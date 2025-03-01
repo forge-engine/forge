@@ -1,0 +1,48 @@
+{
+    "$schema": "https://raw.githubusercontent.com/upperdo/forge-schemas/refs/heads/main/schemas/modules/schema.json",
+    "name": "forge-error-handler",
+    "version": "1.0.0",
+    "description": "Beautiful error pages for Forge framework",
+    "type": "error-handling",
+    "order": 1,
+    "provides": [
+        "ErrorHandlerInterface@1.0"
+    ],
+    "requires": [
+        "ConfigInterface@1.0"
+    ],
+    "class": "Forge\\Modules\\ForgeErrorHandler\\ErrorModule",
+    "core": true,
+    "config": {
+        "defaults": {
+            "error_pages": {
+                "enabled": true,
+                "theme": "dark",
+                "show_stack_trace": true,
+                "show_code_snippets": true
+            }
+        }
+    },
+    "cli": {
+        "commands": [
+            "error:test"
+        ]
+    },
+    "lifecycleHooks": [
+        "beforeBoot",
+        "afterBoot",
+        "beforeModuleLoad",
+        "afterModuleLoad",
+        "beforeModuleRegister",
+        "afterModuleRegister",
+        "afterConfigLoaded"
+    ],
+    "compatibility": {
+        "framework": ">=0.0.1",
+        "php": "^8.3"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/forge-engine/modules"
+    }
+}

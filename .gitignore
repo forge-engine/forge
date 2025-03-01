@@ -10,6 +10,7 @@
 modules/*
 !modules/.gitkeep
 !modules/ForgePackageManager
+!modules/ForgeErrorHandler
 !cache/.gitkeep
 
 # Ignore temporary files and logs
