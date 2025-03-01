@@ -8,6 +8,7 @@ use Forge\Core\Contracts\Events\EventDispatcherInterface;
 use Forge\Core\Contracts\Modules\DebugBarInterface;
 use Forge\Core\DependencyInjection\Container;
 use Forge\Core\Helpers\Debug;
+use Forge\Core\Routing\CoreRouter;
 use Forge\Http\Middleware\MiddlewarePipeline;
 use Forge\Http\Request;
 use Forge\Http\Response;
@@ -45,7 +46,11 @@ class Bootstrap
         ErrorHandlingSetup::setupErrorHandling($this->container, $this->isCli, $this);
         $this->appManager = AppManagerSetup::setup($this->container);
         ModuleSetup::setup($this->container, $this->appManager, $this->modules);
-        AppSetup::setup($this->container, $this->appManager, $this->apps);
+
+        if ($this->container->has(\Forge\Core\Contracts\Modules\RouterInterface::class)) {
+            AppSetup::setup($this->container, $this->appManager, $this->apps);
+        }
+
         $this->middlewareStack = MiddlewareSetup::setup($this->container, $this->isCli, $this);
         $this->appManager->trigger('afterBoot', $this->container);
     }
@@ -103,23 +108,28 @@ class Bootstrap
     private function createCoreHandler(): callable
     {
         return function (Request $request) {
-
-            if (!$this->isCli) {
-                if ($this->container->has(DebugBarInterface::class)) {
-                    /** @var EventDispatcherInterface $eventDispatcher */
-                    $eventDispatcher = $this->container->get(EventDispatcherInterface::class);
-                    $eventDispatcher->dispatch(new RequestReadyForDebugBarCollector($request, $this->container));
+            if (!$this->container->has(\Forge\Core\Contracts\Modules\RouterInterface::class)) {
+                $router = new CoreRouter();
+                $router->handleRequest($request);
+                exit;
+            } else {
+                if (!$this->isCli) {
+                    if ($this->container->has(DebugBarInterface::class)) {
+                        /** @var EventDispatcherInterface $eventDispatcher */
+                        $eventDispatcher = $this->container->get(EventDispatcherInterface::class);
+                        $eventDispatcher->dispatch(new RequestReadyForDebugBarCollector($request, $this->container));
+                    }
                 }
-            }
 
-            foreach ($this->appManager->getApps() as $app) {
-                /** @var Response $response */
-                $response = $app->handleRequest($request);
-                if ($response !== null) {
-                    return $response;
+                foreach ($this->appManager->getApps() as $app) {
+                    /** @var Response $response */
+                    $response = $app->handleRequest($request);
+                    if ($response !== null) {
+                        return $response;
+                    }
                 }
+                throw new \RuntimeException("No app handled the request");
             }
-            throw new \RuntimeException("No app handled the request");
         };
     }
 
