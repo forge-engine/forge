@@ -3,7 +3,7 @@ return [
     'name' => 'MyApp',
     "key" => \Forge\Core\Helpers\App::env("FORGE_APP_KEY"),
     'middleware' => [
-        \Forge\Http\Middleware\ErrorHandlingMiddleware::class,
+        //\Forge\Http\Middleware\ErrorHandlingMiddleware::class,
         \Forge\Http\Middleware\SecurityHeadersMiddleware::class,
         \Forge\Http\Middleware\CorsMiddleware::class,
         \Forge\Http\Middleware\CompressionMiddleware::class,

@@ -162,14 +162,12 @@ class App
      */
     public static function isErrorHandlerEnabled(): bool
     {
-        $container = self::getContainer();
-        if ($container->has(ErrorHandlerInterface::class)) {
-            if (class_exists(ErrorModule::class)) {
-                $container->instance(ErrorHandlerInterface::class, function ($container) {
-                    return new ErrorModule($container->get(Config::class));
-                });
-                return true;
-            }
+        if (class_exists(ErrorModule::class)) {
+            $container = self::getContainer();
+            $container->instance(ErrorHandlerInterface::class, function ($container) {
+                return new ErrorModule($container->get(Config::class));
+            });
+            return true;
         }
         return false;
     }

@@ -54,7 +54,7 @@ class HomeController
                 ],
             ]
         ];
-        $error = new \ErrorException("Demo");
+        //throw new \ErrorException("Demo");
 
 
         //$url = $storage->temporaryUrl('uploads', 'user/avatar.jpg', 3600);
