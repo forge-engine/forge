@@ -30,7 +30,22 @@ class Path
         $version = $_ENV['APP_ENV'] === 'production' ? '?v=1.0.0' : '?v=' . time();
         return $baseUrl . '/' . trim($type . '/' . $filePath, '/') . $version;
     }
-    
+
+    /**
+     * Generate URL for static site assets.
+     *
+     * This method is specifically for generating URLs to assets within the
+     * statically generated site, where assets are typically located in the 'assets'
+     * directory within the output directory (e.g., public/static/assets).
+     *
+     * @param string $path Asset path relative to the 'assets' directory in static output.
+     * @return string
+     */
+    public static function staticAssetUrl(string $path): string
+    {
+        return '/assets/' . $path;
+    }
+
     /**
      * Get the base path of the Base installation
      *

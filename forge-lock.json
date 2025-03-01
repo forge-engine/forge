@@ -61,10 +61,10 @@
             "integrity": "10b6d894dfa6b2fc0e543affcf90b38bf816e4889c66882ff98b9ccf4e8c4a4e"
         },
         "forge-view-engine": {
-            "version": "1.0.0",
+            "version": "1.0.1",
             "registry": "forge-engine-modules",
-            "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-view-engine/1.0.0/1.0.0.zip",
-            "integrity": "6416b847431e72c0ddd4fa6326bbc4019783d402583cdd80cb41fe35c625ce09"
+            "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-view-engine/1.0.1/1.0.1.zip",
+            "integrity": "40389ca9c6b29d4bb0a387ce9e0af98ed920d6bd29376334ba068409444dfff0"
         },
         "forge-database": {
             "version": "1.0.0",
@@ -77,6 +77,12 @@
             "registry": "forge-engine-modules",
             "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-testing/1.0.0/1.0.0.zip",
             "integrity": "b6eaa1dc1c3b0ed646db2119682054bafb94bebc359295555294b6f50a0bd5b2"
+        },
+        "forge-static-html": {
+            "version": "1.0.0",
+            "registry": "forge-engine-modules",
+            "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-static-html/1.0.0/1.0.0.zip",
+            "integrity": "7ebc2075217cecdbd8b198757f50dd06284297930c0cabac50689e4c9bba5541"
         }
     }
 }
