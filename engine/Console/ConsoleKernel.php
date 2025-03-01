@@ -109,7 +109,7 @@ class ConsoleKernel
 
         foreach ($apps as $app) {
             $config = App::config();
-            $consoleRouteFile = $config->get('routes.console');
+            $consoleRouteFile = $config->get('routes.console', []);
             $consoleRoutesPath = Path::basePath("/{$consoleRouteFile}");
             if (file_exists($consoleRoutesPath)) {
                 $commandDefinitions = require_once $consoleRoutesPath;
