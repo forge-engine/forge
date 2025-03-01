@@ -109,25 +109,28 @@ class ConsoleKernel
 
         foreach ($apps as $app) {
             $config = App::config();
-            $consoleRouteFile = $config->get('routes.console', []);
-            $consoleRoutesPath = Path::basePath("/{$consoleRouteFile}");
-            if (file_exists($consoleRoutesPath)) {
-                $commandDefinitions = require_once $consoleRoutesPath;
-                if (is_array($commandDefinitions)) {
-                    foreach ($commandDefinitions as $commandName => $commandClass) {
-                        if (class_exists($commandClass) && is_subclass_of($commandClass, CommandInterface::class)) {
-                            $commandInstance = new $commandClass($this->container);
-                            $this->registerCommand("app:$commandName", $commandInstance);
-                        } else {
-                            error_log("[ConsoleKernel]: Warning: Invalid command definition for '{$commandName}' in " . $consoleRoutesPath . ". Class '{$commandClass}' not found or not a CommandInterface.");
+            $consoleRouteFile = $config->get('routes.console', '');
+            if ($consoleRouteFile) {
+                $consoleRoutesPath = Path::basePath("/{$consoleRouteFile}");
+                if (file_exists($consoleRoutesPath)) {
+                    $commandDefinitions = require_once $consoleRoutesPath;
+                    if (is_array($commandDefinitions)) {
+                        foreach ($commandDefinitions as $commandName => $commandClass) {
+                            if (class_exists($commandClass) && is_subclass_of($commandClass, CommandInterface::class)) {
+                                $commandInstance = new $commandClass($this->container);
+                                $this->registerCommand("app:$commandName", $commandInstance);
+                            } else {
+                                error_log("[ConsoleKernel]: Warning: Invalid command definition for '{$commandName}' in " . $consoleRoutesPath . ". Class '{$commandClass}' not found or not a CommandInterface.");
+                            }
                         }
+                    } else {
+                        error_log("[ConsoleKernel]: Warning: Invalid console route file at " . $consoleRoutesPath . ". Should return an array of command definitions.");
                     }
                 } else {
-                    error_log("[ConsoleKernel]: Warning: Invalid console route file at " . $consoleRoutesPath . ". Should return an array of command definitions.");
+                    error_log("[ConsoleKernel]: Console route file not found: " . $consoleRoutesPath);
                 }
-            } else {
-                error_log("[ConsoleKernel]: Console route file not found: " . $consoleRoutesPath);
             }
+
         }
         return [];
     }
