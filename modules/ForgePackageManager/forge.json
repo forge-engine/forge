@@ -1,0 +1,40 @@
+{
+    "$schema": "./../../engine/Core/Schema/module-schema.json",
+    "name": "forge-package-manager",
+    "version": "1.0.0",
+    "description": "A Package Manager By Forge",
+    "type": "generic",
+    "order": 0,
+    "provides": [
+        "Forge\\Modules\\Contracts\\PackageManagerInterface@1.0.0"
+    ],
+    "requires": [],
+    "lifecycleHooks": [
+        "beforeBoot",
+        "afterBoot",
+        "beforeModuleLoad",
+        "afterModuleLoad",
+        "beforeModuleRegister",
+        "afterModuleRegister",
+        "afterConfigLoaded"
+    ],
+    "class": "Forge\\Modules\\ForgePackageManager\\ForgePackageManagerModule",
+    "cli": {
+        "commands": [
+            "install:module",
+            "remove:module"
+        ]
+    },
+    "tags": [],
+    "config": {
+        "defaults": {}
+    },
+    "compatibility": {
+        "framework": ">=0.0.1",
+        "php": "^8.3"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/forge-engine/modules"
+    }
+}
