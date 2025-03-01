@@ -2,6 +2,7 @@
 
 namespace Forge\Console;
 
+use Forge\Console\Commands\KeyGenerateCommand;
 use Forge\Console\Commands\PublishModuleResourcesCommand;
 use Forge\Core\Contracts\Command\CommandInterface;
 use Forge\Console\Commands\ConfigCacheCommand;
@@ -78,6 +79,7 @@ class ConsoleKernel
             'list:modules' => new ListModulesCommand($this->container),
             'config:cache' => new ConfigCacheCommand(),
             'config:clear' => new ConfigClearCommand(),
+            'key:generate' => new KeyGenerateCommand(),
             'make:module' => new MakeModuleCommand(),
             'publish' => new PublishModuleResourcesCommand(),
             'serve' => new ServeCommand(),
