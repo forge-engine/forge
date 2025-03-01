@@ -1,0 +1,68 @@
+.dd-container {
+  background-color: #18181a;
+  border: 1px solid #555;
+  border-radius: 4px;
+  padding: 15px;
+  font-family: "Consolas", Courier, monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #f8f8f2;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: auto;
+  max-height: 80vh;
+}
+.dd-container pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
+}
+.dd-container .key {
+  color: #fff;
+  font-weight: 500;
+}
+
+.debugbar-message-info pre {
+  width: 60%;
+}
+
+.dd-container .string {
+  color: #3bdb3a;
+}
+
+.dd-container .number {
+  color: #e6b450;
+}
+
+.dd-container .boolean,
+.dd-trace {
+  color: #61afef;
+  font-weight: 700;
+}
+
+.dd-container .null {
+  color: #ff8400;
+}
+.dd-container .object,
+.dd-container .array,
+.dd-container .object-class {
+  color: #61afef;
+  font-weight: bold;
+}
+.dd-container .object-property,
+.dd-container .array-element {
+  margin-left: 15px;
+  display: block;
+}
+.dd-container .value {
+  font-weight: normal;
+}
+.dd-container .object-class {
+  font-style: italic;
+  color: #777;
+}

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Index</title>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="/static/assets/style.css"></head>
+<body>
+<div class="content">
+    <h1>UPPER Flutter Stores 📦</h1>
+
+UPPER Flutter Stores is a lightweight, powerful, and flexible state management solution designed to simplify your
+Flutter applications. Inspired by the simplicity of Svelte Stores, it provides a unified store API with specialized
+independent stores for advanced use cases like persistence, snapshots, undo/redo functionality, middleware, and more.
+
+<hr>
+
+<h2>🌟 Features</h2>
+
+<ul>
+<li><strong>Unified API</strong>: Manage your application's state in a single store with optional features like persistence, undo/redo,
+  snapshots, and async operations.</li>
+<li><strong>Independent Stores</strong>: Modular and specific stores for specialized needs:<pre><code>- <strong>BaseStore</strong>: A minimal store with reactive state.</code></pre><pre><code>- <strong>AsyncStore</strong>: Manage asynchronous tasks with built-in loading and error states.</code></pre><pre><code>- <strong>UndoableStore</strong>: Add undo/redo functionality for state transitions.</code></pre><pre><code>- <strong>ComputedStore</strong>: Automatically derive state based on dependencies.</code></pre><pre><code>- <strong>PersistentStore</strong>: Save and restore state with <code>SharedPreferences</code>.</code></pre><pre><code>- <strong>SnapshotStore</strong>: Create and replay snapshots of state.</code></pre><pre><code>- <strong>DynamicStore</strong>: Manage key-value state dynamically.</code></pre><pre><code>- <strong>MiddlewareStore</strong>: Add middleware for intercepting state changes.</code></pre></li>
+<li><strong>Tracing and Debugging</strong>: Track state changes, errors, and their context when debugging is enabled.</li>
+<li><strong>Integration Ready</strong>: Wrap your application with <code>StoreLifecycleManager</code> for automatic cleanup of listeners and
+  subscriptions.</li>
+<li><strong>No Boilerplate</strong>: Minimal setup with extensive functionality out-of-the-box.</li>
+</ul>
+
+<hr>
+
+<h2>🔧 Installation</h2>
+
+Add the package to your <code>pubspec.yaml</code>:
+
+<pre><code class="language-yaml">dependencies:<pre><code>upper<em>flutter</em>stores: 0.1.15&lt;/code&gt;&lt;/pre&gt;</code></pre>
+
+Run:
+
+<pre><code class="language-bash">flutter pub get</code></pre>
+
+<hr>
+
+<h2>🚀 Getting Started</h2>
+
+<h3>Unified Store Example</h3>
+
+<pre><code class="language-dart">import &#039;package:upper<em>flutter</em>stores/upper<em>flutter</em>stores.dart&#039;;
+
+void main() {
+  final store = Store&lt;int&gt;(<pre><code>0, // Initial state</code></pre><pre><code>enableDebugging: true, // Enable debug logs</code></pre><pre><code>enableUndoRedo: true, // Add undo/redo capability</code></pre><pre><code>enableSnapshots: true, // Enable snapshot functionality</code></pre><pre><code>enablePersistence: true, // Persist state across app restarts</code></pre><pre><code>persistKey: &amp;#039;counter<em>store&amp;#039;, // Key for persistence</code></pre><pre><code>fromJson: (json) =&amp;gt; json[&amp;#039;value&amp;#039;] as int,</code></pre><pre><code>toJson: (state) =&amp;gt; {&amp;#039;value&amp;#039;: state},</code></pre>
+  );
+
+  // Listen to state changes
+  store.subscribe((state) {<pre><code>print(&amp;#039;State updated: $state&amp;#039;);</code></pre>
+  });
+
+  // Perform state updates
+  store.set(10); // Update state
+  store.undo(); // Undo last change
+  store.takeSnapshot(); // Take a snapshot
+  store.persist(); // Save state
+}</code></pre>
+
+<h2>💡 Full Demo</h2>
+
+Check the <a href="https://github.com/upperdo/upper&lt;/em&gt;flutter&lt;em&gt;stores">Example</a> for more details.
+
+<hr>
+
+<h2>💡 Advanced Usage</h2>
+
+<h3>1. Async Operations</h3>
+
+<pre><code class="language-dart">final asyncStore = AsyncStore&lt;String&gt;(enableDebugging: true);
+
+asyncStore.run(() async {
+  await Future.delayed(Duration(seconds: 2));
+  return &quot;Data Loaded!&quot;;
+});
+
+asyncStore.subscribe((state) {
+  if (state.isLoading) {<pre><code>print(&amp;quot;Loading...&amp;quot;);</code></pre>
+  } else if (state.data != null) {<pre><code>print(&amp;quot;Data: ${state.data}&amp;quot;);</code></pre>
+  } else if (state.error != null) {<pre><code>print(&amp;quot;Error: ${state.error}&amp;quot;);</code></pre>
+  }
+});</code></pre>
+
+<h3>2. Undo/Redo Functionality</h3>
+
+<pre><code class="language-dart">final undoableStore = UndoableStore&lt;int&gt;(0, enableDebugging: true);
+
+undoableStore.set(10);
+undoableStore.set(20);
+
+undoableStore.undo(); // Reverts to 10
+undoableStore.redo(); // Returns to 20</code></pre>
+
+<h3>3. Middleware Example</h3>
+
+<pre><code class="language-dart">final middlewareStore = MiddlewareStore&lt;int&gt;(0, enableDebugging: true);
+
+// Add a middleware to log state transitions
+middlewareStore.addMiddleware((oldState, newState) {
+  print(&quot;State changed from $oldState to $newState&quot;);
+});
+
+// Add another middleware for validation
+middlewareStore.addMiddleware((oldState, newState) {
+  if (newState &lt; 0) {<pre><code>print(&amp;quot;Warning: State is negative&amp;quot;);</code></pre>
+  }
+});
+
+// Update state
+middlewareStore.set(10); // Logs: State changed from 0 to 10
+middlewareStore.set(-5); // Logs: State changed from 10 to -5 and Warning: State is negative</code></pre>
+
+<h3>4. Lifecycle Management with <code>StoreLifecycleManager</code></h3>
+
+Wrap your app with <code>StoreLifecycleManager</code> to automatically manage listeners:
+
+<pre><code class="language-dart">StoreLifecycleManager.register(context, () {
+  print(&quot;Dispose callback executed&quot;);
+});</code></pre>
+
+<hr>
+
+<h2>📋 List of Features</h2>
+
+1. <strong>State Management</strong>:<pre><code>- Reactive state updates.</code></pre><pre><code>- Built-in tracing for debugging.</code></pre>
+2. <strong>Persistence</strong>:<pre><code>- Save and restore state with <code>SharedPreferences</code>.</code></pre>
+3. <strong>Undo/Redo</strong>:<pre><code>- Built-in undo/redo stack for state transitions.</code></pre>
+4. <strong>Snapshots</strong>:<pre><code>- Take, replay, and clear state snapshots.</code></pre>
+5. <strong>Async Operations</strong>:<pre><code>- Manage loading, success, and error states with ease.</code></pre>
+6. <strong>Dynamic Key-Value State</strong>:<pre><code>- Flexible state management for dynamic structures.</code></pre>
+7. <strong>Middleware</strong>:<pre><code>- Add middleware to intercept and process state changes.</code></pre>
+8. <strong>Computed State</strong>:<pre><code>- Automatically calculate state based on dependencies.</code></pre>
+
+<hr>
+
+<h2>🛠 Debugging and Tracing</h2>
+
+Enable debugging with <code>enableDebugging: true</code> in any store. It provides:
+
+<ul>
+<li>Logs of state transitions.</li>
+<li>Errors with stack traces.</li>
+<li>Context tracking to locate the source of changes.</li>
+</ul>
+
+<hr>
+
+<h2>📄 License</h2>
+
+This project is licensed under the MIT License. See the <a href="LICENSE">LICENSE</a> file for details.
+
+<hr>
+
+<h2>📝 Changelog</h2>
+
+See the <a href="CHANGELOG.md">CHANGELOG.md</a> for the list of updates and improvements.
+
+<hr>
+
+<h2>💬 Feedback and Contributions</h2>
+
+We’d love your feedback! Feel free to open issues or contribute to the repository.
+
+<hr>
+
+<h2>🧪 Tests</h2>
+
+This package comes with extensive unit tests to ensure reliability. Run tests with:
+
+<pre><code class="language-bash">flutter test</code></pre>
+
+<hr>
+
+<h1>Pending Features Checklist for <strong>upper</em>flutter<em>stores</strong></h1>
+
+This checklist outlines planned features for the <strong>upper</em>flutter<em>stores</strong> package to enhance functionality, usability,
+and appeal to both beginner and advanced users.
+
+<h2>Core Enhancements</h2>
+
+<ul>
+<li>[ ] <strong>Multi-Store Sync</strong><pre><code>- Enable seamless synchronization of shared states across multiple stores.</code></pre><pre><code>- Provide middleware and event-based synchronization options.</code></pre></li>
+</ul>
+
+<ul>
+<li>[ ] <strong>Caching Support</strong><pre><code>- Middleware to automatically cache API responses based on rules.</code></pre><pre><code>- Configurable TTL (time-to-live) and cache invalidation options.</code></pre></li>
+</ul>
+
+<ul>
+<li>[ ] <strong>DevTools Event Integration</strong><pre><code>- Log and expose store events to DevTools using the <code>dart:developer</code> timeline.</code></pre><pre><code>- Enable visualization of store changes in a DevTools custom panel.</code></pre></li>
+</ul>
+
+<ul>
+<li>[ ] <strong>Custom Event Viewer</strong><pre><code>- Create a dedicated DevTools extension for monitoring <code>upper&lt;/em&gt;flutter&lt;em&gt;stores.&lt;/em&gt;</code> events.</code></pre><pre><code>- Display events like state changes, middleware logs, and snapshots in a table format.</code></pre></li>
+</ul>
+
+<h2>Developer Experience</h2>
+
+<ul>
+<li>[ ] <strong>Enhanced Debugging Panel</strong><pre><code>- In-app debugging widget to visualize state, undo/redo history, and snapshots.</code></pre><pre><code>- Filter and search states by keywords for quick analysis.</code></pre></li>
+</ul>
+
+<ul>
+<li>[ ] <strong>Type Safety Enhancements</strong><pre><code>- Integrate stricter type definitions for common store patterns.</code></pre><pre><code>- Provide <code>TypedStore</code> examples for common use cases like models, lists, and maps.</code></pre></li>
+</ul>
+
+<ul>
+<li>[ ] <strong>Error Boundary Middleware</strong><pre><code>- Capture and gracefully handle errors within store state transitions.</code></pre><pre><code>- Prevent application crashes due to unexpected errors in state updates.</code></pre></li>
+</ul>
+
+<h2>Advanced Features</h2>
+
+<ul>
+<li>[ ] <strong>Immutable State Helpers</strong><pre><code>- Introduce immutable state utilities for performance optimization.</code></pre><pre><code>- Automatically handle deep copies during state updates.</code></pre></li>
+</ul>
+
+<ul>
+<li>[ ] <strong>Lazy Store Initialization</strong><pre><code>- Load specific stores only when accessed, reducing initial memory footprint.</code></pre></li>
+</ul>
+
+<ul>
+<li>[ ] <strong>State Export and Import</strong><pre><code>- Add support for exporting and importing states as JSON for testing or migration.</code></pre><pre><code>- Useful for replicating bugs or transferring states between environments.</code></pre></li>
+</ul>
+
+<h2>Ecosystem Expansion</h2>
+
+<ul>
+<li>[ ] <strong>CLI Integration</strong><pre><code>- Command-line tools to scaffold stores, generate models, and manage configurations.</code></pre></li>
+</ul>
+
+<ul>
+<li>[ ] <strong>Enhanced Documentation</strong><pre><code>- Add more examples, including real-world use cases.</code></pre><pre><code>- Provide dedicated guides for advanced features like computed stores and multi-store setups.</code></pre></li>
+</ul>
+
+<ul>
+<li>[ ] <strong>Community Marketplace</strong><pre><code>- Allow publishing and sharing custom middlewares, adapters, or store patterns.</code></pre></li>
+</ul>
+
+<h2>Performance Improvements</h2>
+
+<ul>
+<li>[ ] <strong>Batch State Updates</strong><pre><code>- Optimize state updates by batching multiple changes into a single notification cycle.</code></pre></li>
+</ul>
+
+<ul>
+<li>[ ] <strong>Selective Store Listeners</strong><pre><code>- Enable widgets to listen to specific parts of the state for improved performance.</code></pre></li>
+</ul>
+
+--
+
+<h2>📚 Documentation</h2>
+
+Check the <a href="https://github.com/upperdo/upper&lt;em&gt;flutter&lt;/em&gt;stores/tree/master/doc">full documentation</a> for more details and
+advanced examples.
+
+<hr>
+
+<h3>Contribution</h3>
+
+If you’re interested in contributing or suggesting additional features, please refer to
+the <a href="https://github.com/upperdo/upper&lt;em&gt;flutter&lt;/em&gt;stores/blob/master/doc/CONTRIBUTING.md">CONTRIBUTING.md</a>.</div>
+<footer class="site-footer">
+    <p>&copy; 2025 Generated by Forge Static Module. All rights reserved.</p>
+</footer></body>
+</html>

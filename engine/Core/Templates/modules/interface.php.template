@@ -1,0 +1,8 @@
+<?php
+
+namespace Forge\Modules\{{ moduleName }}\Contracts;
+
+interface {{ interfaceName }}
+{
+    public function test(): void;
+}

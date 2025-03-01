@@ -1,0 +1,37 @@
+{
+    "$schema": "./../../engine/Core/Schema/module-schema.json",
+    "name": "{{ moduleName }}",
+    "version": "{{ moduleVersion }}",
+    "description": "{{ moduleDescription }}",
+    "type": "generic",
+    "order": 100,
+    "provides": [
+        "Forge\\Modules\\Contracts\\{{ interfaceName }}@{{ moduleVersion }}"
+    ],
+    "requires": [],
+    "lifecycleHooks": [
+        "beforeBoot",
+        "afterBoot",
+        "beforeModuleLoad",
+        "afterModuleLoad",
+        "beforeModuleRegister",
+        "afterModuleRegister",
+        "afterConfigLoaded"
+    ],
+    "class": "Forge\\Modules\\{{ moduleName }}\\{{ moduleName }}Module",
+    "cli": {
+        "commands": []
+    },
+    "tags": [],
+    "config": {
+        "defaults": {}
+    },
+     "compatibility": {
+        "framework": ">=0.0.1",
+        "php": "^8.3"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/forge-engine/modules"
+    }
+}

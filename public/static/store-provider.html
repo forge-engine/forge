@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Untitled</title>
+    <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="/static/assets/style.css"></head>
+<body>
+<div class="content">
+    <h1>StoreProvider Documentation</h1>
+
+<h2>Overview</h2>
+
+The <code>StoreProvider</code> is a core component of the <strong>upper<em>flutter</em>stores</strong> package, enabling state management by providing
+a single store to a subtree of widgets. It utilizes Flutter’s <code>InheritedWidget</code> to make the store accessible to any
+descendant widget.
+
+<h2>Features</h2>
+
+<ul>
+<li><strong>Type-safe access</strong>: Provides type-safe access to the store in the widget tree.</li>
+<li><strong>Reactivity</strong>: Automatically rebuilds widgets when the store’s state changes.</li>
+<li><strong>Modularity</strong>: Makes it easy to inject specific stores into distinct parts of the widget tree.</li>
+</ul>
+
+<h2>Usage</h2>
+
+<h3>Import</h3>
+
+First, ensure you import the necessary package:
+
+<pre><code class="language-dart">import &#039;package:upper<em>flutter</em>stores/upper<em>flutter</em>stores.dart&#039;;</code></pre>
+
+<h3>Basic Example</h3>
+
+Wrap a part of your widget tree with <code>StoreProvider</code> to inject a specific store:
+
+<pre><code class="language-dart">import &#039;package:flutter/material.dart&#039;;
+import &#039;package:upper<em>flutter</em>stores/upper<em>flutter</em>stores.dart&#039;;
+
+class CounterStore extends StoreInterface&lt;int&gt; {
+  CounterStore() : super(0);
+
+  void increment() =&gt; set(state + 1);
+  void decrement() =&gt; set(state - 1);
+}
+
+void main() {
+  runApp(<pre><code>StoreProvider&amp;lt;CounterStore&amp;gt;(</code></pre><pre><code>  store: CounterStore(),</code></pre><pre><code>  child: const MyApp(),</code></pre><pre><code>),</code></pre>
+  );
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({Key? key}) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {<pre><code>final counterStore = StoreProvider.of&amp;lt;CounterStore&amp;gt;(context);</code></pre>
+<pre><code>return MaterialApp(</code></pre><pre><code>  home: Scaffold(</code></pre><pre><code>    appBar: AppBar(title: const Text(&amp;#039;StoreProvider Example&amp;#039;)),</code></pre><pre><code>    body: Center(</code></pre><pre><code>      child: Column(</code></pre><pre><code>        mainAxisAlignment: MainAxisAlignment.center,</code></pre><pre><code>        children: [</code></pre><pre><code>          ValueListenableBuilder(</code></pre><pre><code>            valueListenable: counterStore,</code></pre><pre><code>            builder: (context, value, <em>) {</code></pre><pre><code>              return Text(&amp;#039;Counter: $value&amp;#039;);</code></pre><pre><code>            },</code></pre><pre><code>          ),</code></pre><pre><code>          Row(</code></pre><pre><code>            mainAxisAlignment: MainAxisAlignment.center,</code></pre><pre><code>            children: [</code></pre><pre><code>              IconButton(</code></pre><pre><code>                icon: const Icon(Icons.remove),</code></pre><pre><code>                onPressed: counterStore.decrement,</code></pre><pre><code>              ),</code></pre><pre><code>              IconButton(</code></pre><pre><code>                icon: const Icon(Icons.add),</code></pre><pre><code>                onPressed: counterStore.increment,</code></pre><pre><code>              ),</code></pre><pre><code>            ],</code></pre><pre><code>          ),</code></pre><pre><code>        ],</code></pre><pre><code>      ),</code></pre><pre><code>    ),</code></pre><pre><code>  ),</code></pre><pre><code>);</code></pre>
+  }
+}</code></pre>
+
+<h3>API Reference</h3>
+
+<h4>Constructor</h4>
+
+<pre><code class="language-dart">const StoreProvider&lt;T extends BaseStore&gt;({
+  required T store,
+  required Widget child,
+  Key? key,
+})</code></pre>
+
+<ul>
+<li><strong><code>store</code></strong>: The instance of the store to provide.</li>
+<li><strong><code>child</code></strong>: The widget subtree that can access the provided store.</li>
+</ul>
+
+<h4>Static Method</h4>
+
+<pre><code class="language-dart">static T of&lt;T extends BaseStore&gt;(BuildContext context)</code></pre>
+
+<ul>
+<li>Retrieves the store instance of type <code>T</code> from the nearest ancestor <code>StoreProvider</code>.</li>
+<li>Throws an assertion if no matching <code>StoreProvider</code> is found in the widget tree.</li>
+</ul>
+
+<h4>Update Behavior</h4>
+
+The <code>StoreProvider</code> will notify its descendants only when the provided store changes.
+
+<h3>Best Practices</h3>
+
+1. <strong>Avoid nesting providers unnecessarily</strong>:
+   Use <code>MultiStoreProvider</code> when injecting multiple stores.
+2. <strong>Keep stores lightweight</strong>:
+   Stores should focus on state management and avoid UI-related logic.
+3. <strong>Combine with consumers</strong>:
+   Use <code>StoreConsumer</code> or <code>ValueListenableBuilder</code> for clean and reactive UI updates.
+
+<h3>Common Pitfalls</h3>
+
+1. <strong>Forgetting to wrap with a provider</strong>:
+   Ensure every widget accessing a store is wrapped by a <code>StoreProvider</code>.
+2. <strong>Overlapping providers</strong>:
+   Be mindful of provider scopes to avoid unintentional overrides.
+
+<h2>Next Steps</h2>
+
+Explore <a href="STORE&lt;/em&gt;CONSUMER.md">StoreConsumer</a> to learn how to reactively consume stores in the widget tree.
+
+For more advanced usage, refer to the <a href="README.md">Unified Store Overview</a>.
+
+<hr>
+
+<h2>Conclusion</h2>
+
+The <strong>upper<em>flutter</em>stores</strong> package is versatile and caters to various use cases across industries. Its modular design,
+robust features, and developer-friendly API make it a powerful tool for managing state in Flutter applications.</div>
+<footer class="site-footer">
+    <p>&copy; 2025 Generated by Forge Static Module. All rights reserved.</p>
+</footer></body>
+</html>
