@@ -1,7 +1,7 @@
 {
     "name": "My project",
     "modules": {
-        "forge-package-manager": "1.fo0.0",
+        "forge-package-manager": "1.0.0",
         "forge-test": "1.0.0",
         "forge-router": "1.0.0",
         "forge-api": "0.0.1-dev",

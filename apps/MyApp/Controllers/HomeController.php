@@ -46,7 +46,7 @@ class HomeController
                 ],
                 [
                     'label' => 'Forge',
-                    'url' => '#'
+                    'url' => 'https://github.com/forge-engine/forge'
                 ],
                 [
                     'label' => 'GitHub',
