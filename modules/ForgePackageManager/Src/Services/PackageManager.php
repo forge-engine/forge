@@ -15,6 +15,8 @@ class PackageManager implements PackageManagerInterface
     private const OFFICIAL_REGISTRY_NAME = 'forge-engine-modules';
     private const OFFICIAL_REGISTRY_BASE_URL = 'https://github.com/forge-engine/modules';
     private const OFFICIAL_REGISTRY_BRANCH = 'main';
+    private const FRAMEWORK_MODULE_NAME = 'forge-engine/framework';
+    private const PACKAGE_MANAGER_MODULE_NAME = 'forge-package-manager';
 
     private string $modulesPath;
     private array $registries;
@@ -84,6 +86,11 @@ class PackageManager implements PackageManagerInterface
             $moduleInstallPath = $this->getModulesPath() . $moduleInstallFolderName;
 
             $this->info("Installing module {$moduleName} version {$versionToInstall} from lock file...");
+
+            if ($moduleName === self::FRAMEWORK_MODULE_NAME) {
+                $this->installFrameworkModule($versionToInstall);
+                continue;
+            }
 
             $this->info("Verifying integrity of {$moduleName}...");
             if (file_exists($moduleCachePath)) {
@@ -175,6 +182,13 @@ class PackageManager implements PackageManagerInterface
 
     public function installModule(string $moduleName, ?string $version = null): void
     {
+        $this->info("Installing module: {$moduleName}" . ($version ? " version {$version}" : " (latest)"));
+
+        if ($moduleName === self::FRAMEWORK_MODULE_NAME) {
+            $this->installFrameworkModule($version);
+            return;
+        }
+
         // 1. Determine registry and module info
         $moduleInfo = $this->getModuleInfo($moduleName, $version);
         if (!$moduleInfo) {
@@ -229,9 +243,63 @@ class PackageManager implements PackageManagerInterface
         $this->success("Module {$moduleName} version {$versionToInstall} installed successfully.");
     }
 
-    public function removeModule(string $moduleName): void
+
+    private function installFrameworkModule(?string $version = null): void
     {
-        $this->error("Remove module not yet implemented.");
+        $this->info("Installing Forge Engine Framework...");
+
+        $installScriptPath = BASE_PATH . '/install.php';
+        if (!file_exists($installScriptPath)) {
+            $this->error("Error: install.php script not found in project root.");
+            return;
+        }
+
+        $command = "php " . escapeshellarg($installScriptPath);
+        if ($version) {
+            $command .= " --version=" . escapeshellarg($version);
+        }
+
+        $this->info("Executing framework install script: {$command}");
+
+        $process = proc_open(
+            $command,
+            [
+                0 => ['pipe', 'r'],
+                1 => ['pipe', 'w'],
+                2 => ['pipe', 'w'],
+            ],
+            $pipes
+        );
+
+        if (is_resource($process)) {
+            fclose($pipes[0]);
+
+            $stdout = stream_get_contents($pipes[1]);
+            fclose($pipes[1]);
+
+            $stderr = stream_get_contents($pipes[2]);
+            fclose($pipes[2]);
+
+            $returnCode = proc_close($process);
+
+            echo $stdout;
+
+            if ($returnCode !== 0) {
+                $this->error("Framework install script failed with exit code: {$returnCode}");
+                if (!empty($stderr)) {
+                    $this->error("Install script error output:\n" . $stderr);
+                }
+            } else {
+                $this->success("Forge Framework installed successfully.");
+                if (!empty($stderr)) {
+                    $this->warning("Framework install script had warnings:\n" . $stderr);
+                }
+                $this->updateForgeJson(self::FRAMEWORK_MODULE_NAME, $version ?: 'latest');
+            }
+
+        } else {
+            $this->error("Failed to execute framework install script.");
+        }
     }
 
     public function getModuleInfo(string $moduleName = null, ?string $version = null): ?array
@@ -286,7 +354,7 @@ class PackageManager implements PackageManagerInterface
             ];
         }
 
-        if (strpos($moduleName, 'forge-') === 0) {
+        if (strpos($moduleName, 'forge-') === 0 && $moduleName !== self::FRAMEWORK_MODULE_NAME) {
             return [
                 'name' => self::OFFICIAL_REGISTRY_NAME,
                 'url' => self::OFFICIAL_REGISTRY_BASE_URL,
@@ -446,5 +514,67 @@ class PackageManager implements PackageManagerInterface
     private function generateModuleInstallFolderName(string $fullName): string
     {
         return Strings::toPascalCase($fullName);
+    }
+
+    public function removeModule(string $moduleName): void
+    {
+        if ($moduleName === self::FRAMEWORK_MODULE_NAME) {
+            $this->warning("Uninstalling 'forge-engine/framework' may cause critical system errors.");
+            $this->warning("Only proceed if you understand the risks. Most functionality will be disabled.");
+            $this->warning("It's highly recommended to reinstall the framework afterwards to restore functionality.");
+        }
+
+        if ($moduleName === self::PACKAGE_MANAGER_MODULE_NAME) {
+            $this->warning("Uninstalling 'forge-package-manager' will disable automatic module management.");
+            $this->warning("You will need to manually download and install modules until another package manager is installed.");
+            $this->warning("Consider installing another package manager or reinstalling forge-package-manager afterwards.");
+        }
+
+        $moduleInstallFolderName = $this->generateModuleInstallFolderName($moduleName);
+        $moduleInstallPath = $this->getModulesPath() . $moduleInstallFolderName;
+
+        if (!is_dir($moduleInstallPath)) {
+            $this->warning("Module '{$moduleName}' is not currently installed, or the installation folder is missing: {$moduleInstallPath}");
+            $this->warning("Skipping module removal.");
+            return;
+        }
+
+        $this->info("Removing module {$moduleName}...");
+
+        if (!$this->removeDirectory($moduleInstallPath)) {
+            $this->error("Failed to delete module directory: {$moduleInstallPath}");
+            return;
+        }
+
+        $this->updateForgeJsonOnModuleRemoval($moduleName);
+        $this->updateForgeLockJsonOnModuleRemoval($moduleName);
+
+        $this->success("Module {$moduleName} removed successfully.");
+    }
+
+    private function updateForgeJsonOnModuleRemoval(string $moduleName): void
+    {
+        $forgeJsonPath = BASE_PATH . '/forge.json';
+        $forgeConfig = $this->readForgeJson();
+        if (isset($forgeConfig['modules'][$moduleName])) {
+            unset($forgeConfig['modules'][$moduleName]);
+            $this->writeForgeJson($forgeConfig);
+            $this->info("Removed '{$moduleName}' from forge.json.");
+        } else {
+            $this->warning("Module '{$moduleName}' not found in forge.json modules section. Skipping forge.json update.");
+        }
+    }
+
+    private function updateForgeLockJsonOnModuleRemoval(string $moduleName): void
+    {
+        $forgeLockJsonPath = BASE_PATH . '/forge-lock.json';
+        $lockData = $this->readForgeLockJson();
+        if (isset($lockData['modules'][$moduleName])) {
+            unset($lockData['modules'][$moduleName]);
+            $this->writeForgeLockJson($lockData);
+            $this->info("Removed '{$moduleName}' from forge-lock.json.");
+        } else {
+            $this->warning("Module '{$moduleName}' not found in forge-lock.json modules section. Skipping forge-lock.json update.");
+        }
     }
 }

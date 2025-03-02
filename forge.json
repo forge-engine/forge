@@ -3,7 +3,6 @@
     "modules": {
         "forge-engine/framework": "0.1.0",
         "forge-package-manager": "1.0.0",
-        "forge-test": "1.0.0",
         "forge-router": "1.0.0",
         "forge-api": "0.0.1-dev",
         "forge-debug-bar": "1.0.0",
@@ -15,6 +14,7 @@
         "forge-view-engine": "1.0.1",
         "forge-database": "1.0.0",
         "forge-testing": "1.0.0",
-        "forge-static-html": "1.0.0"
+        "forge-static-html": "1.0.0",
+        "forge-test": "1.0.0"
     }
 }

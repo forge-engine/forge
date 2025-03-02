@@ -1,9 +1,32 @@
 <?php
-const FRAMEWORK_REPO_URL = 'https://github.com/forge-engine/framework';
+
+// install.php - Decoupled Forge Framework Installer (Fetching from GitHub Registry)
+
+// 1. Configuration - Updated to Framework Registry Repo
+const FRAMEWORK_REPO_URL = 'https://github.com/forge-engine/framework-registry'; // Changed to framework-registry repo
 const FRAMEWORK_FORGE_JSON_PATH_IN_REPO = 'forge.json';
 const FRAMEWORK_REPO_BRANCH = 'main';
 
-// 2. Construct Raw GitHub URL for forge.json
+// --- Version Specification ---
+$specifiedVersion = null;
+// Parse command-line arguments to check for --version option
+for ($i = 1; $i < count($argv); $i++) {
+    if (strpos($argv[$i], '--version=') === 0) {
+        $specifiedVersion = substr($argv[$i], strlen('--version='));
+        break;
+    } elseif ($argv[$i] === '--version') {
+        if (isset($argv[$i + 1])) {
+            $specifiedVersion = $argv[$i + 1];
+            break;
+        } else {
+            echo "Error: --version option requires a version number.\n";
+            displayHelp(); // Show help and exit
+            exit(1);
+        }
+    }
+}
+
+// 2. Construct Raw GitHub URL for forge.json (Manifest)
 $frameworkForgeJsonUrl = generateRawGithubUrl(FRAMEWORK_REPO_URL, FRAMEWORK_REPO_BRANCH, FRAMEWORK_FORGE_JSON_PATH_IN_REPO);
 echo "Fetching framework manifest from: " . $frameworkForgeJsonUrl . "\n";
 
@@ -17,46 +40,74 @@ if (!$frameworkManifest || !is_array($frameworkManifest)) {
     die("Error decoding framework manifest JSON from GitHub.\n");
 }
 
-// 4. Determine Framework Version to Install (using 'latest' from manifest)
-$versionToInstall = $frameworkManifest['versions']['latest'] ?? null;
-if (!$versionToInstall) {
-    die("Error: 'latest' version not defined in framework manifest.\n");
+// 4. Determine Framework Version to Install
+if ($specifiedVersion) {
+    $versionToInstall = $specifiedVersion;
+    echo "Installing specified framework version: {$versionToInstall}\n";
+    if (!isset($frameworkManifest['versions'][$versionToInstall])) {
+        die("Error: Specified version '{$versionToInstall}' not found in framework manifest.\n");
+    }
+} else {
+    $versionToInstall = $frameworkManifest['versions']['latest'] ?? null;
+    echo "Installing latest framework version: {$versionToInstall}\n";
+    if (!$versionToInstall) {
+        die("Error: 'latest' version not defined in framework manifest.\n");
+    }
 }
+
 
 $versionDetails = $frameworkManifest['versions'][$versionToInstall];
 if (!$versionDetails) {
-    die("Version '{$versionToInstall}' details not found in framework manifest.\n");
+    die("Version details for '{$versionToInstall}' not found in framework manifest.\n"); // More specific error
 }
 
-$downloadUrl = $versionDetails['download_url'];
+// 5. Construct Download URL for Version ZIP (using framework-registry base URL)
+$downloadZipRelativePath = $versionDetails['download_url']; // e.g., "versions/0.1.0.zip"
+$downloadUrl = generateRawGithubUrl(FRAMEWORK_REPO_URL, FRAMEWORK_REPO_BRANCH, $downloadZipRelativePath); // Use generateRawGithubUrl again
 $integrityHash = $versionDetails['integrity'];
 
-// 5. Download Framework ZIP
+// 6. Download Framework ZIP
 echo "Downloading Forge Framework version {$versionToInstall} from: " . $downloadUrl . "\n";
-$zipFilePath = downloadFile($downloadUrl, 'engine.zip');
+$zipFilePath = downloadFile($downloadUrl, 'forge-framework.zip');
+if (!$zipFilePath) {
+    die("Error downloading framework ZIP file.\n");
+}
 
-// 6. Verify Integrity
+// 7. Verify Integrity
 echo "Verifying integrity...\n";
-if (!verifyFileIntegrity($zipFilePath, $integrityHash)) { // Function to verify hash
+if (!verifyFileIntegrity($zipFilePath, $integrityHash)) {
+    unlink($zipFilePath); // Delete potentially corrupted download
     die("Integrity check failed! Downloaded file is corrupted or tampered.\n");
 }
 
-// 7. Extract Framework Files
-echo "Extracting framework files...\n";
-$extractionPath = './'; // Extract to project root for simplicity initially
-if (!extractZip($zipFilePath, $extractionPath)) { // Function to extract zip
-    die("Error extracting framework files.\n");
+// 8. Prepare Engine Folder and Extract Framework Files
+echo "Preparing engine folder and extracting framework files...\n";
+$extractionPath = './engine';
+
+// --- Handle existing engine folder ---
+if (is_dir($extractionPath)) {
+    echo "Deleting existing engine folder...\n";
+    if (!recursiveDeleteDirectory($extractionPath)) {
+        die("Error deleting existing engine folder: " . $extractionPath . "\n");
+    }
+}
+echo "Creating engine folder: " . $extractionPath . "\n";
+if (!mkdir($extractionPath, 0755, true)) {
+    die("Error creating engine folder: " . $extractionPath . "\n");
 }
 
-// 8. Cleanup (optional - remove downloaded zip)
+if (!extractZip($zipFilePath, $extractionPath)) {
+    unlink($zipFilePath);
+    recursiveDeleteDirectory($extractionPath);
+    die("Error extracting framework files to engine folder.\n");
+}
+
 unlink($zipFilePath);
 
-// 9. Post-Installation Message
-echo "\nForge Framework version {$versionToInstall} installed successfully!\n";
+echo "\nForge Framework version {$versionToInstall} installed successfully inside the 'engine' folder!\n";
 echo "You can now use 'php forge.php' to manage your project and modules.\n";
 echo "Run 'php forge.php list' to see available commands.\n";
 
-// --- Helper Functions (Implement these - e.g., generateRawGithubUrl, downloadFile, verifyFileIntegrity, extractZip) ---
 
 /**
  * Generates the raw GitHub URL for a file in a repository.
@@ -128,4 +179,46 @@ function extractZip(string $zipPath, string $destinationPath): bool
     } else {
         return false;
     }
+}
+
+/**
+ * Recursively deletes a directory and its contents.
+ *
+ * @param string $dirPath Path to the directory to delete.
+ * @return bool True on success, false on failure.
+ */
+function recursiveDeleteDirectory(string $dirPath): bool
+{
+    if (!is_dir($dirPath)) {
+        return false;
+    }
+
+    $files = new RecursiveIteratorIterator(
+        new RecursiveDirectoryIterator($dirPath, FilesystemIterator::SKIP_DOTS),
+        RecursiveIteratorIterator::CHILD_FIRST
+    );
+
+    foreach ($files as $fileinfo) {
+        if ($fileinfo->isDir()) {
+            if (!rmdir($fileinfo->getRealPath())) {
+                return false;
+            }
+        } else {
+            if (!unlink($fileinfo->getRealPath())) {
+                return false;
+            }
+        }
+    }
+    return rmdir($dirPath);
+}
+
+function displayHelp(): void
+{
+    echo "Forge Framework Installer (install.php)\n\n";
+    echo "Usage: php install.php [options]\n\n";
+    echo "Options:\n";
+    echo "  --version=<version>   Specify the framework version to install (e.g., --version=0.1.0).\n";
+    echo "  --version <version>   Specify the framework version to install (e.g., --version 0.1.0).\n";
+    echo "  help                  Displays this help message.\n";
+    echo "\nInstalls the latest framework version if no options are provided.\n";
 }
