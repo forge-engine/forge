@@ -5,3 +5,6 @@
 [submodule "framework-registry"]
 	path = framework-registry
 	url = git@github.com:forge-engine/framework-registry.git
+[submodule "engine"]
+	path = engine
+	url = git@github.com:forge-engine/framework.git
