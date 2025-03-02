@@ -1,0 +1,31 @@
+{
+    "$schema": "https://raw.githubusercontent.com/upperdo/forge-schemas/refs/heads/main/schemas/modules/schema.json",
+    "name": "forge-logger",
+    "description": "Basic logger for forge",
+    "version": "1.0.0",
+    "order": 2,
+    "provides": [
+        "LoggerInterface@1.0"
+    ],
+    "class": "Forge\\Modules\\ForgeLogger\\LoggerModule",
+    "lifecycleHooks": [],
+    "config": {
+        "defaults": {
+            "storage": {
+                "log": {
+                    "path": "storage/logs"
+                }
+            }
+        }
+    },
+    "type": "logger",
+    "requires": [],
+    "compatibility": {
+        "framework": ">=0.0.1",
+        "php": "^8.3"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/forge-engine/modules"
+    }
+}

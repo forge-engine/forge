@@ -1,0 +1,38 @@
+{
+    "$schema": "./../../engine/Core/Schema/module-schema.json",
+    "name": "forge-events",
+    "version": "1.0.0",
+    "description": "Decoupled event system with pub/sub capabilities",
+    "type": "events",
+    "order": 90,
+    "provides": [
+        "ForgeEventDispatcher@1.0.0",
+        "ForgeEventSubscriber@1.0.0"
+    ],
+    "requires": [],
+    "lifecycleHooks": [
+        "beforeBoot",
+        "afterBoot",
+        "beforeModuleLoad",
+        "afterModuleLoad",
+        "beforeModuleRegister",
+        "afterModuleRegister",
+        "afterConfigLoaded"
+    ],
+    "class": "Forge\\Modules\\ForgeEvents\\ForgeEventsModule",
+    "cli": {
+        "commands": []
+    },
+    "tags": [],
+    "config": {
+        "defaults": {}
+    },
+    "compatibility": {
+        "framework": ">=0.0.1",
+        "php": "^8.3"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/forge-engine/modules"
+    }
+}

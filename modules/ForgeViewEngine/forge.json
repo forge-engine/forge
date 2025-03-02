@@ -1,0 +1,40 @@
+{
+    "$schema": "https://raw.githubusercontent.com/upperdo/forge-schemas/refs/heads/main/schemas/modules/schema.json",
+    "name": "forge-view-engine",
+    "version": "1.0.1",
+    "type": "view-engine",
+    "order": 3,
+    "provides": [
+        "ViewEngineInterface@1.0"
+    ],
+    "requires": [],
+    "class": "Forge\\Modules\\ForgeViewEngine\\ViewModule",
+    "config": {
+        "defaults": {
+            "view": {
+                "paths": [
+                    "views"
+                ],
+                "cache": "storage/framework/views"
+            }
+        }
+    },
+    "description": "",
+    "lifecycleHooks": [
+        "beforeBoot",
+        "afterBoot",
+        "beforeModuleLoad",
+        "afterModuleLoad",
+        "beforeModuleRegister",
+        "afterModuleRegister",
+        "afterConfigLoaded"
+    ],
+    "compatibility": {
+        "framework": ">=0.0.1",
+        "php": "^8.3"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/forge-engine/modules"
+    }
+}
