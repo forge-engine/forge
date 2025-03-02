@@ -81,14 +81,14 @@ function listVersions(): void
     }
 
     $versions = $manifestData['versions'] ?? [];
-    if (empty($versions) || count($versions) <= 1 && isset($versions['latest'])) { // Check if versions are empty or only contains 'latest'
+    if (empty($versions) || count($versions) <= 1 && isset($versions['latest'])) {
         echo "No framework versions found in the manifest.\n";
         return;
     }
 
     echo "-----------------------------------\n";
     foreach ($versions as $versionName => $versionDetails) {
-        if ($versionName !== 'latest') { // Exclude 'latest' pseudo-version from listing
+        if ($versionName !== 'latest') {
             echo "- " . $versionName . "\n";
         }
     }
@@ -109,7 +109,7 @@ switch ($command) {
         }
         createVersion($versionArg);
         break;
-    case 'list-version':
+    case 'list-versions':
         listVersions();
         break;
     case 'help':
@@ -117,8 +117,6 @@ switch ($command) {
         displayHelp();
         break;
 }
-
-// --- Helper Functions (Implement these - e.g., createZip, calculateFileIntegrity, readFrameworkManifest, writeFrameworkManifest) ---
 
 /**
  * Creates a ZIP archive of a directory.
@@ -134,7 +132,7 @@ function createZip(string $sourceDir, string $zipFilePath): bool
         return false;
     }
 
-    $sourceDir = rtrim($sourceDir, '/'); // Ensure source directory path doesn't end with a slash
+    $sourceDir = rtrim($sourceDir, '/');
 
     $files = new RecursiveIteratorIterator(
         new RecursiveDirectoryIterator($sourceDir),
