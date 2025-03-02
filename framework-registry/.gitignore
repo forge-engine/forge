@@ -2,35 +2,6 @@
 .env
 !.env.example
 
-# Ignore compiled source code
-/vendor/
-/node_modules/
-
-# Ignore modules
-modules/*
-!modules/.gitkeep
-!modules/ForgePackageManager
-!modules/ForgeErrorHandler
-!cache/.gitkeep
-framewok-registry/*
-!framework-registry/.forge.json
-
-# Ignore temporary files and logs
-/storage/*.key
-/storage/*.log
-/storage/cache/*
-/storage/sessions/*
-/storage/framework/views/*
-!/storage/.gitignore
-/storage/*.key
-/storage/logs/*
-/storage/database.sqlite
-/storage/memory.sqlite
-/storate/framework/modules/*
-/storage/framewok/tmp/*
-/storage/*.sqlite
-
-
 # Ignore cache and logs
 *.log
 *.cache

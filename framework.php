@@ -2,14 +2,19 @@
 
 // framework.php - Forge Framework Registry Management CLI
 
+const FRAMEWORK_REGISTRY_FOLDER = __DIR__ . '/framework-registry';
+const FRAMEWORK_ENGINE_FOLDER = __DIR__ . '/engine';
+const FRAMEWORK_VERSIONS_FOLDER = FRAMEWORK_REGISTRY_FOLDER . '/versions';
+const FRAMEWORK_MANIFEST_FILE = FRAMEWORK_REGISTRY_FOLDER . '/forge.json';
+
 function createVersion(string $version): void
 {
     echo "Creating framework version: {$version}\n";
 
-    $engineFolderPath = __DIR__ . '/engine';
-    $registryFolderPath = __DIR__ . '/framework-registry';
-    $versionsFolderPath = $registryFolderPath . '/versions';
-    $manifestFilePath = $registryFolderPath . '/forge.json';
+    $engineFolderPath = FRAMEWORK_ENGINE_FOLDER;
+    $registryFolderPath = FRAMEWORK_REGISTRY_FOLDER;
+    $versionsFolderPath = FRAMEWORK_VERSIONS_FOLDER;
+    $manifestFilePath = FRAMEWORK_MANIFEST_FILE;
     $versionZipFilename = $version . '.zip';
     $versionZipFilePath = $versionsFolderPath . '/' . $versionZipFilename;
 
@@ -45,7 +50,7 @@ function createVersion(string $version): void
         'release_notes_url' => 'https://github.com/forge-engine/forge/blob/main/CHANGELOG.md',
         'require' => $manifestData['require'] ?? [],
     ];
-    $manifestData['versions']['latest'] = $version;
+    $manifestData['versions']['latest'] = $version; // Update latest version
 
     if (!writeFrameworkManifest($manifestFilePath, $manifestData)) {
         die("Error writing updated framework manifest.\n");
@@ -54,17 +59,44 @@ function createVersion(string $version): void
     echo "Framework version {$version} created and manifest updated successfully!\n";
     echo "ZIP file saved to: {$versionZipFilePath}\n";
     echo "Manifest updated in: {$manifestFilePath}\n";
+
+    // --- 5. Git Commit Changes in framework-registry ---
+    echo "Committing changes to framework registry...\n";
+    $registryDir = FRAMEWORK_REGISTRY_FOLDER;
+    chdir($registryDir);
+
+    $commitMessage = "Add framework version v" . $version;
+    $gitAddResult = runGitCommand('add', ['.']);
+    if ($gitAddResult['exitCode'] !== 0) {
+        chdir(__DIR__);
+        die("Git add failed: " . $gitAddResult['output']);
+    }
+
+    $gitCommitResult = runGitCommand('commit', ['-m', $commitMessage]);
+    if ($gitCommitResult['exitCode'] !== 0) {
+        chdir(__DIR__);
+        die("Git commit failed: " . $gitCommitResult['output']);
+    }
+
+    chdir(__DIR__);
+    echo "Changes committed to framework registry.\n";
+
 }
 
-function displayHelp(): void
+function uploadRegistry(): void
 {
-    echo "Forge Framework Registry Tool (framework.php)\n\n";
-    echo "Usage: php framework.php <command> [options]\n\n";
-    echo "Available commands:\n";
-    echo "  create-version <version>  Creates a new framework version (zips engine, updates manifest).\n";
-    echo "  list-versions           Lists available framework versions from the manifest.\n";
-    echo "  help                    Displays this help message.\n";
-    // ... more commands can be added later (e.g., upload-registry, list-versions)
+    echo "Uploading framework registry...\n";
+    $registryDir = FRAMEWORK_REGISTRY_FOLDER;
+    chdir($registryDir);
+
+    $gitPushResult = runGitCommand('push', ['origin', 'main']);
+    if ($gitPushResult['exitCode'] !== 0) {
+        chdir(__DIR__);
+        die("Git push failed: " . $gitPushResult['output']);
+    }
+
+    chdir(__DIR__);
+    echo "Framework registry uploaded successfully!\n";
 }
 
 function listVersions(): void
@@ -96,6 +128,17 @@ function listVersions(): void
     echo "Latest Version: " . ($versions['latest'] ?? 'Not defined') . "\n";
 }
 
+function displayHelp(): void
+{
+    echo "Forge Framework Registry Tool (framework.php)\n\n";
+    echo "Usage: php framework.php <command> [options]\n\n";
+    echo "Available commands:\n";
+    echo "  create-version <version>  Creates a new framework version (zips engine, updates manifest, commits changes).\n";
+    echo "  list-versions           Lists available framework versions from the manifest.\n";
+    echo "  upload-registry         Pushes the framework registry changes to the remote repository.\n";
+    echo "  help                    Displays this help message.\n";
+}
+
 // --- Command Handling ---
 $command = $argv[1] ?? 'help';
 $versionArg = $argv[2] ?? null;
@@ -111,6 +154,9 @@ switch ($command) {
         break;
     case 'list-versions':
         listVersions();
+        break;
+    case 'upload-registry':
+        uploadRegistry();
         break;
     case 'help':
     default:
@@ -206,4 +252,23 @@ function writeFrameworkManifest(string $manifestFilePath, array $manifestData): 
         return true;
     }
     return false; // File writing error
+}
+
+/**
+ * Runs a Git command in a specified directory.
+ *
+ * @param string $command Git command to run (e.g., 'add', 'commit', 'push').
+ * @param array $arguments Array of arguments for the Git command.
+ * @return array Associative array containing 'exitCode' and 'output'.
+ */
+function runGitCommand(string $command, array $arguments): array
+{
+    $commandString = "git " . $command . " " . implode(" ", array_map('escapeshellarg', $arguments));
+    $output = [];
+    $exitCode = 0;
+    exec($commandString . " 2>&1", $output, $exitCode);
+    return [
+        'exitCode' => $exitCode,
+        'output' => implode("\n", $output),
+    ];
 }
