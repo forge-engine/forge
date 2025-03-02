@@ -8,3 +8,6 @@
 [submodule "engine"]
 	path = engine
 	url = git@github.com:forge-engine/framework.git
+[submodule "installer"]
+	path = installer
+	url = git@github.com:forge-engine/installer.git
