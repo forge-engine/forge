@@ -1,0 +1,13 @@
+[submodule "modules-registry"]
+	path = modules-registry
+	url = git@github.com:forge-engine/modules.git
+
+[submodule "framework-registry"]
+	path = framework-registry
+	url = git@github.com:forge-engine/framework-registry.git
+[submodule "engine"]
+	path = engine
+	url = git@github.com:forge-engine/framework.git
+[submodule "installer"]
+	path = installer
+	url = git@github.com:forge-engine/installer.git

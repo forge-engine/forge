@@ -1,0 +1,40 @@
+{
+    "$schema": "./../../engine/Core/Schema/module-schema.json",
+    "name": "ForgeTesting",
+    "version": "1.0.0",
+    "description": "Core testing framework for Forge Engine",
+    "type": "testing",
+    "order": 100,
+    "provides": [
+        "TestCase@1.0.0"
+    ],
+    "requires": [],
+    "lifecycleHooks": [],
+    "class": "Forge\\Modules\\ForgeTesting\\ForgeTestingModule",
+    "cli": {
+        "commands": [
+            "test:run",
+            "test:list"
+        ]
+    },
+    "tags": [
+        "testing",
+        "qa"
+    ],
+    "config": {
+        "defaults": {
+            "test_directories": [
+                "tests"
+            ],
+            "test_suffix": "Test.php"
+        }
+    },
+    "compatibility": {
+        "framework": ">=0.0.1",
+        "php": "^8.3"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/forge-engine/modules"
+    }
+}

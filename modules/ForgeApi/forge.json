@@ -1,0 +1,45 @@
+{
+    "$schema": "./../../engine/Core/Schema/module-schema.json",
+    "name": "forge-api",
+    "version": "1.0.0",
+    "description": "Api Support for for ForgeRouter By Forge",
+    "type": "generic",
+    "order": 100,
+    "provides": [
+        "Forge\\Modules\\Contracts\\ForgeApiInterface@1.0.0"
+    ],
+    "requires": [
+        "RouterInterface@1.0"
+    ],
+    "lifecycleHooks": [
+        "beforeBoot",
+        "afterBoot",
+        "beforeModuleLoad",
+        "afterModuleLoad",
+        "beforeModuleRegister",
+        "afterModuleRegister",
+        "afterConfigLoaded"
+    ],
+    "class": "Forge\\Modules\\ForgeApi\\ForgeApiModule",
+    "cli": {
+        "commands": []
+    },
+    "tags": [],
+    "config": {
+        "defaults": {
+            "rate_limit": 100,
+            "auth_types": [
+                "token",
+                "jwt"
+            ]
+        }
+    },
+    "compatibility": {
+        "framework": ">=0.0.1",
+        "php": "^8.3"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/forge-engine/modules"
+    }
+}

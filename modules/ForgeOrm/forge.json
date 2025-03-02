@@ -1,0 +1,41 @@
+{
+    "$schema": "./../../engine/Core/Schema/module-schema.json",
+    "name": "forge-orm",
+    "version": "1.0.0",
+    "description": "A Basic ORM By Forge",
+    "type": "generic",
+    "order": 11,
+    "provides": [
+        "Forge\\Modules\\Contracts\\ForgeOrmInterface@1.0.0"
+    ],
+    "requires": [
+        "Forge\\Modules\\Contracts\\DatabaseInterface@1.0.0"
+    ],
+    "lifecycleHooks": [
+        "beforeBoot",
+        "afterBoot",
+        "beforeModuleLoad",
+        "afterModuleLoad",
+        "beforeModuleRegister",
+        "afterModuleRegister",
+        "afterConfigLoaded"
+    ],
+    "class": "Forge\\Modules\\ForgeOrm\\ForgeOrmModule",
+    "cli": {
+        "commands": [
+            "migrate"
+        ]
+    },
+    "tags": [],
+    "config": {
+        "defaults": {}
+    },
+    "compatibility": {
+        "framework": ">=0.0.1",
+        "php": "^8.3"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/forge-engine/modules"
+    }
+}

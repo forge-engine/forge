@@ -6,12 +6,6 @@
             "url": "https://raw.githubusercontent.com/forge-engine/modules-v2/main/modules/forge-package-manager/1.0.0/1.0.0.zip",
             "integrity": "6f921bcfb8c987d60f968206656aa1bb0b073ea6f1201732b219d854bd54446a"
         },
-        "forge-test": {
-            "version": "1.0.0",
-            "registry": "forge-engine-modules",
-            "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-test/1.0.0/1.0.0.zip",
-            "integrity": "c97cc7b73d46abb0fc4bfd55da5ee01d7191f7ea7201fd1f8bf0bee5234098b5"
-        },
         "forge-router": {
             "version": "1.0.0",
             "registry": "forge-engine-modules",
@@ -83,6 +77,12 @@
             "registry": "forge-engine-modules",
             "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-static-html/1.0.0/1.0.0.zip",
             "integrity": "7ebc2075217cecdbd8b198757f50dd06284297930c0cabac50689e4c9bba5541"
+        },
+        "forge-test": {
+            "version": "1.0.0",
+            "registry": "forge-engine-modules",
+            "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-test/1.0.0/1.0.0.zip",
+            "integrity": "c97cc7b73d46abb0fc4bfd55da5ee01d7191f7ea7201fd1f8bf0bee5234098b5"
         }
     }
 }

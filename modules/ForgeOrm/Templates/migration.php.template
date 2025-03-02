@@ -1,0 +1,32 @@
+<?php
+
+namespace Database\Migrations;
+
+use Forge\Modules\ForgeOrm\Migrations\Migration;
+use Forge\Modules\ForgeOrm\Schema\Blueprint;
+
+class {{ className }} extends Migration
+{
+    /**
+     * Run the migrations.
+     *
+     * @return void
+     */
+    public function up(): void
+    {
+        $this->schema->create('{{ tableGuess }}', function (Blueprint $blueprint) {
+            $blueprint->primaryKey('id');
+            $blueprint->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     *
+     * @return void
+     */
+    public function down(): void
+    {
+        $this->schema->drop('{{ tableGuess} ');
+    }
+}

@@ -1,0 +1,41 @@
+{
+    "$schema": "./../../engine/Core/Schema/module-schema.json",
+    "name": "forge-storage",
+    "version": "1.0.0",
+    "description": "Multi-driver storage system with bucket management",
+    "type": "storage",
+    "order": 40,
+    "provides": [
+        "Forge\\Modules\\ForgeStorage\\Contracts\\StorageInterface@1.0.0"
+    ],
+    "requires": [],
+    "lifecycleHooks": [
+        "beforeBoot",
+        "afterBoot",
+        "beforeModuleLoad",
+        "afterModuleLoad",
+        "beforeModuleRegister",
+        "afterModuleRegister",
+        "afterConfigLoaded"
+    ],
+    "class": "Forge\\Modules\\ForgeStorage\\ForgeStorageModule",
+    "cli": {
+        "commands": []
+    },
+    "tags": [],
+    "config": {
+        "defaults": {
+            "default_driver": "local",
+            "root_path": "storage/app",
+            "public_path": "public/storage"
+        }
+    },
+    "compatibility": {
+        "framework": ">=0.0.1",
+        "php": "^8.3"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/forge-engine/modules"
+    }
+}
