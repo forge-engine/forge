@@ -38,6 +38,20 @@ class PackageManager implements PackageManagerInterface
         }
     }
 
+    public function getRegistries(): array
+    {
+        return $this->registries;
+    }
+
+    public function getDefaultRegistryDetails()
+    {
+        return [
+            'name' => self::OFFICIAL_REGISTRY_NAME,
+            'url' => self::OFFICIAL_REGISTRY_BASE_URL,
+            'branch' => self::OFFICIAL_REGISTRY_BRANCH,
+        ];
+    }
+
     public function installFromLock(): void
     {
         $lockData = $this->readForgeLockJson();
@@ -220,7 +234,7 @@ class PackageManager implements PackageManagerInterface
         $this->error("Remove module not yet implemented.");
     }
 
-    private function getModuleInfo(string $moduleName, ?string $version = null): ?array
+    public function getModuleInfo(string $moduleName = null, ?string $version = null): ?array
     {
         $registryDetails = $this->getRegistryDetailsForModule($moduleName);
         $modulesJsonUrl = $this->getModulesJsonUrl($registryDetails);
@@ -262,8 +276,16 @@ class PackageManager implements PackageManagerInterface
         return $modulesData[$moduleName] ?? null;
     }
 
-    private function getRegistryDetailsForModule(string $moduleName): array
+    private function getRegistryDetailsForModule(?string $moduleName): array
     {
+        if ($moduleName === null) {
+            return [
+                'name' => self::OFFICIAL_REGISTRY_NAME,
+                'url' => self::OFFICIAL_REGISTRY_BASE_URL,
+                'branch' => self::OFFICIAL_REGISTRY_BRANCH,
+            ];
+        }
+
         if (strpos($moduleName, 'forge-') === 0) {
             return [
                 'name' => self::OFFICIAL_REGISTRY_NAME,
