@@ -43,7 +43,7 @@ class StaticGenerator
 
             }
         }
-        echo "Route generation completed.\n"; // Debug: Route generation complete message
+        echo "Route generation completed.\n";
     }
 
     private function shouldGenerateRoute(array $route): bool
@@ -94,7 +94,7 @@ class StaticGenerator
             if (!is_dir($outputDir)) {
                 if (!mkdir($outputDir, 0755, true)) {
                     echo "  Error: Failed to create output directory: " . $outputDir . "\n";
-                    return; // Stop processing this route if directory creation fails
+                    return;
                 } else {
                 }
             }
@@ -127,6 +127,9 @@ class StaticGenerator
     private function getOutputPath(string $uri): string
     {
         $path = trim($uri, '/');
+        if (empty($path)) {
+            return "{$this->outputDir}/index.html";
+        }
         $filename = $path ?: 'index';
         return "{$this->outputDir}/{$filename}/index.html";
     }
