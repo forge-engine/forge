@@ -1,6 +1,7 @@
 {
     "name": "My project",
     "modules": {
+        "forge-engine/framework": "0.1.0",
         "forge-package-manager": "1.0.0",
         "forge-test": "1.0.0",
         "forge-router": "1.0.0",
