@@ -12,6 +12,8 @@ modules/*
 !modules/ForgePackageManager
 !modules/ForgeErrorHandler
 !cache/.gitkeep
+framewok-registry/*
+!framework-registry/.forge.json
 
 # Ignore temporary files and logs
 /storage/*.key
