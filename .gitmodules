@@ -1,0 +1,3 @@
+[submodule "modules-registry"]
+	path = modules-registry
+	url = git@github.com:forge-engine/modules.git
