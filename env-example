@@ -9,7 +9,7 @@ FORGE_EVENT_QUEUE_DRIVER=synce
 
 # Database
 # mysql, sqlite, memory, pgsql, redis
-FORGE_DB_CONNECTION=mysql
+FORGE_DB_CONNECTION=sqlite
 # Mysql
 FORGE_DB_PORT=3306
 FORGE_DB_HOST=127.0.0.1

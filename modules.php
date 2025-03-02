@@ -1,28 +1,38 @@
 <?php
 
-const FRAMEWORK_REGISTRY_FOLDER = __DIR__ . '/framework-registry';
-const FRAMEWORK_ENGINE_FOLDER = __DIR__ . '/engine';
-const FRAMEWORK_VERSIONS_FOLDER = FRAMEWORK_REGISTRY_FOLDER . '/versions';
-const FRAMEWORK_MANIFEST_FILE = FRAMEWORK_REGISTRY_FOLDER . '/forge.json';
+const MODULES_REGISTRY_FOLDER = __DIR__ . '/modules-registry';
+const MODULES_SOURCE_FOLDER = __DIR__ . '/modules';
+const MODULES_VERSIONS_FOLDER = MODULES_REGISTRY_FOLDER . '/modules';
+const MODULES_MANIFEST_FILE = MODULES_REGISTRY_FOLDER . '/modules.json';
 
-function createVersion(string $version): void
+function createVersion(string $moduleVersionString): void
 {
-    echo "Creating framework version: {$version}\n";
+    echo "Creating module version: {$moduleVersionString}\n";
 
-    $engineFolderPath = FRAMEWORK_ENGINE_FOLDER;
-    $registryFolderPath = FRAMEWORK_REGISTRY_FOLDER;
-    $versionsFolderPath = FRAMEWORK_VERSIONS_FOLDER;
-    $manifestFilePath = FRAMEWORK_MANIFEST_FILE;
-    $versionZipFilename = $version . '.zip';
-    $versionZipFilePath = $versionsFolderPath . '/' . $versionZipFilename;
-
-    if (!is_dir($versionsFolderPath)) {
-        mkdir($versionsFolderPath, 0755, true);
+    list($moduleName, $version) = explode('@', $moduleVersionString);
+    if (!$moduleName || !$version) {
+        die("Error: Invalid module version format. Use module-name@version (e.g., forge-logger@1.2.0)\n");
     }
 
-    echo "Zipping engine folder...\n";
-    if (!createZip($engineFolderPath, $versionZipFilePath)) {
-        die("Error creating ZIP archive for version {$version}.\n");
+    $moduleSourceFolderName = generateModuleInstallFolderName($moduleName);
+    $moduleSourcePath = MODULES_SOURCE_FOLDER . '/' . $moduleSourceFolderName;
+    $registryModulePath = MODULES_VERSIONS_FOLDER . '/' . $moduleName;
+    $registryVersionPath = $registryModulePath . '/' . $version;
+    $manifestFilePath = MODULES_MANIFEST_FILE;
+    $versionZipFilename = $version . '.zip';
+    $versionZipFilePath = $registryVersionPath . '/' . $versionZipFilename;
+
+    if (!is_dir($moduleSourcePath)) {
+        die("Error: Module source folder not found: {$moduleSourcePath}. Ensure module '{$moduleName}' exists in the modules directory.\n");
+    }
+
+    if (!is_dir($registryVersionPath)) {
+        mkdir($registryVersionPath, 0755, true);
+    }
+
+    echo "Zipping module folder...\n";
+    if (!createZip($moduleSourcePath, $versionZipFilePath)) {
+        die("Error creating ZIP archive for module {$moduleName} version {$version}.\n");
     }
 
     echo "Calculating SHA256 integrity hash...\n";
@@ -31,35 +41,39 @@ function createVersion(string $version): void
         die("Error calculating integrity hash for {$versionZipFilename}.\n");
     }
 
-    echo "Updating framework manifest (forge.json)...\n";
-    $manifestData = readFrameworkManifest($manifestFilePath);
+    echo "Updating module manifest (forge.json)...\n";
+    $manifestData = readModulesManifest($manifestFilePath);
     if (!$manifestData) {
-        die("Error reading framework manifest.\n");
+        die("Error reading module manifest.\n");
     }
 
-    $manifestData['versions'][$version] = [
-        'download_url' => 'versions/' . $versionZipFilename,
+    if (!isset($manifestData[$moduleName])) {
+        $manifestData[$moduleName] = [
+            'latest' => $version,
+            'versions' => [],
+        ];
+    }
+    $manifestData[$moduleName]['versions'][$version] = [
+        'description' => "Version " . $version . " of " . $moduleName,
+        'url' => $moduleName . '/' . $version . '/' . $versionZipFilename,
         'integrity' => $integrityHash,
-        'release_date' => date('Y-m-d'),
-        'release_notes_url' => 'https://github.com/forge-engine/forge/blob/main/CHANGELOG.md',
-        'require' => $manifestData['require'] ?? [],
     ];
-    $manifestData['versions']['latest'] = $version;
+    $manifestData[$moduleName]['latest'] = $version;
 
-    if (!writeFrameworkManifest($manifestFilePath, $manifestData)) {
-        die("Error writing updated framework manifest.\n");
+
+    if (!writeModulesManifest($manifestFilePath, $manifestData)) {
+        die("Error writing updated module manifest.\n");
     }
 
-    echo "Framework version {$version} created and manifest updated successfully!\n";
+    echo "Module {$moduleName} version {$version} created and manifest updated successfully!\n";
     echo "ZIP file saved to: {$versionZipFilePath}\n";
     echo "Manifest updated in: {$manifestFilePath}\n";
 
-    // --- 5. Git Commit Changes in framework-registry ---
-    echo "Committing changes to framework registry...\n";
-    $registryDir = FRAMEWORK_REGISTRY_FOLDER;
+    echo "Committing changes to module registry...\n";
+    $registryDir = MODULES_REGISTRY_FOLDER;
     chdir($registryDir);
 
-    $commitMessage = "Add framework version v" . $version;
+    $commitMessage = "Add module " . $moduleName . " version v" . $version;
     $gitAddResult = runGitCommand('add', ['.']);
     if ($gitAddResult['exitCode'] !== 0) {
         chdir(__DIR__);
@@ -73,13 +87,13 @@ function createVersion(string $version): void
     }
 
     chdir(__DIR__);
-    echo "Changes committed to framework registry.\n";
+    echo "Changes committed to module registry.\n";
 }
 
 function uploadRegistry(): void
 {
-    echo "Uploading framework registry...\n";
-    $registryDir = FRAMEWORK_REGISTRY_FOLDER;
+    echo "Uploading module registry...\n";
+    $registryDir = MODULES_REGISTRY_FOLDER;
     chdir($registryDir);
 
     $gitPushResult = runGitCommand('push', ['origin', 'main']);
@@ -89,46 +103,51 @@ function uploadRegistry(): void
     }
 
     chdir(__DIR__);
-    echo "Framework registry uploaded successfully!\n";
+    echo "Module registry uploaded successfully!\n";
 }
 
 function listVersions(): void
 {
-    $registryFolderPath = __DIR__ . '/framework-registry';
-    $manifestFilePath = $registryFolderPath . '/forge.json';
+    $manifestFilePath = MODULES_MANIFEST_FILE;
 
-    echo "Available Forge Framework Versions:\n";
+    echo "Available Forge Modules and Versions:\n";
 
-    $manifestData = readFrameworkManifest($manifestFilePath);
+    $manifestData = readModulesManifest($manifestFilePath);
     if (!$manifestData) {
-        echo "Error: Could not read framework manifest (forge.json).\n";
+        echo "Error: Could not read module manifest (forge.json).\n";
         return;
     }
 
-    $versions = $manifestData['versions'] ?? [];
-    if (empty($versions) || count($versions) <= 1 && isset($versions['latest'])) {
-        echo "No framework versions found in the manifest.\n";
+    if (empty($manifestData)) {
+        echo "No modules found in the manifest.\n";
         return;
     }
 
     echo "-----------------------------------\n";
-    foreach ($versions as $versionName => $versionDetails) {
-        if ($versionName !== 'latest') {
-            echo "- " . $versionName . "\n";
+    foreach ($manifestData as $moduleName => $moduleInfo) {
+        echo "Module: " . $moduleName . "\n";
+        echo "  Latest Version: " . ($moduleInfo['latest'] ?? 'Not defined') . "\n";
+        echo "  Available Versions:\n";
+        $versions = $moduleInfo['versions'] ?? [];
+        if (empty($versions)) {
+            echo "    No versions defined.\n";
+        } else {
+            foreach ($versions as $versionName => $versionDetails) {
+                echo "    - " . $versionName . "\n";
+            }
         }
+        echo "-----------------------------------\n";
     }
-    echo "-----------------------------------\n";
-    echo "Latest Version: " . ($versions['latest'] ?? 'Not defined') . "\n";
 }
 
 function displayHelp(): void
 {
-    echo "Forge Framework Registry Tool (framework.php)\n\n";
-    echo "Usage: php framework.php <command> [options]\n\n";
+    echo "Forge Module Registry Tool (modules.php)\n\n";
+    echo "Usage: php modules.php <command> [options]\n\n";
     echo "Available commands:\n";
-    echo "  create-version <version>  Creates a new framework version (zips engine, updates manifest, commits changes).\n";
-    echo "  list-versions           Lists available framework versions from the manifest.\n";
-    echo "  publish                 Pushes the framework registry changes to the remote repository.\n";
+    echo "  create-version <module-name>@<version>  Creates a new module version (zips module, updates manifest, commits changes).\n";
+    echo "  list-versions           Lists available modules and their versions from the manifest.\n";
+    echo "  publish                 Pushes the module registry changes to the remote repository.\n";
     echo "  help                    Displays this help message.\n";
 }
 
@@ -138,7 +157,7 @@ $versionArg = $argv[2] ?? null;
 switch ($command) {
     case 'create-version':
         if (!$versionArg) {
-            echo "Error: Version number is required for create-version command.\n\n";
+            echo "Error: Module name and version are required for create-version command.\n\n";
             displayHelp();
             exit(1);
         }
@@ -205,12 +224,12 @@ function calculateFileIntegrity(string $filePath): string|bool
 
 
 /**
- * Reads and decodes the framework manifest (forge.json) file.
+ * Reads and decodes the modules manifest (forge.json) file.
  *
  * @param string $manifestFilePath Path to the forge.json manifest file.
  * @return array|null Associative array of manifest data on success, null on failure.
  */
-function readFrameworkManifest(string $manifestFilePath): ?array
+function readModulesManifest(string $manifestFilePath): ?array
 {
     if (!file_exists($manifestFilePath)) {
         return null;
@@ -228,13 +247,13 @@ function readFrameworkManifest(string $manifestFilePath): ?array
 
 
 /**
- * Encodes and writes the framework manifest data to the forge.json file.
+ * Encodes and writes the modules manifest data to the forge.json file.
  *
  * @param string $manifestFilePath Path to the forge.json manifest file.
  * @param array $manifestData Associative array of manifest data to write.
  * @return bool True on success, false on failure.
  */
-function writeFrameworkManifest(string $manifestFilePath, array $manifestData): bool
+function writeModulesManifest(string $manifestFilePath, array $manifestData): bool
 {
     $jsonContent = json_encode($manifestData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     if ($jsonContent === false) {
@@ -263,4 +282,20 @@ function runGitCommand(string $command, array $arguments): array
         'exitCode' => $exitCode,
         'output' => implode("\n", $output),
     ];
+}
+
+/**
+ * Generates PascalCase folder name from module full name.
+ *
+ * @param string $fullName Module full name (e.g., forge-logger).
+ * @return string PascalCase folder name (e.g., ForgeLogger).
+ */
+function generateModuleInstallFolderName(string $fullName): string
+{
+    $parts = explode('-', $fullName);
+    $pascalCaseName = '';
+    foreach ($parts as $part) {
+        $pascalCaseName .= ucfirst($part);
+    }
+    return $pascalCaseName;
 }

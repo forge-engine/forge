@@ -1,15 +1,11 @@
 <?php
 
-// install.php - Decoupled Forge Framework Installer (Fetching from GitHub Registry)
-
-// 1. Configuration - Updated to Framework Registry Repo
-const FRAMEWORK_REPO_URL = 'https://github.com/forge-engine/framework-registry'; // Changed to framework-registry repo
+const FRAMEWORK_REPO_URL = 'https://github.com/forge-engine/framework-registry';
 const FRAMEWORK_FORGE_JSON_PATH_IN_REPO = 'forge.json';
 const FRAMEWORK_REPO_BRANCH = 'main';
 
-// --- Version Specification ---
+
 $specifiedVersion = null;
-// Parse command-line arguments to check for --version option
 for ($i = 1; $i < count($argv); $i++) {
     if (strpos($argv[$i], '--version=') === 0) {
         $specifiedVersion = substr($argv[$i], strlen('--version='));
@@ -20,17 +16,15 @@ for ($i = 1; $i < count($argv); $i++) {
             break;
         } else {
             echo "Error: --version option requires a version number.\n";
-            displayHelp(); // Show help and exit
+            displayHelp();
             exit(1);
         }
     }
 }
 
-// 2. Construct Raw GitHub URL for forge.json (Manifest)
 $frameworkForgeJsonUrl = generateRawGithubUrl(FRAMEWORK_REPO_URL, FRAMEWORK_REPO_BRANCH, FRAMEWORK_FORGE_JSON_PATH_IN_REPO);
 echo "Fetching framework manifest from: " . $frameworkForgeJsonUrl . "\n";
 
-// 3. Fetch Framework forge.json Content
 $frameworkManifestJson = @file_get_contents($frameworkForgeJsonUrl);
 if (!$frameworkManifestJson) {
     die("Error fetching framework manifest from GitHub. URL: " . $frameworkForgeJsonUrl . "\n");
@@ -40,7 +34,6 @@ if (!$frameworkManifest || !is_array($frameworkManifest)) {
     die("Error decoding framework manifest JSON from GitHub.\n");
 }
 
-// 4. Determine Framework Version to Install
 if ($specifiedVersion) {
     $versionToInstall = $specifiedVersion;
     echo "Installing specified framework version: {$versionToInstall}\n";
@@ -58,33 +51,28 @@ if ($specifiedVersion) {
 
 $versionDetails = $frameworkManifest['versions'][$versionToInstall];
 if (!$versionDetails) {
-    die("Version details for '{$versionToInstall}' not found in framework manifest.\n"); // More specific error
+    die("Version details for '{$versionToInstall}' not found in framework manifest.\n");
 }
 
-// 5. Construct Download URL for Version ZIP (using framework-registry base URL)
-$downloadZipRelativePath = $versionDetails['download_url']; // e.g., "versions/0.1.0.zip"
-$downloadUrl = generateRawGithubUrl(FRAMEWORK_REPO_URL, FRAMEWORK_REPO_BRANCH, $downloadZipRelativePath); // Use generateRawGithubUrl again
+$downloadZipRelativePath = $versionDetails['download_url'];
+$downloadUrl = generateRawGithubUrl(FRAMEWORK_REPO_URL, FRAMEWORK_REPO_BRANCH, $downloadZipRelativePath);
 $integrityHash = $versionDetails['integrity'];
 
-// 6. Download Framework ZIP
 echo "Downloading Forge Framework version {$versionToInstall} from: " . $downloadUrl . "\n";
 $zipFilePath = downloadFile($downloadUrl, 'forge-framework.zip');
 if (!$zipFilePath) {
     die("Error downloading framework ZIP file.\n");
 }
 
-// 7. Verify Integrity
 echo "Verifying integrity...\n";
 if (!verifyFileIntegrity($zipFilePath, $integrityHash)) {
-    unlink($zipFilePath); // Delete potentially corrupted download
+    unlink($zipFilePath);
     die("Integrity check failed! Downloaded file is corrupted or tampered.\n");
 }
 
-// 8. Prepare Engine Folder and Extract Framework Files
 echo "Preparing engine folder and extracting framework files...\n";
 $extractionPath = './engine';
 
-// --- Handle existing engine folder ---
 if (is_dir($extractionPath)) {
     echo "Deleting existing engine folder...\n";
     if (!recursiveDeleteDirectory($extractionPath)) {
@@ -122,7 +110,6 @@ function generateRawGithubUrl(string $repoUrl, string $branch, string $filePathI
     $repoBaseRawUrl = rtrim(str_replace('github.com', 'raw.githubusercontent.com', $repoUrl), '/');
     return $repoBaseRawUrl . '/' . $branch . '/' . $filePathInRepo;
 }
-
 
 /**
  * Downloads a file from a URL to a destination path.
