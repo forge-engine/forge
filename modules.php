@@ -55,7 +55,7 @@ function createVersion(string $moduleVersionString): void
     }
     $manifestData[$moduleName]['versions'][$version] = [
         'description' => "Version " . $version . " of " . $moduleName,
-        'url' => $moduleName . '/' . $version . '/' . $versionZipFilename,
+        'url' => $moduleName . '/' . $version,
         'integrity' => $integrityHash,
     ];
     $manifestData[$moduleName]['latest'] = $version;
