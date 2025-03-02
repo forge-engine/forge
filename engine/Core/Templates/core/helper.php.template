@@ -1,0 +1,17 @@
+<?php
+
+namespace {{ namesapce }};
+
+class {{ name }}
+{
+    /**
+     * Sample method
+     *
+     * @param string $string
+     * @return string
+     */
+    public static function hi(string $string): string
+    {
+        return $string;
+    }
+}

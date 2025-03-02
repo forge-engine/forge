@@ -1,0 +1,17 @@
+<?php
+
+namespace {{ namespace }};
+
+trait {{ name }}
+{
+    /**
+     * Output an informational message.
+     *
+     * @param string $message The message to display.
+     */
+    protected function info(string $message): void
+    {
+        echo "\033[34m{$message}\033[0m\n";
+    }
+
+}

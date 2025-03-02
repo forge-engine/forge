@@ -12,7 +12,6 @@ modules/*
 !modules/ForgePackageManager
 !modules/ForgeErrorHandler
 !cache/.gitkeep
-engine/*
 
 # Ignore temporary files and logs
 /storage/*.key

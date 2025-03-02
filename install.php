@@ -1,7 +1,7 @@
 <?php
 const FRAMEWORK_REPO_URL = 'https://github.com/forge-engine/framework';
 const FRAMEWORK_FORGE_JSON_PATH_IN_REPO = 'forge.json';
-const FRAMEWORK_REPO_BRANCH = 'feature-framework';
+const FRAMEWORK_REPO_BRANCH = 'main';
 
 // 2. Construct Raw GitHub URL for forge.json
 $frameworkForgeJsonUrl = generateRawGithubUrl(FRAMEWORK_REPO_URL, FRAMEWORK_REPO_BRANCH, FRAMEWORK_FORGE_JSON_PATH_IN_REPO);
@@ -33,7 +33,7 @@ $integrityHash = $versionDetails['integrity'];
 
 // 5. Download Framework ZIP
 echo "Downloading Forge Framework version {$versionToInstall} from: " . $downloadUrl . "\n";
-$zipFilePath = downloadFile($downloadUrl, 'forge-framework.zip'); // Function to download file
+$zipFilePath = downloadFile($downloadUrl, 'engine.zip');
 
 // 6. Verify Integrity
 echo "Verifying integrity...\n";
@@ -73,14 +73,59 @@ function generateRawGithubUrl(string $repoUrl, string $branch, string $filePathI
 }
 
 
-function downloadFile(string $url, string $destinationPath)
-{ /* ... download file and return path ... */
+/**
+ * Downloads a file from a URL to a destination path.
+ *
+ * @param string $url URL of the file to download.
+ * @param string $destinationPath Path to save the downloaded file.
+ * @return string|bool Path to the downloaded file on success, false on failure.
+ */
+function downloadFile(string $url, string $destinationPath): string|bool
+{
+    $fileContent = @file_get_contents($url);
+    if ($fileContent === false) {
+        return false;
+    }
+    if (file_put_contents($destinationPath, $fileContent) !== false) {
+        return $destinationPath;
+    }
+    return false;
 }
 
-function verifyFileIntegrity(string $filePath, $expectedHash)
-{ /* ... hash verification ... */
+/**
+ * Verifies the SHA256 integrity of a file.
+ *
+ * @param string $filePath Path to the file to verify.
+ * @param string $expectedHash Expected SHA256 hash.
+ * @return bool True if integrity is verified, false otherwise.
+ */
+function verifyFileIntegrity(string $filePath, string $expectedHash): bool
+{
+    if (!file_exists($filePath)) {
+        return false;
+    }
+    $calculatedHash = hash_file('sha256', $filePath);
+    return $calculatedHash === $expectedHash;
 }
 
-function extractZip($zipPath, $destinationPath)
-{ /* ... zip extraction ... */
+/**
+ * Extracts a ZIP archive to a destination directory.
+ *
+ * @param string $zipPath Path to the ZIP archive.
+ * @param string $destinationPath Path to extract the contents to.
+ * @return bool True on successful extraction, false otherwise.
+ */
+function extractZip(string $zipPath, string $destinationPath): bool
+{
+    $zip = new ZipArchive();
+    if ($zip->open($zipPath) === TRUE) {
+        if (!is_dir($destinationPath)) {
+            mkdir($destinationPath, 0755, true);
+        }
+        $zip->extractTo($destinationPath);
+        $zip->close();
+        return true;
+    } else {
+        return false;
+    }
 }

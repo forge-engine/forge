@@ -1,0 +1,29 @@
+{
+    "name": "forge-engine/framework",
+    "version": "0.1.0",
+    "manifest_version": "1.0",
+    "description": "Forge PHP Framework - Core Engine",
+    "homepage": "https://forge-engine.github.io/",
+    "repository": "https://github.com/forge-engine/forge-engine",
+    "require": {
+        "php": ">=8.3"
+    },
+    "authors": [
+        {
+            "name": "Forge Engine Team",
+            "homepage": "https://forge-engine.github.io/about-us"
+        }
+    ],
+    "versions": {
+        "0.1.0": {
+            "download_url": "versions/0.1.0.zip",
+            "integrity": "e7ed08e93ea7f3b6e0f04635778ae6fe1e38679b05d0d0a8c75ba42a463ee885",
+            "release_date": "2025-03-02",
+            "release_notes_url": "https://github.com/forge-engine/forge/blob/main/CHANGELOG.md",
+            "require": {
+                "php": ">=8.3"
+            }
+        },
+        "latest": "0.1.0"
+    }
+}

@@ -1,0 +1,188 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "Forge Module Schema",
+    "description": "Schema for Forge module configuration files.",
+    "type": "object",
+    "properties": {
+        "name": {
+            "type": "string",
+            "description": "The name of the module.",
+            "examples": [
+                "forge-basic-router"
+            ]
+        },
+        "version": {
+            "type": "string",
+            "description": "The version of the module.",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$",
+            "examples": [
+                "1.0.0"
+            ]
+        },
+        "description": {
+            "type": "string",
+            "description": "A description of the module.",
+            "examples": [
+                "Forge basic router example"
+            ]
+        },
+        "type": {
+            "type": "string",
+            "description": "The type of the module.",
+            "examples": [
+                "router"
+            ]
+        },
+        "order": {
+            "type": "integer",
+            "description": "The order in which the module should be loaded.",
+            "examples": [
+                3
+            ]
+        },
+        "provides": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "description": "Interfaces provided by the module.",
+                "examples": [
+                    "Forge\\Modules\\Router\\RouterInterface@1.0"
+                ]
+            },
+            "description": "List of interfaces provided by the module."
+        },
+        "requires": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "description": "Interfaces required by the module.",
+                "examples": [
+                    "ViewEngineInterface@1.0"
+                ]
+            },
+            "description": "List of interfaces required by the module."
+        },
+        "lifecycleHooks": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "description": "Lifecycle hooks implemented by the module.",
+                "examples": [
+                    "beforeBoot",
+                    "afterBoot",
+                    "beforeModuleLoad",
+                    "afterModuleLoad",
+                    "beforeModuleRegister",
+                    "afterModuleRegister",
+                    "afterConfigLoaded"
+                ]
+            },
+            "description": "List of lifecycle hooks."
+        },
+        "class": {
+            "type": "string",
+            "description": "The fully qualified class name of the module.",
+            "examples": [
+                "Forge\\Modules\\Router\\RouterModule"
+            ]
+        },
+        "cli": {
+            "type": "object",
+            "properties": {
+                "commands": {
+                    "type": "array",
+                    "items": {
+                        "type": "string",
+                        "description": "CLI commands provided by the module.",
+                        "examples": [
+                            "route:list"
+                        ]
+                    },
+                    "description": "List of CLI commands."
+                }
+            },
+            "description": "CLI configuration for the module."
+        },
+        "tags": {
+            "type": "array",
+            "items": {
+                "type": "string",
+                "description": "Tags associated with the module.",
+                "examples": [
+                    "router"
+                ]
+            },
+            "description": "List of tags."
+        },
+        "config": {
+            "type": "object",
+            "properties": {
+                "defaults": {
+                    "type": "object",
+                    "description": "Default configuration values for the module."
+                }
+            },
+            "description": "Configuration options for the module."
+        },
+        "compatibility": {
+            "type": "object",
+            "description": "Compatibility information for the module.",
+            "properties": {
+                "framework": {
+                    "type": "string",
+                    "description": "Supported Forge framework version.",
+                    "examples": [
+                        ">=0.0.1"
+                    ]
+                },
+                "php": {
+                    "type": "string",
+                    "description": "Supported PHP version.",
+                    "examples": [
+                        "^8.3"
+                    ]
+                }
+            },
+            "required": [
+                "framework",
+                "php"
+            ]
+        },
+        "repository": {
+            "type": "object",
+            "description": "Repository information for the module.",
+            "properties": {
+                "type": {
+                    "type": "string",
+                    "description": "Repository type (e.g., git).",
+                    "examples": [
+                        "git"
+                    ]
+                },
+                "url": {
+                    "type": "string",
+                    "description": "URL of the repository.",
+                    "examples": [
+                        "https://github.com/forge-engine/modules"
+                    ]
+                }
+            },
+            "required": [
+                "type",
+                "url"
+            ]
+        }
+    },
+    "required": [
+        "name",
+        "version",
+        "description",
+        "type",
+        "provides",
+        "requires",
+        "lifecycleHooks",
+        "class",
+        "compatibility",
+        "repository"
+    ]
+}

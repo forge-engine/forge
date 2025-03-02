@@ -1,0 +1,19 @@
+<?php
+
+namespace Forge\Modules\{{ moduleName }};
+
+use Forge\Modules\{{ moduleName }}\Contracts\{{ interfaceName }};
+use Forge\Core\Contracts\Modules\ModulesInterface;
+use Forge\Core\DependencyInjection\Container;
+use Forge\Core\Helpers\Debug;
+
+class {{ moduleClassName }} extends ModulesInterface
+{
+    public function register(Container $container): void
+    {
+        // Module registration logic here
+        $module = new {{ moduleName }}();
+        $container->instance({{ interfaceName }}::class, $module);
+        Debug::addEvent("[{{ moduleName }}Module] Registered", "start"); // Example event
+    }
+}
