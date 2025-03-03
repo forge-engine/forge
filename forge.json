@@ -2,7 +2,7 @@
     "name": "My project",
     "modules": {
         "forge-engine/framework": "0.1.0",
-        "forge-package-manager": "1.0.0",
+        "forge-package-manager": "1.0.2",
         "forge-router": "1.0.0",
         "forge-api": "0.0.1-dev",
         "forge-debug-bar": "1.0.2",

@@ -7,7 +7,6 @@ use Forge\Core\DependencyInjection\Container;
 use Forge\Core\Events\DatabaseQueryExecuted;
 use Forge\Core\Helpers\Debug;
 use Forge\Modules\ForgeDatabase\Contracts\DatabaseInterface;
-use Forge\Modules\ForgeOrm\QueryBuilder;
 
 class InMemoryAdapter implements DatabaseInterface
 {
@@ -77,13 +76,5 @@ class InMemoryAdapter implements DatabaseInterface
     public function lastInsertId(): string
     {
         return $this->pdo->lastInsertId();
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function table(string $table): QueryBuilder
-    {
-        return (new QueryBuilder())->table($table);
     }
 }

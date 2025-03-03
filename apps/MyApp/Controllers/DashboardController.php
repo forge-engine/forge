@@ -25,11 +25,18 @@ class DashboardController
 
     public function index(Request $request): Response
     {
-        $files = $this->db->table('storage')->get();
-        $buckets = $this->db->table('buckets')->get();
+        // Using Query Builder instance from the container
+        //$builder = App::queryBuilder();
+        //$builder->table('storage')->get();
+        //$files = $builder->table('storage')->get();
+        //$buckets = $builder->table('buckets')->get();
+
+        // Low level database access
+        $files2 = $this->db->query("SELECT * FROM storage");
+        $buckets2 = $this->db->query("SELECT * FROM buckets");
         $data = [
-            'files' => $files,
-            'buckets' => $buckets
+            'files' => $files2,
+            'buckets' => $buckets2
         ];
         return $this->view->render('storage.dashboard', $data);
     }

@@ -7,7 +7,6 @@ use Forge\Core\DependencyInjection\Container;
 use Forge\Core\Events\DatabaseQueryExecuted;
 use Forge\Core\Helpers\Debug;
 use Forge\Modules\ForgeDatabase\Contracts\DatabaseInterface;
-use Forge\Modules\ForgeOrm\QueryBuilder;
 use PDO;
 use PDOException;
 
@@ -148,13 +147,5 @@ class PostgresqlAdapter implements DatabaseInterface
         if (!$this->pdo) {
             throw new \RuntimeException("Database connection not established. Call connect() first.");
         }
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function table(string $table): QueryBuilder
-    {
-        return (new QueryBuilder())->table($table);
     }
 }

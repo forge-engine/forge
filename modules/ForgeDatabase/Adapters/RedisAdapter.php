@@ -3,7 +3,6 @@
 namespace Forge\Modules\ForgeDatabase\Adapters;
 
 use Forge\Modules\ForgeDatabase\Contracts\DatabaseInterface;
-use Forge\Modules\ForgeOrm\QueryBuilder;
 use Redis;
 use RedisException;
 use RuntimeException;
@@ -132,11 +131,4 @@ class RedisAdapter implements DatabaseInterface
         }
     }
 
-    /**
-     * @inheritDoc
-     */
-    public function table(string $table): QueryBuilder
-    {
-        return (new QueryBuilder())->table($table);
-    }
 }

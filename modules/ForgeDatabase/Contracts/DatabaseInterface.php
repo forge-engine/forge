@@ -2,8 +2,6 @@
 
 namespace Forge\Modules\ForgeDatabase\Contracts;
 
-use Forge\Modules\ForgeOrm\QueryBuilder;
-
 interface DatabaseInterface
 {
     public function connect(array $config): void;
@@ -19,12 +17,4 @@ interface DatabaseInterface
     public function rollback(): void;
 
     public function lastInsertId(): string;
-
-    /**
-     * Get a query builder instance for fluent database operations.
-     *
-     * @param string $table The name of the table to start building a query for.
-     * @return QueryBuilder
-     */
-    public function table(string $table): QueryBuilder;
 }

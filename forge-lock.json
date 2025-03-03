@@ -1,10 +1,10 @@
 {
     "modules": {
         "forge-package-manager": {
-            "version": "1.0.0",
+            "version": "1.0.2",
             "registry": "forge-engine-modules",
-            "url": "https://raw.githubusercontent.com/forge-engine/modules-v2/main/modules/forge-package-manager/1.0.0/1.0.0.zip",
-            "integrity": "6f921bcfb8c987d60f968206656aa1bb0b073ea6f1201732b219d854bd54446a"
+            "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-package-manager/1.0.2/1.0.2.zip",
+            "integrity": "22a3b66a2b3c779ea7c0bce0bc3e5856b1245822e6f44d6d5a31ac5fec258451"
         },
         "forge-router": {
             "version": "1.0.0",
