@@ -14,7 +14,7 @@ use MyApp\Middleware\FileExpirationMiddleware;
 $router = App::router();
 
 $router->get('/', [HomeController::class, 'index']);
-$router->get('/docs', [DocController::class, 'index']);
+$router->get('/docs/{category}/{slug}', [DocController::class, 'index']);
 $router->get('/contact', function () {
     return (new \Forge\Http\Response())->html('Contat form');
 });

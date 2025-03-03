@@ -146,9 +146,9 @@ class MigrationManager
         $migrations = [];
         $appsPath = BASE_PATH . '/apps/';
 
-        foreach (glob($appsPath . '*/Database/Migration/*.php') as $file) {
+        foreach (glob($appsPath . '*/Database/Migrations/*.php') as $file) {
             $migrationName = $this->getMigrationNameFromFilePath($file);
-            $namespace = $this->getMigrationNamespaceFromFilePath($file, 'Apps');
+            $namespace = $this->getMigrationNamespaceFromFilePath($file, 'MyApp');
             $className = $this->getClassName($migrationName, $namespace);
             $migrations[$migrationName] = ['name' => $migrationName, 'path' => $file, 'class' => $className, 'namespace' => $namespace];
         }
@@ -164,7 +164,7 @@ class MigrationManager
     {
         $segments = explode(DIRECTORY_SEPARATOR, $filePath);
         $moduleOrAppName = $segments[array_search('modules', $segments) + 1] ?? $segments[array_search('apps', $segments) + 1] ?? '';
-        return "Forge\\{$type}\\{$moduleOrAppName}\\Database\\Migrations";
+        return "{$type}\\Database\\Migrations";
     }
 
     private function getClassName(string $filename, string $namespace): string

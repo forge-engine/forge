@@ -4,6 +4,7 @@ namespace Forge\Modules\ForgeStaticHtml;
 
 use Forge\Core\Helpers\App;
 use Forge\Http\Request;
+use Forge\Modules\ForgeDatabase\Contracts\DatabaseInterface;
 use Forge\Modules\ForgeRouter\BasicRouter;
 
 class StaticGenerator
@@ -35,10 +36,26 @@ class StaticGenerator
     private function generateRoutes(): void
     {
         $routes = $this->router->getRoutes();
+        $dynamicRoutesConfig = $this->config['dynamic_routes'] ?? [];
 
         foreach ($routes as $route) {
             if ($this->shouldGenerateRoute($route)) {
-                $this->generateRouteOutput($route);
+                $isDynamicRoute = false;
+
+                foreach ($dynamicRoutesConfig as $routeName => $dynamicRouteConfig) {
+                    $routePattern = $dynamicRouteConfig['route_pattern'] ?? null;
+                    $strposResult = strpos($route['uri'], $routePattern);
+
+                    if ($routePattern && $strposResult === 0) {
+                        $this->generateDynamicRoutes($route, $routeName, $dynamicRouteConfig);
+                        $isDynamicRoute = true;
+                        break;
+                    }
+                }
+
+                if (!$isDynamicRoute) {
+                    $this->generateRouteOutput($route);
+                }
             } else {
 
             }
@@ -46,20 +63,64 @@ class StaticGenerator
         echo "Route generation completed.\n";
     }
 
+    private function generateDynamicRoutes(array $route, string $routeName, array $dynamicRouteConfig): void
+    {
+
+        if ($dynamicRouteConfig['data_source'] !== 'database') {
+            echo "Warning: Dynamic route '{$routeName}' misconfigured or database data source not specified.\n";
+            return;
+        }
+
+        try {
+            $database = App::getContainer()->get(DatabaseInterface::class);
+        } catch (\Throwable $e) {
+            echo "Warning: Database module not available. Skipping dynamic route '{$routeName}' generation.\n";
+            echo "  Ensure the database module is installed and configured if you want to generate dynamic routes from the database.\n";
+            return;
+        }
+
+        $categoriesTable = $dynamicRouteConfig['options']['categories_table'];
+        $sectionsTable = $dynamicRouteConfig['options']['sections_table'];
+        $categorySlugColumn = $dynamicRouteConfig['options']['category_slug_column'];
+        $sectionSlugColumn = $dynamicRouteConfig['options']['section_slug_column'];
+        $sectionCategoryIdColumn = $dynamicRouteConfig['options']['section_category_id_column'];
+
+        $categories = $database->table($categoriesTable)->get();
+
+
+        foreach ($categories as $category) {
+            $sections = $database->table($sectionsTable)
+                ->where($sectionCategoryIdColumn, $category['id'])
+                ->get();
+
+            foreach ($sections as $section) {
+                $uri = str_replace(
+                    ['{category}', '{slug}'],
+                    [$category[$categorySlugColumn], $section[$sectionSlugColumn]],
+                    $dynamicRouteConfig['route_pattern']
+                );
+
+                if ($this->matchesIncludePatterns($uri)) {
+                    $this->generateRouteOutput(['uri' => $uri, 'method' => 'GET']);
+                }
+            }
+        }
+    }
+
+
     private function shouldGenerateRoute(array $route): bool
     {
         $isGet = $route['method'] === 'GET';
-        $isStatic = $this->isStaticRoute($route);
+        //$isStatic = $this->isStaticRoute($route);
         $matchesPatterns = $this->matchesIncludePatterns($route['uri']);
 
-        return $isGet && $isStatic && $matchesPatterns;
+        return $isGet && $matchesPatterns;
     }
 
     private function matchesIncludePatterns(string $uri): bool
     {
         $patterns = $this->config['include_paths'] ?? ['/'];
 
-        // Special case: include everything
         if (in_array('/', $patterns, true)) {
             return true;
         }
@@ -95,7 +156,6 @@ class StaticGenerator
                 if (!mkdir($outputDir, 0755, true)) {
                     echo "  Error: Failed to create output directory: " . $outputDir . "\n";
                     return;
-                } else {
                 }
             }
 
@@ -126,13 +186,17 @@ class StaticGenerator
 
     private function getOutputPath(string $uri): string
     {
-        $path = trim($uri, '/');
+        $pathParts = explode('/', trim($uri, '/'));
+        $filename = array_pop($pathParts) ?: 'index';
+        $path = implode('/', $pathParts);
+
         if (empty($path)) {
-            return "{$this->outputDir}/index.html";
+            return "{$this->outputDir}/{$filename}/index.html";
+        } else {
+            return "{$this->outputDir}/{$path}/{$filename}/index.html";
         }
-        $filename = $path ?: 'index';
-        return "{$this->outputDir}/{$filename}/index.html";
     }
+
 
     private function cleanOutputDir(): void
     {
