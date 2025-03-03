@@ -19,10 +19,10 @@
             "integrity": "09ec70c07aaca8165aec2433ec180c267e15f9e2bbaad586ff1038013a61e558"
         },
         "forge-debug-bar": {
-            "version": "1.0.0",
+            "version": "1.0.2",
             "registry": "forge-engine-modules",
-            "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-debug-bar/1.0.0/1.0.0.zip",
-            "integrity": "dcc2dbe090afb366559a113842090a49246e9f2981ca4f7832f1c91cb948c8f8"
+            "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-debug-bar/1.0.2/1.0.2.zip",
+            "integrity": "b7a42930986d10f9262927504ac59803076b154c045f6d31b62e0982c7486ca9"
         },
         "forge-error-handler": {
             "version": "1.0.0",

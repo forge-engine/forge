@@ -180,7 +180,7 @@ class PackageManager implements PackageManagerInterface
         return $integrityHash;
     }
 
-    public function installModule(string $moduleName, ?string $version = null): void
+    public function installModule(string $moduleName, ?string $version = null, ?string $forceCache = null): void
     {
         $this->info("Installing module: {$moduleName}" . ($version ? " version {$version}" : " (latest)"));
 
@@ -214,7 +214,7 @@ class PackageManager implements PackageManagerInterface
 
         $githubZipUrl = $this->generateGithubZipUrl($registryRawBaseUrl, $registryDetails['branch'], $moduleDownloadPathInRepo);
 
-        if (!file_exists($moduleCachePath)) {
+        if ($forceCache === 'force' || !file_exists($moduleCachePath)) {
             $this->info("Downloading module {$moduleName} version {$versionToInstall} from {$githubZipUrl}...");
             $integrityHash = $this->downloadFile($githubZipUrl, $moduleCachePath);
             $this->integrityHash = $integrityHash;

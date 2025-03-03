@@ -23,21 +23,23 @@ class InstallModuleCommand implements CommandInterface
 
     public function execute(array $args): int
     {
+        $this->info("You can bypass the cache by adding force to the end: php forge.php install:module module-name force");
         if (empty($args[0])) {
-            $this->error("Module name is required. Usage: forge install:module <module-name>[@version]");
+            $this->error("Module name is required. Usage: php forge.php install:module <module-name>[@version]");
             return 1;
         }
 
         $moduleNameVersion = $args[0];
         $parts = explode('@', $moduleNameVersion);
         $moduleName = $parts[0];
+        $forceCache = $args[1] ?? null;
         $version = $parts[1] ?? null;
 
 
         try {
             /** @var PackageManager $packageManager */
             $packageManager = App::getContainer()->get(PackageManager::class);
-            $packageManager->installModule($moduleName, $version);
+            $packageManager->installModule($moduleName, $version, $forceCache);
             return 0;
         } catch (\Throwable $e) {
             $this->error("Error installing module: " . $e->getMessage());

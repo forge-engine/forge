@@ -1,7 +1,7 @@
 {
     "$schema": "https://raw.githubusercontent.com/upperdo/forge-schemas/refs/heads/main/schemas/modules/schema.json",
     "name": "forge-debugbar",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Forge debug bar",
     "type": "debugger",
     "provides": [
