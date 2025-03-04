@@ -23,7 +23,6 @@ class HomeController
 
     /**
      * @inject
-     * @var DatabaseInterface $db
      */
     private DatabaseInterface $db;
 

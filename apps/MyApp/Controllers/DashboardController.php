@@ -10,6 +10,7 @@ use Forge\Http\Request;
 use Forge\Http\Response;
 use Forge\Core\Contracts\Modules\ViewEngineInterface;
 use Forge\Modules\ForgeDatabase\Contracts\DatabaseInterface;
+use Forge\Modules\ForgeOrm\QueryBuilder;
 
 class DashboardController
 {
@@ -23,20 +24,25 @@ class DashboardController
      */
     private DatabaseInterface $db;
 
+    /**
+     * @inject
+     */
+    private QueryBuilder $queryBuilder;
+
     public function index(Request $request): Response
     {
-        // Using Query Builder instance from the container
-        //$builder = App::queryBuilder();
-        //$builder->table('storage')->get();
-        //$files = $builder->table('storage')->get();
-        //$buckets = $builder->table('buckets')->get();
+        // Using Query Builder
+        $filesRaw = $this->queryBuilder->table('storage')->get();
+        $bucketsRaw = $this->queryBuilder->table('buckets')->get();
 
         // Low level database access
-        $files2 = $this->db->query("SELECT * FROM storage");
-        $buckets2 = $this->db->query("SELECT * FROM buckets");
+        $files = $this->db->query("SELECT * FROM storage");
+        $buckets = $this->db->query("SELECT * FROM buckets");
         $data = [
-            'files' => $files2,
-            'buckets' => $buckets2
+            'files' => $files,
+            'buckets' => $buckets,
+            'filesRaw' => $filesRaw,
+            'bucketRaw' => $bucketsRaw,
         ];
         return $this->view->render('storage.dashboard', $data);
     }

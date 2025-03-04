@@ -1,0 +1,38 @@
+{
+    "$schema": "./../../engine/Core/Schema/module-schema.json",
+    "name": "ForgeExplicitOrm",
+    "version": "0.0.1",
+    "description": "An Explicit ORM by Forge",
+    "type": "generic",
+    "order": 100,
+    "provides": [
+        "Forge\\Modules\\Contracts\\ForgeExplicitOrmInterface@0.0.1"
+    ],
+    "requires": [],
+    "lifecycleHooks": [
+        "beforeBoot",
+        "afterBoot",
+        "beforeModuleLoad",
+        "afterModuleLoad",
+        "beforeModuleRegister",
+        "afterModuleRegister",
+        "afterConfigLoaded"
+    ],
+    "class": "Forge\\Modules\\ForgeExplicitOrm\\ForgeExplicitOrmModule",
+    "cli": {
+        "commands": []
+    },
+    "tags": [],
+    "config": {
+        "defaults": {}
+    },
+    "compatibility": {
+        "framework": ">=0.0.1",
+        "database": ">=0.0.1",
+        "php": "^8.3"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/forge-engine/modules"
+    }
+}
