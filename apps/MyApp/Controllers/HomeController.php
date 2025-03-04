@@ -2,6 +2,8 @@
 
 namespace MyApp\Controllers;
 
+use Forge\Core\Helpers\Redirect;
+use Forge\Enums\FlashMessageType;
 use Forge\Http\Request;
 use Forge\Http\Response;
 use Forge\Http\Session;
@@ -30,7 +32,7 @@ class HomeController
     {
         $this->session->start();
         $this->session->set('debugbar_test_key', "From from debugbar session");
-
+        $this->session->setFlash(FlashMessageType::SUCCESS, 'Profile updated successfully');
         $data = [
             'title' => 'Forge Framework',
             'users' => ['name' => 'Bob L', 'isLoggedIn' => true],
@@ -51,7 +53,8 @@ class HomeController
                     'label' => 'GitHub',
                     'url' => 'https://github.com/forge-engine'
                 ],
-            ]
+            ],
+            'session' => $this->session
         ];
         //throw new \ErrorException("Demo");
 
@@ -62,6 +65,8 @@ class HomeController
         //Debug::addEvent('[Test]: ', 'start');
 
         //$this->db->query("SELECT * FROM forge_migrations");
+
+        Redirect::to('/profile');
 
 
         return $this->view->render('landing.index', $data, 'base');
