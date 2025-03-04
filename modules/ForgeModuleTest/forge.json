@@ -22,11 +22,14 @@
     "cli": {
         "commands": []
     },
+    "postInstall": {
+        "commands": []
+    },
     "tags": [],
     "config": {
         "defaults": {}
     },
-     "compatibility": {
+    "compatibility": {
         "framework": ">=0.0.1",
         "php": "^8.3"
     },

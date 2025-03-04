@@ -18,6 +18,9 @@
     "config": {
         "defaults": {}
     },
+    "postInstall": {
+        "commands": []
+    },
     "compatibility": {
         "framework": ">=0.0.1",
         "database": ">=0.0.1",

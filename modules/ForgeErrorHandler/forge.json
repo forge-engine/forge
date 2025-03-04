@@ -1,9 +1,9 @@
 {
     "$schema": "./../../engine/Core/Schema/module-schema.json",
     "name": "ForgeErrorHandler",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "description": "An error handler by forge",
-    "type": "generic",
+    "type": "error",
     "order": 9,
     "provides": [
         "ErrorHandler@1.0.0"
@@ -22,9 +22,16 @@
     "cli": {
         "commands": []
     },
-    "tags": [],
+    "tags": [
+        "error-handler"
+    ],
     "config": {
         "defaults": {}
+    },
+    "postInstall": {
+        "commands": [
+            "php forge.php publish forge-error-handler --type=assets"
+        ]
     },
     "compatibility": {
         "framework": ">=0.0.1",

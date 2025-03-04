@@ -25,10 +25,10 @@
             "integrity": "b7a42930986d10f9262927504ac59803076b154c045f6d31b62e0982c7486ca9"
         },
         "forge-error-handler": {
-            "version": "0.0.1",
+            "version": "0.0.2",
             "registry": "forge-engine-modules",
-            "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-error-handler/0.0.1/0.0.1.zip",
-            "integrity": "e0aee4831f5710a222cfc8127d5aa761a266a7ad255bc6601b590a28c2c7ff83"
+            "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-error-handler/0.0.2/0.0.2.zip",
+            "integrity": "6ecfe86f5ad34886736df8c6f0cae4a06e19c7f084e57d199ed734a97fddf5f8"
         },
         "forge-mark-down": {
             "version": "1.0.0",

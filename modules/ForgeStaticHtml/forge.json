@@ -19,6 +19,11 @@
             "static:generate:html"
         ]
     },
+    "postInstall": {
+        "commands": [
+            "php forge.php publish forge-static-html --type=config"
+        ]
+    },
     "tags": [],
     "config": {
         "defaults": {

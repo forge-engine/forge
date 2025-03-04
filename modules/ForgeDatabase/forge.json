@@ -22,6 +22,11 @@
     "cli": {
         "commands": []
     },
+    "postInstall": {
+        "commands": [
+            "php forge.php publish forge-database --type=config"
+        ]
+    },
     "tags": [],
     "config": {
         "defaults": {}

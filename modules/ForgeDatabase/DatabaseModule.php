@@ -19,7 +19,7 @@ class DatabaseModule extends ModulesInterface
     public function register(Container $container): void
     {
         $config = App::config();
-        $databaseParams = $config->get('database');
+        $databaseParams = $config->get('forge_database');
         $connection = $databaseParams['connections'][$databaseParams['default']];
         $connectionName = $connection['database'];
 

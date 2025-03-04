@@ -24,6 +24,9 @@
     "cli": {
         "commands": []
     },
+    "postInstall": {
+        "commands": []
+    },
     "tags": [],
     "config": {
         "defaults": {

@@ -12,7 +12,7 @@ class ViewModule extends ModulesInterface
 {
     public function register(Container $container): void
     {
-        $config = $container->get(Config::class)->get('view');
+        $config = $container->get(Config::class)->get('forge_view_engine');
         $engine = new PhpViewEngine(
             $config,
             BASE_PATH

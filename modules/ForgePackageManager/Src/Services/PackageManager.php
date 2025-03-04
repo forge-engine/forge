@@ -27,8 +27,8 @@ class PackageManager implements PackageManagerInterface
     public function __construct()
     {
         $config = App::config();
-        $this->registries = $config->get('package_manager.registry', []);
-        $this->cacheTtl = $config->get('package_manager.cache_ttl', 3600);
+        $this->registries = $config->get('forge_package_manager.registry', []);
+        $this->cacheTtl = $config->get('forge_package_manager.cache_ttl', 3600);
         $this->modulesPath = BASE_PATH . '/modules/';
         $this->cachePath = BASE_PATH . '/storage/framework/modules/cache/';
 
@@ -240,6 +240,32 @@ class PackageManager implements PackageManagerInterface
         $this->updateForgeJson($moduleName, $versionToInstall);
         $this->createForgeLockJson($moduleName, $versionToInstall, $registryDetails, $githubZipUrl, $integrityHash);
 
+        $moduleForgeJsonPath = $moduleInstallPath . '/forge.json';
+        if (file_exists($moduleForgeJsonPath)) {
+            $moduleForgeJsonContent = file_get_contents($moduleForgeJsonPath);
+            $moduleConfig = json_decode($moduleForgeJsonContent, true);
+
+            if (isset($moduleConfig['postInstall']['commands']) && is_array($moduleConfig['postInstall']['commands'])) {
+                $this->info("Executing post-install commands for module {$moduleName}...");
+                foreach ($moduleConfig['postInstall']['commands'] as $command) {
+                    $this->info("Executing command: {$command}");
+                    exec($command, $output, $returnVar);
+
+                    if ($returnVar !== 0) {
+                        $this->error("Post-install command '{$command}' failed for module {$moduleName} with exit code: {$returnVar}");
+                        if (!empty($output)) {
+                            $this->error("Command output:\n" . implode("\n", $output));
+                        }
+                        $this->warning("Post-install command failure - Module installation continues with warnings.");
+                    } else {
+                        $this->info("Post-install command '{$command}' executed successfully for module {$moduleName}.");
+                        if (!empty($output)) {
+                            $this->info("Command output:\n" . implode("\n", $output));
+                        }
+                    }
+                }
+            }
+        }
         $this->success("Module {$moduleName} version {$versionToInstall} installed successfully.");
     }
 

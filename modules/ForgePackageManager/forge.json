@@ -1,7 +1,7 @@
 {
     "$schema": "./../../engine/Core/Schema/module-schema.json",
     "name": "forge-package-manager",
-    "version": "1.0.0",
+    "version": "1.0.3",
     "description": "A Package Manager By Forge",
     "type": "generic",
     "order": 0,
@@ -28,6 +28,11 @@
     "tags": [],
     "config": {
         "defaults": {}
+    },
+    "postInstall": {
+        "commands": [
+            "php forge.php publish forge-package-manager --type=config"
+        ]
     },
     "compatibility": {
         "framework": ">=0.0.1",

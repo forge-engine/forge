@@ -19,6 +19,11 @@
             }
         }
     },
+    "postInstall": {
+        "commands": [
+            "php forge.php publish forge-view-engine --type=config"
+        ]
+    },
     "description": "",
     "lifecycleHooks": [
         "beforeBoot",

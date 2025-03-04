@@ -26,6 +26,9 @@
             "migrate"
         ]
     },
+    "postInstall": {
+        "commands": []
+    },
     "tags": [],
     "config": {
         "defaults": {}

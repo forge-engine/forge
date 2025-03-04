@@ -1,7 +1,7 @@
 {
     "$schema": "./../../engine/Core/Schema/module-schema.json",
     "name": "forge-events",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Decoupled event system with pub/sub capabilities",
     "type": "events",
     "order": 90,
@@ -21,6 +21,11 @@
     ],
     "class": "Forge\\Modules\\ForgeEvents\\ForgeEventsModule",
     "cli": {
+        "commands": [
+            "php forge.php publish forge-events --type=config"
+        ]
+    },
+    "postInstall": {
         "commands": []
     },
     "tags": [],

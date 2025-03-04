@@ -23,6 +23,11 @@
     "tags": [
         "debugger"
     ],
+    "postInstall": {
+        "commands": [
+            "php forge.php publish --type=all"
+        ]
+    },
     "compatibility": {
         "framework": ">=0.0.1",
         "php": "^8.3"

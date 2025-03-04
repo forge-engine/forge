@@ -20,7 +20,9 @@
     ],
     "class": "Forge\\Modules\\ForgeStorage\\ForgeStorageModule",
     "cli": {
-        "commands": []
+        "commands": [
+            "php forge.php publish forge-storage --type=all"
+        ]
     },
     "tags": [],
     "config": {
