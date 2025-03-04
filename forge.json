@@ -6,7 +6,7 @@
         "forge-router": "1.0.0",
         "forge-api": "0.0.1-dev",
         "forge-debug-bar": "1.0.2",
-        "forge-error-handler": "1.0.0",
+        "forge-error-handler": "0.0.1",
         "forge-mark-down": "1.0.0",
         "forge-orm": "1.0.0",
         "forge-static-gen": "1.0.0",
