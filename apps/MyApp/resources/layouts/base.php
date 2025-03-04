@@ -1,7 +1,3 @@
-<?php
-/** @var array $data */
-$links = ['links' => $data['links']];
-?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -12,8 +8,10 @@ $links = ['links' => $data['links']];
     <link rel="stylesheet" href="/assets/css/style.css">
 </head>
 <body>
-<div class="layout-wrapper">
+<div class="wrapper">
     {{content}}
 </div>
+
+<script src="/assets/js/scripts.js" defer></script>
 </body>
 </html>

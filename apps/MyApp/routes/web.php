@@ -19,6 +19,8 @@ $router->get('/contact', function () {
     return (new \Forge\Http\Response())->html('Contat form');
 });
 
+$router->resource('/flash-message-test', \MyApp\Controllers\FlashMessageController::class);
+
 $router->get('/favicon.ico', function () {
     $faviconPath = BASE_PATH . '/public/favicon.ico';
     if (file_exists($faviconPath)) {

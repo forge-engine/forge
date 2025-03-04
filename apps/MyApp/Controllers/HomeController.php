@@ -30,9 +30,8 @@ class HomeController
 
     public function index(Request $request): Response
     {
-        $this->session->start();
-        $this->session->set('debugbar_test_key', "From from debugbar session");
-        $this->session->setFlash(FlashMessageType::SUCCESS, 'Profile updated successfully');
+        //$this->session->start();
+        //$this->session->set('debugbar_test_key', "From from debugbar session");
         $data = [
             'title' => 'Forge Framework',
             'users' => ['name' => 'Bob L', 'isLoggedIn' => true],
@@ -54,7 +53,7 @@ class HomeController
                     'url' => 'https://github.com/forge-engine'
                 ],
             ],
-            'session' => $this->session
+           
         ];
         //throw new \ErrorException("Demo");
 
@@ -65,8 +64,6 @@ class HomeController
         //Debug::addEvent('[Test]: ', 'start');
 
         //$this->db->query("SELECT * FROM forge_migrations");
-
-        Redirect::to('/profile');
 
 
         return $this->view->render('landing.index', $data, 'base');
