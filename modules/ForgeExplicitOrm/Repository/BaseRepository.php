@@ -8,7 +8,7 @@ use Forge\Modules\ForgeExplicitOrm\Exception\RepositoryException;
 
 abstract class BaseRepository implements RepositoryInterface
 {
-    protected DatabaseInterface $database;
+    public DatabaseInterface $database;
 
     /**
      * @var class-string The fully qualified class name of the DTO for this repository.
@@ -54,7 +54,7 @@ abstract class BaseRepository implements RepositoryInterface
             $params = [':id' => $id];
             $data = $this->database->query($sql, $params);
 
-            if (!data) {
+            if (!$data) {
                 return null;
             }
 
@@ -229,7 +229,7 @@ abstract class BaseRepository implements RepositoryInterface
      * @return object
      * @throws RepositoryException If the DTO class is invalid or instantiation fails.
      */
-    protected function createDtoFromData(array $data): object
+    public function createDtoFromData(array $data): object
     {
         $dtoClass = $this->dtoClass;
 

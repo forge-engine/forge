@@ -1,6 +1,11 @@
 <?php
 /** @var array $files */
 /** @var array $buckets */
+/**
+ * @var MyApp\DataTransferObjects\CategoryDTO|null $category
+ * @var array<MyApp\DataTransferObjects\CategoryDTO> $allCategories
+ * @var array<MyApp\DataTransferObjects\SectionDTO> $sections
+ */
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -95,6 +100,15 @@
         <?php endforeach; ?>
         </tbody>
     </table>
+
+    <pre>
+    <?php print_r($category); ?>
+    </pre>
+    <pre>
+    <?php print_r($sections[0]->content); ?>
+    </pre>
+
+
 </div>
 </body>
 </html>

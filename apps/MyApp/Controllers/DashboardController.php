@@ -10,7 +10,10 @@ use Forge\Http\Request;
 use Forge\Http\Response;
 use Forge\Core\Contracts\Modules\ViewEngineInterface;
 use Forge\Modules\ForgeDatabase\Contracts\DatabaseInterface;
+use Forge\Modules\ForgeExplicitOrm\Exception\RepositoryException;
 use Forge\Modules\ForgeOrm\QueryBuilder;
+use MyApp\DataTransferObjects\CategoryDTO;
+use MyApp\Repositories\CategoryRepository;
 
 class DashboardController
 {
@@ -29,8 +32,29 @@ class DashboardController
      */
     private QueryBuilder $queryBuilder;
 
+    /**
+     * @inject
+     */
+    private CategoryRepository $categoryRepository;
+
+    /**
+     * @throws RepositoryException
+     */
     public function index(Request $request): Response
     {
+        $categoryId = 1;
+
+        /** @var CategoryDTO $categoryDto */
+        $categoryDto = $this->categoryRepository->find($categoryId);
+        $allCategories = $this->categoryRepository->findAll();
+        $categoryBySlug = $this->categoryRepository->findBySlug('getting-starter');
+
+        $sections = null;
+        if ($categoryDto) {
+            $sectionsRelation = $this->categoryRepository->sections();
+            $sections = $sectionsRelation->for($categoryDto);
+        }
+
         // Using Query Builder
         $filesRaw = $this->queryBuilder->table('storage')->get();
         $bucketsRaw = $this->queryBuilder->table('buckets')->get();
@@ -43,6 +67,10 @@ class DashboardController
             'buckets' => $buckets,
             'filesRaw' => $filesRaw,
             'bucketRaw' => $bucketsRaw,
+            'category' => $categoryDto,
+            'allCategories' => $allCategories,
+            'categoryBySlug' => $categoryBySlug,
+            'sections' => $sections
         ];
         return $this->view->render('storage.dashboard', $data);
     }
