@@ -13,7 +13,7 @@ class ViewModule extends ModulesInterface
     {
         $config = $container->get(Config::class)->get('forge_view_engine');
         $appPaths = $container->get(Config::class)->get('app.paths.resources');
-        $viewEngineConfig = array_merge($config, $appPaths);
+        $viewEngineConfig = array_merge($config, ['paths' => $appPaths]);
         $engine = new PhpViewEngine($viewEngineConfig);
 
 
