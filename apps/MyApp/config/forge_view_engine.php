@@ -1,8 +1,5 @@
 <?php
 return [
-    'paths' => [
-        'view' => 'apps/MyApp/resources/views',
-        'components' => 'apps/MyApp/resources/components'
-    ],
+    'paths' => [],
     'cache' => 'storage/compiled_views',
 ];
