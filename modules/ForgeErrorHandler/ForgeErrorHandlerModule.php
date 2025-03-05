@@ -11,12 +11,14 @@ class ForgeErrorHandlerModule extends ModulesInterface
 {
     public function register(Container $container): void
     {
-        $container->instance(ErrorHandlerInterface::class, function () {
-            $config = App::config()->get('forge_error_handler');
-            return new ErrorHandler(
-                debugMode: $config['debugMode'],
-                logPath: $config['logPath']
-            );
-        });
+        if (!PHP_SAPI === 'cli') {
+            $container->instance(ErrorHandlerInterface::class, function () {
+                $config = App::config()->get('forge_error_handler');
+                return new ErrorHandler(
+                    debugMode: $config['debugMode'],
+                    logPath: $config['logPath']
+                );
+            });
+        }
     }
 }

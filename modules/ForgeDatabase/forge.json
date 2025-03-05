@@ -20,7 +20,9 @@
     ],
     "class": "Forge\\Modules\\ForgeDatabase\\DatabaseModule",
     "cli": {
-        "commands": []
+        "commands": [
+            "db:reset"
+        ]
     },
     "postInstall": {
         "commands": [

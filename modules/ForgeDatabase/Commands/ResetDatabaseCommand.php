@@ -4,6 +4,7 @@ namespace Forge\Modules\ForgeDatabase\Commands;
 
 use Forge\Core\Helpers\App;
 use Forge\Modules\ForgeDatabase\Contracts\DatabaseInterface;
+use Forge\Core\Configuration\Config;
 use Forge\Core\Contracts\Command\CommandInterface;
 use Forge\Core\Traits\OutputHelper;
 
@@ -11,18 +12,17 @@ class ResetDatabaseCommand implements CommandInterface
 {
     use OutputHelper;
 
+    /**
+     * @inject
+     */
     private DatabaseInterface $db;
-    private string $databaseName;
+    /**
+     * @inject
+     */
+    private Config $config;
 
     public function __construct()
     {
-        $config = App::config();
-        $databaseParams = $config->get('database');
-        $connection = $databaseParams['connections'][$databaseParams['default']];
-        $databaseName = $connection['database'];
-        $databaseInstance = App::getContainer()->get(DatabaseInterface::class);
-        $this->db = $databaseInstance;
-        $this->databaseName = $databaseName;
     }
 
     public function getName(): string
@@ -40,14 +40,17 @@ class ResetDatabaseCommand implements CommandInterface
      */
     public function execute(array $args): int
     {
+        $databaseParams = $this->config->get('forge_database');
+        $connection = $databaseParams['connections'][$databaseParams['default']];
+        $connectionName = $connection['database'];
 
         $this->db->beginTransaction();
         try {
-            $this->log("Droping [$this->databaseName] database..");
-            $this->db->query("DROP database $this->databaseName");
-            $this->log("Recreating [$this->databaseName] database..");
-            $this->db->query("CREATE database $this->databaseName");
-            $this->success("Database [$this->databaseName] created succesfully");
+            $this->log("Droping [$connectionName] database..");
+            $this->db->query("DROP database $connectionName");
+            $this->log("Recreating [$connectionName] database..");
+            $this->db->query("CREATE database $connectionName");
+            $this->success("Database [$connectionName] created succesfully");
             $this->comment('Please run your migrations again.');
         } catch (\Throwable $e) {
             $this->error("Error reseting database.");
