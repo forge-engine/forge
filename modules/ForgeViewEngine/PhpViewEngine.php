@@ -12,22 +12,23 @@ class PhpViewEngine implements ViewEngineInterface
     private ViewFinder $finder;
     private Compiler $compiler;
     private string $compiledPath;
+    private string $basePath;
 
     /**
      * @param array<int,mixed> $config
      */
     public function __construct(
-        private array  $config,
-        private string $basePath
+        private array $config
     )
     {
+        $this->basePath = BASE_PATH;
         $this->finder = new ViewFinder(
             $this->config['paths'] ?? [],
             $this->basePath
         );
 
         $this->compiler = new Compiler();
-        $this->compiledPath = $basePath . '/' . $config['cache'];
+        $this->compiledPath = $this->basePath . '/' . $config['cache'];
     }
 
     public function render(string $view, array $data = [], ?string $layout = null, bool $render_as_string = false): Response

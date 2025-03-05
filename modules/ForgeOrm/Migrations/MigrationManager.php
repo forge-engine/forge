@@ -17,6 +17,7 @@ class MigrationManager
     private DatabaseInterface $db;
     private Schema $schema;
 
+
     public function __construct()
     {
         $databaseInstance = App::getContainer()->get(DatabaseInterface::class);
@@ -144,9 +145,9 @@ class MigrationManager
     private function discoverAppMigrations(): array
     {
         $migrations = [];
-        $appsPath = BASE_PATH . '/apps/';
+        $appPath = App::config()->get('app.paths.database.migrations');
 
-        foreach (glob($appsPath . '*/Database/Migrations/*.php') as $file) {
+        foreach (glob($appPath . '/*.php') as $file) {
             $migrationName = $this->getMigrationNameFromFilePath($file);
             $namespace = $this->getMigrationNamespaceFromFilePath($file, 'MyApp');
             $className = $this->getClassName($migrationName, $namespace);

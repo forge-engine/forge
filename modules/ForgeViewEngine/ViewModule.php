@@ -6,17 +6,16 @@ use Forge\Core\Contracts\Modules\ModulesInterface;
 use Forge\Core\DependencyInjection\Container;
 use Forge\Core\Configuration\Config;
 use Forge\Core\Contracts\Modules\ViewEngineInterface;
-use Forge\Core\Helpers\Debug;
 
 class ViewModule extends ModulesInterface
 {
     public function register(Container $container): void
     {
         $config = $container->get(Config::class)->get('forge_view_engine');
-        $engine = new PhpViewEngine(
-            $config,
-            BASE_PATH
-        );
+        $appPaths = $container->get(Config::class)->get('app.paths.resources');
+        $viewEngineConfig = array_merge($config, $appPaths);
+        $engine = new PhpViewEngine($viewEngineConfig);
+
 
         $container->instance(ViewEngineInterface::class, $engine);
     }
@@ -24,15 +23,13 @@ class ViewModule extends ModulesInterface
     public function onAfterConfigLoaded(Container $container): void
     {
         $config = $container->get(Config::class);
-        $existingPaths = $config->get('view.paths', []);
+        $existingPaths = $config->get('app.paths.resources', []);
         $newPaths = [
-            'apps/*/views',
-            'apps/*/resources/views',
             'modules/*/views'
         ];
 
         $mergePaths = array_unique(array_merge($existingPaths, $newPaths));
-        $config->set('view.paths', $mergePaths);
+        $config->set('app.paths.resources', $mergePaths);
     }
 
 }
