@@ -19,7 +19,7 @@ return [
             "views" => "apps/MyApp/resources/views",
             "components" => "apps/MyApp/resources/components",
             "layouts" => "apps/MyApp/resources/layouts",
-            "spark" => "apps/MyApp/resources/spark"
+            "spark" => "apps/MyApp/resources/spark",
         ],
         "public" => [
             "assets" => "public/assets",
@@ -32,6 +32,7 @@ return [
         ],
         "controllers" => "apps/MyApp/Controllers",
         "models" => "apps/MyApp/Models",
+        "respositories" => "apps/MyApp/Repositories",
         "routes" => "app/MyApp/routes",
         "events" => "apps/MyApp/Events",
         "helpers" => "apps/MyApp/Helpers",
@@ -41,5 +42,6 @@ return [
         "interfaces" => "apps/MyApp/Contracts",
         "services" => "apps/MyApp/Services",
         "traits" => "apps/MyApp/Traits",
+        "dtos" => "apps/MyApp/DataTransferObjects",
     ],
 ];
