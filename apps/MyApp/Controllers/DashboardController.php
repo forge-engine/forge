@@ -72,7 +72,7 @@ class DashboardController
             'categoryBySlug' => $categoryBySlug,
             'sections' => $sections
         ];
-        return $this->view->render('storage.dashboard', $data);
+        return $this->view->render('storage.dashboard', $data, 'base');
     }
 
     public function createBucket(Request $request): Response

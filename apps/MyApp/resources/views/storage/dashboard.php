@@ -7,47 +7,6 @@
  * @var array<MyApp\DataTransferObjects\SectionDTO> $sections
  */
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Storage Dashboard</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-        }
-
-        .container {
-            max-width: 800px;
-            margin: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-        }
-
-        th {
-            background-color: #f2f2f2;
-        }
-
-        form {
-            margin-bottom: 20px;
-        }
-
-        .actions a {
-            margin-right: 10px;
-        }
-    </style>
-</head>
-<body>
 <div class="container">
     <h1>Storage Dashboard</h1>
 
@@ -107,8 +66,4 @@
     <pre>
     <?php print_r($sections[0]->content); ?>
     </pre>
-
-
 </div>
-</body>
-</html>

@@ -14,6 +14,10 @@ use MyApp\Middleware\FileExpirationMiddleware;
 $router = App::router();
 
 $router->get('/', [HomeController::class, 'index']);
+$router->get('/login', [\MyApp\Controllers\AuthController::class, 'loginForm']);
+$router->post('/login', [\MyApp\Controllers\AuthController::class, 'login']);
+$router->get('/register', [\MyApp\Controllers\AuthController::class, 'registerForm']);
+$router->post('/register', [\MyApp\Controllers\AuthController::class, 'register']);
 $router->get('/docs/{category}/{slug}', [DocController::class, 'index']);
 $router->get('/contact', function () {
     return (new \Forge\Http\Response())->html('Contat form');
@@ -50,6 +54,7 @@ $router->group('/admin', function (RouterInterface $router) {
 });
 
 $router->group('/dashboard', function (RouterInterface $router) {
+    $router->middleware([\Forge\Modules\ForgeAuth\Middleware\AuthMiddleware::class]);
     $router->get('/', [DashboardController::class, 'index']);
     $router->post('/create-bucket', [DashboardController::class, 'createBucket']);
     $router->get('/url', [DashboardController::class, 'getUrl']);
