@@ -1,12 +1,12 @@
 {
     "$schema": "./../../engine/Core/Schema/module-schema.json",
-    "name": "ForgeErrorHandler",
-    "version": "0.0.3",
-    "description": "An error handler by forge",
-    "type": "error",
-    "order": 8,
+    "name": "ForgeAuth",
+    "version": "0.0.1",
+    "description": "An Auth Module By Forge",
+    "type": "auth",
+    "order": 11,
     "provides": [
-        "ErrorHandler@1.0.0"
+        "ForgeAuth@1.0.0"
     ],
     "requires": [],
     "lifecycleHooks": [
@@ -18,20 +18,18 @@
         "afterModuleRegister",
         "afterConfigLoaded"
     ],
-    "class": "Forge\\Modules\\ForgeErrorHandler\\ForgeErrorHandlerModule",
+    "class": "Forge\\Modules\\ForgeAuth\\ForgeAuthModule",
     "cli": {
         "commands": []
     },
-    "tags": [
-        "error-handler"
-    ],
-    "config": {
-        "defaults": {}
-    },
     "postInstall": {
         "commands": [
-            "php forge.php publish forge-error-handler --type=assets"
+            "php forge.php publish ForgeAuth --type=all"
         ]
+    },
+    "tags": [],
+    "config": {
+        "defaults": {}
     },
     "compatibility": {
         "framework": ">=0.0.1",
