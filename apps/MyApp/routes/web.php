@@ -25,16 +25,6 @@ $router->get('/contact', function () {
 
 $router->resource('/flash-message-test', \MyApp\Controllers\FlashMessageController::class);
 
-$router->get('/favicon.ico', function () {
-    $faviconPath = BASE_PATH . '/public/favicon.ico';
-    if (file_exists($faviconPath)) {
-        $content = file_get_contents($faviconPath);
-        $contentType = ['Content-Type' => 'image/x-icon'];
-        $statusCode = 200;
-        return (new \Forge\Http\Response())->setContent($content)->setHeader($contentType)->setStatusCode($statusCode);
-    }
-    return new Response('', 404);
-});
 
 $router->get('/files/{clean_path}', [FileController::class, 'serveFile'], [FileExpirationMiddleware::class]);
 

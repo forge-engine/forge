@@ -4,10 +4,16 @@ return [
     "key" => \Forge\Core\Helpers\App::env("FORGE_APP_KEY"),
     'middleware' => [
         \Forge\Http\Middleware\ErrorHandlingMiddleware::class,
-        \Forge\Http\Middleware\SecurityHeadersMiddleware::class,
+        //\Forge\Http\Middleware\StrictSecurityHeadersMiddleware::class,
+        \Forge\Http\Middleware\RelaxSecurityHeadersMiddleware::class,
         \Forge\Http\Middleware\CorsMiddleware::class,
         \Forge\Http\Middleware\CompressionMiddleware::class,
         \MyApp\Middleware\StartSessionMiddleware::class,
+        //\MyApp\Middleware\CssOptimizationMiddleware::class,
+        //\MyApp\Middleware\MinifyJsMiddleware::class,
+        \MyApp\Middleware\MinifyMiddleware::class,
+        //\MyApp\Middleware\CacheContentMiddleware::class,
+
     ],
     'cors' => [
         'allowed_origins' => ['*'],
