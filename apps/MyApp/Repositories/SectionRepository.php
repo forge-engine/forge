@@ -37,7 +37,7 @@ class SectionRepository extends BaseRepository
      */
     public function findBySlug(string $slug): ?object
     {
-        $sections = $this->where(['slug' => $slug]);
+        $sections = $this->whereCriteria(['slug' => $slug]);
 
         return $sections[0] ?? null;
     }

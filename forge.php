@@ -1,5 +1,7 @@
 #!/usr/bin/env php
 <?php
+//date_default_timezone_set('UTC');
+
 define("BASE_PATH", __DIR__);
 define("CACHE_DIR", BASE_PATH . "/storage/framework/modules/cache");
 require_once BASE_PATH . "/engine/Core/Bootstrap/Autoloader.php";

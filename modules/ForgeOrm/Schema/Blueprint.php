@@ -272,6 +272,38 @@ class Blueprint
     }
 
     /**
+     * Add an enum column to the blueprint.
+     *
+     * @param string $column The name of the column.
+     * @param array $allowedValues Array of allowed enum values.
+     * @return $this
+     */
+    public function enum(string $column, array $allowedValues): self
+    {
+        if (empty($allowedValues)) {
+            throw new \InvalidArgumentException("Enum column '{$column}' must have at least one allowed value.");
+        }
+        $enumValues = "'" . implode("', '", array_map('addslashes', $allowedValues)) . "'"; // Escape and quote values
+        $this->columns[] = "{$column} ENUM({$enumValues})";
+        return $this;
+    }
+
+    /**
+     * Set default value to CURRENT_TIMESTAMP for the column.
+     * This is a modifier and should be chained after defining a datetime or timestamp column type.
+     *
+     * @return $this
+     */
+    public function defaultCurrentTimestamp(): self
+    {
+        if (!empty($this->columns)) {
+            $lastColumn = array_pop($this->columns);
+            $this->columns[] = "{$lastColumn} DEFAULT CURRENT_TIMESTAMP";
+        }
+        return $this;
+    }
+
+    /**
      * Add a primary key constraint to the blueprint (usually for 'id' column).
      *
      * @param string|array $columns The column(s) to set as the primary key.

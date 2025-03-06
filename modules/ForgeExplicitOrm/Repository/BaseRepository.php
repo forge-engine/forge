@@ -22,6 +22,22 @@ abstract class BaseRepository implements RepositoryInterface
     protected string $table;
 
     /**
+     * @var array Stores where clauses for query building.
+     */
+    protected array $whereConditions = [];
+
+    /**
+     * @var string|null Stores the orderBy clause for query building.
+     */
+    protected ?string $orderByClause = null;
+
+    /**
+     * @var int|null Stores the limit for query building (for 'first()').
+     */
+    protected ?int $limitClause = null;
+
+
+    /**
      * BaseRepository constructor
      *
      * @param DatabaseInterface $database
@@ -39,6 +55,145 @@ abstract class BaseRepository implements RepositoryInterface
             throw new RepositoryException(sprintf('Table name not defined in %s.', static::class));
         }
     }
+
+    /**
+     * Reset query building clauses.
+     *
+     * @return $this
+     */
+    protected function resetQueryClauses(): self
+    {
+        $this->whereConditions = [];
+        $this->orderByClause = null;
+        $this->limitClause = null;
+        return $this;
+    }
+
+
+    /**
+     * Add a where condition for query building.
+     *
+     * @param array $criteria Associative array of where clauses (column => value).
+     *                        Example: ['category_id' => 1, 'is_published' => true] or
+     *                        [['column1', '>', 'value1'], ['column2', '<', 'value2']] for more complex conditions
+     * @return $this
+     */
+    public function where(array $criteria): self
+    {
+        $this->whereConditions = $criteria;
+        return $this;
+    }
+
+    /**
+     * Add an orderBy clause for query building.
+     *
+     * @param string $column Column to order by.
+     * @param string $direction Order direction ('ASC' or 'DESC'). Default 'ASC'.
+     * @return $this
+     */
+    public function orderBy(string $column, string $direction = 'ASC'): self
+    {
+        $direction = strtoupper($direction);
+        if (!in_array($direction, ['ASC', 'DESC'])) {
+            $direction = 'ASC'; // Default to ASC if direction is invalid
+        }
+        $this->orderByClause = "{$column} {$direction}";
+        return $this;
+    }
+
+    /**
+     * Set a limit for query building (for fetching a single record).
+     *
+     * @param int $limit
+     * @return $this
+     */
+    protected function limit(int $limit): self
+    {
+        $this->limitClause = $limit;
+        return $this;
+    }
+
+
+    /**
+     * Build the SQL query string and parameters based on current clauses.
+     *
+     * @return array{sql: string, params: array}
+     */
+    protected function buildQuery(): array
+    {
+        $sqlParts = [sprintf('SELECT * FROM %s', $this->table)];
+        $params = [];
+        $whereClauses = [];
+
+        if (!empty($this->whereConditions)) {
+            if (is_array(reset($this->whereConditions))) {
+                foreach ($this->whereConditions as $condition) {
+                    if (is_array($condition) && count($condition) >= 3) {
+                        list($column, $operator, $value) = $condition;
+                        if (strtoupper($operator) === 'IS' && is_null($value)) {
+                            $whereClauses[] = "{$column} IS NULL"; // Correct: No placeholder for IS NULL
+                        } elseif (strtoupper($operator) === 'IS NOT' && is_null($value)) {
+                            $whereClauses[] = "{$column} IS NOT NULL"; // Handle IS NOT NULL as well if needed in future
+                        } else {
+                            $placeholder = ':' . str_replace('.', '_', $column) . '_' . count($params);
+                            $whereClauses[] = "{$column} {$operator} {$placeholder}";
+                            $params[$placeholder] = $value;
+                        }
+                    } elseif (is_array($condition) && count($condition) === 2) {
+                        list($column, $value) = $condition;
+                        $placeholder = ':' . str_replace('.', '_', $column) . '_' . count($params);
+                        $whereClauses[] = "{$column} = {$placeholder}";
+                        $params[$placeholder] = $value;
+                    }
+                }
+            } else {
+                foreach ($this->whereConditions as $column => $value) {
+                    $placeholder = ':' . str_replace('.', '_', $column) . '_' . count($params);
+                    $whereClauses[] = "{$column} = {$placeholder}";
+                    $params[$placeholder] = $value;
+                }
+            }
+
+            if (!empty($whereClauses)) {
+                $sqlParts[] = 'WHERE ' . implode(' AND ', $whereClauses);
+            }
+        }
+
+        if ($this->orderByClause) {
+            $sqlParts[] = 'ORDER BY ' . $this->orderByClause;
+        }
+
+        if ($this->limitClause !== null) {
+            $sqlParts[] = 'LIMIT ' . $this->limitClause;
+        }
+
+        return ['sql' => implode(' ', $sqlParts), 'params' => $params];
+    }
+
+
+    /**
+     * Execute the built query and fetch results.
+     *
+     * @return array<array> Array of data arrays.
+     * @throws RepositoryException If there's a database error.
+     */
+    protected function get(): array
+    {
+        try {
+            $queryData = $this->buildQuery();
+            $results = $this->database->query($queryData['sql'], $queryData['params']);
+            $this->resetQueryClauses();
+            return $results;
+        } catch (\Throwable $e) {
+            $this->resetQueryClauses();
+            throw new RepositoryException(
+                sprintf('Error executing query on table %s: %s', $this->table, $e->getMessage()),
+                0,
+                $e
+            );
+        }
+    }
+
 
     /**
      * Find a record by ID.
@@ -184,43 +339,54 @@ abstract class BaseRepository implements RepositoryInterface
     }
 
     /**
-     * Find records based on where clause.
+     * Find records based on where clause (using query builder).
      *
      * @param array $criteria Associative array of where clauses (column => value).
-     *                         Example: ['category_id' => 1, 'is_published' => true]
+     *                        Example: ['category_id' => 1, 'is_published' => true]
      * @return array<object> Array of DTO objects matching the criteria.
      * @throws RepositoryException If there's a database error.
      */
-    public function where(array $criteria): array
+    public function whereCriteria(array $criteria): array
     {
-        try {
-            $whereClauses = [];
-            $params = [];
-            foreach ($criteria as $column => $value) {
-                $placeholder = ':' . $column . '_' . count($params);
-                $whereClauses[] = $column . ' = ' . $placeholder;
-                $params[$placeholder] = $value;
-            }
-            $whereSql = implode(' AND ', $whereClauses);
-            $sql = sprintf('SELECT * FROM %s WHERE %s', $this->table, $whereSql);
-            $results = $this->database->query($sql, $params);
-
-
-            $dtos = [];
-            foreach ($results as $data) {
-                $dtos[] = $this->createDtoFromData($data);
-            }
-
-            return $dtos;
-
-        } catch (\Throwable $e) {
-            throw new RepositoryException(
-                sprintf('Error finding records with criteria in table %s: %s', $this->table, $e->getMessage()),
-                0,
-                $e
-            );
-        }
+        $this->where($criteria);
+        return $this->getDtos();
     }
+
+    /**
+     * Find records based on pre-built where, orderBy, limit clauses and return DTO objects.
+     *
+     * @return array<object> Array of DTO objects matching the criteria.
+     * @throws RepositoryException If there's a database error.
+     */
+    protected function getDtos(): array
+    {
+        $results = $this->get(); // Execute the built query and get data arrays
+
+        $dtos = [];
+        foreach ($results as $data) {
+            $dtos[] = $this->createDtoFromData($data);
+        }
+        return $dtos;
+    }
+
+    /**
+     * Get the first record matching current query clauses.
+     *
+     * @return ?object DTO object or null if not found
+     * @throws RepositoryException If there's a database error.
+     */
+    public function first(): ?object
+    {
+        $this->limit(1);
+        $results = $this->get();
+
+        $firstRow = isset($results[0]) ? $results[0] : null;
+        if (!$firstRow) {
+            return null;
+        }
+        return $this->createDtoFromData($firstRow);
+    }
+
 
     /**
      * Helper function to create a DTO object from data.

@@ -12,7 +12,7 @@ class UserRepository extends BaseRepository
 
     public function findByEmail(string $email): ?UserDTO
     {
-        $user = $this->where(['email' => $email]);
+        $user = $this->whereCriteria(['email' => $email]);
         return $user[0] ?? null;
     }
 

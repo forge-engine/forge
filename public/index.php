@@ -1,8 +1,11 @@
 <?php
+date_default_timezone_set('UTC');
+
 if (PHP_VERSION_ID < 80200) {
     echo "Error: Forge requires PHP 8.2 or higher. Your current PHP version is " . PHP_VERSION . "\n";
     exit(1);
 }
+
 
 // --- Define Core Paths ---
 define("BASE_PATH", dirname(__DIR__));

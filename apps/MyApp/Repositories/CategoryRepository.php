@@ -44,7 +44,7 @@ class CategoryRepository extends BaseRepository
   */
  public function findBySlug(string $slug): ?CategoryDTO
  {
-  $categories = $this->where(['slug' => $slug]);
+  $categories = $this->whereCriteria(['slug' => $slug]);
 
   return $categories[0] ?? null;
  }

@@ -5,6 +5,11 @@ use Forge\Core\Helpers\View;
 /** @var array $data */
 $links = ['links' => $data['links']];
 
+
+$queue = new \Forge\Modules\ForgeQueue\Queue(\Forge\Core\Helpers\App::db());
+
+$queue->dispatch(new \MyApp\Jobs\EmailJob('jeremias2@gmail.com', 'This is a test', 'Some content'));
+
 ?>
 
 <div class="landing-wrapper">
