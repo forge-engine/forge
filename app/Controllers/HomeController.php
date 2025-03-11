@@ -8,7 +8,6 @@ use App\Repositories\UserRepository;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Routing\Route;
 use Forge\Core\Http\Request;
-use http\Client\Response;
 
 #[Service]
 class HomeController
