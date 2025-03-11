@@ -4,19 +4,16 @@ declare(strict_types=1);
 
 namespace Forge\Core\Database;
 
-use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Database\Connection;
 use Forge\Core\Database\Migrations\Migration;
 use PDO;
 
-#[Service]
 final class Migrator
 {
-    private const MIGRATIONS_TABLE = 'forge_migrations';
+    private const MIGRATIONS_TABLE = "forge_migrations";
 
-    public function __construct(
-        private Connection $connection
-    ) {
+    public function __construct(private Connection $connection)
+    {
         $this->ensureMigrationsTable();
     }
 
@@ -59,7 +56,9 @@ final class Migrator
     private function ensureMigrationsTable(): void
     {
         $this->connection->exec(
-            "CREATE TABLE IF NOT EXISTS " . self::MIGRATIONS_TABLE . " (
+            "CREATE TABLE IF NOT EXISTS " .
+                self::MIGRATIONS_TABLE .
+                " (
                 migration VARCHAR(255) PRIMARY KEY,
                 batch INT NOT NULL
             )"
@@ -69,7 +68,7 @@ final class Migrator
     private function getPendingMigrations(): array
     {
         $ran = $this->getRanMigrationNames();
-        $files = glob(BASE_PATH . '/app/database/migrations/*.php');
+        $files = glob(BASE_PATH . "/app/database/migrations/*.php");
 
         return array_filter($files, function ($file) use ($ran) {
             return !in_array(basename($file), $ran);
@@ -81,7 +80,9 @@ final class Migrator
         $batch = $this->getLastBatch() - $steps + 1;
 
         $stmt = $this->connection->prepare(
-            "SELECT migration FROM " . self::MIGRATIONS_TABLE . " 
+            "SELECT migration FROM " .
+                self::MIGRATIONS_TABLE .
+                "
             WHERE batch >= ? ORDER BY batch DESC, migration DESC"
         );
 
@@ -95,14 +96,13 @@ final class Migrator
         $migration->up();
 
         $stmt = $this->connection->prepare(
-            "INSERT INTO " . self::MIGRATIONS_TABLE . " (migration, batch) 
+            "INSERT INTO " .
+                self::MIGRATIONS_TABLE .
+                " (migration, batch)
             VALUES (?, ?)"
         );
 
-        $stmt->execute([
-            basename($path),
-            $this->getNextBatchNumber()
-        ]);
+        $stmt->execute([basename($path), $this->getNextBatchNumber()]);
     }
 
     private function rollbackMigration(string $migration): void
@@ -125,9 +125,8 @@ final class Migrator
 
     private function getMigrationClassName(string $path): string
     {
-        $filename = basename($path, '.php');
-        // Remove the date prefix (YYYY_MM_DD_HHMMSS_) to get just the class name
-        return preg_replace('/^\d{4}_\d{2}_\d{2}_\d{6}_/', '', $filename);
+        $filename = basename($path, ".php");
+        return preg_replace("/^\d{4}_\d{2}_\d{2}_\d{6}_/", "", $filename);
     }
 
     private function getRanMigrationNames(): array
@@ -143,7 +142,7 @@ final class Migrator
         $stmt = $this->connection->query(
             "SELECT MAX(batch) FROM " . self::MIGRATIONS_TABLE
         );
-        return (int)$stmt->fetchColumn() + 1;
+        return (int) $stmt->fetchColumn() + 1;
     }
 
     private function getLastBatch(): int
@@ -151,6 +150,6 @@ final class Migrator
         $stmt = $this->connection->query(
             "SELECT MAX(batch) FROM " . self::MIGRATIONS_TABLE
         );
-        return (int)$stmt->fetchColumn();
+        return (int) $stmt->fetchColumn();
     }
 }

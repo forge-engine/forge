@@ -3,28 +3,36 @@ declare(strict_types=1);
 
 namespace Forge\Core\Database;
 
-use Attribute;
+use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Database\QueryBuilder;
+use Forge\Core\DI\Container;
 use ReflectionClass;
 use ReflectionProperty;
 
+#[Service]
 abstract class Model
 {
-    protected static string $connection = 'default';
+    protected static string $connection = "default";
     private array $original = [];
     protected static array $with = [];
     protected static array $scopes = [];
     protected bool $softDelete = false;
-    protected string $deletedAtColumn = 'deleted_at';
-    
+    protected string $deletedAtColumn = "deleted_at";
+
     /**
      * Properties that should be hidden from object dumps
      */
     protected array $hidden = [];
-    
+
     private static function getConnection(): \PDO
     {
-        return \Forge\Core\DI\Container::getInstance()->get(Connection::class)->getPdo();
+        return Container::getInstance()->get(Connection::class);
+    }
+
+    private function getQueryBuilder(): QueryBuilder
+    {
+        echo "Debug: BaseModel::getQueryBuilder() called!\n";
+        return Container::getInstance()->get(QueryBuilder::class);
     }
 
     public function __construct(array $attributes = [])
@@ -36,7 +44,7 @@ abstract class Model
             }
         }
     }
-    
+
     /**
      * Convert the model to an array, hiding protected properties
      */
@@ -44,17 +52,20 @@ abstract class Model
     {
         $array = [];
         $reflection = new ReflectionClass($this);
-        
-        foreach ($reflection->getProperties(ReflectionProperty::IS_PUBLIC) as $property) {
+
+        foreach (
+            $reflection->getProperties(ReflectionProperty::IS_PUBLIC)
+            as $property
+        ) {
             $name = $property->getName();
             if (!in_array($name, $this->hidden) && !$property->isStatic()) {
                 $array[$name] = $this->$name;
             }
         }
-        
+
         return $array;
     }
-    
+
     /**
      * Convert the model to JSON
      */
@@ -62,7 +73,7 @@ abstract class Model
     {
         return json_encode($this->toArray());
     }
-    
+
     /**
      * Handle JSON serialization
      */
@@ -87,71 +98,69 @@ abstract class Model
         $primaryKey = $this->getPrimaryKey();
         $value = $this->$primaryKey ?? null;
 
-        if ($value === null) return false;
-        
-        // If soft delete is enabled, update the deleted_at column
-        if ($this->softDelete) {
-            return (new QueryBuilder(
-                self::getConnection(),
-                $this->getTable()
-            ))
-                ->where($primaryKey, '=', $value)
-                ->update([$this->deletedAtColumn => date('Y-m-d H:i:s')])
-            > 0;
+        if ($value === null) {
+            return false;
         }
-        
+
+        if ($this->softDelete) {
+            return $this->getQueryBuilder()
+                ->setTable($this->getTable())
+                ->where($primaryKey, "=", $value)
+                ->update([$this->deletedAtColumn => date("Y-m-d H:i:s")]) > 0;
+        }
+
         // Otherwise perform a hard delete
-        return (new QueryBuilder(
-                self::getConnection(),
-                $this->getTable()
-            ))
-                ->where($primaryKey, '=', $value)
-                ->delete()
-            > 0;
+        return $this->getQueryBuilder()
+            ->setTable($this->getTable())
+            ->where($primaryKey, "=", $value)
+            ->delete() > 0;
     }
 
     public static function find(int $id): ?static
     {
-        $query = (new QueryBuilder(
-            self::getConnection(),
-            static::getTable()
-        ))->where(static::getPrimaryKey(), '=', $id);
-        
+        $instance = new static();
+
+        $query = $instance
+            ->getQueryBuilder()
+            ->setTable(static::getTable())
+            ->where(static::getPrimaryKey(), "=", $id);
+
         // Apply soft delete constraint if enabled
-        if ((new static())->softDelete) {
-            $query->whereNull((new static())->deletedAtColumn);
+        if ($instance->softDelete) {
+            $query->whereNull($instance->deletedAtColumn);
         }
-        
+
         $model = $query->first(static::class);
-        
+
         if ($model && !empty(static::$with)) {
             $model->loadRelations(static::$with);
         }
-        
+
         return $model;
     }
 
     public static function all(): array
     {
-        $query = new QueryBuilder(
-            self::getConnection(),
-            static::getTable()
-        );
-        
+        $instance = new static(); // Create instance to access properties like $softDelete
+
+        $query = $instance
+            ->getQueryBuilder() // Use container-resolved QueryBuilder
+            ->setTable(static::getTable()); // Set table dynamically
+
         // Apply soft delete constraint if enabled
-        if ((new static())->softDelete) {
-            $query->whereNull((new static())->deletedAtColumn);
+        if ($instance->softDelete) {
+            $query->whereNull($instance->deletedAtColumn);
         }
-        
+
         $models = $query->get(static::class);
-        
+
         // Load eager loaded relations if any
         if (!empty(static::$with) && !empty($models)) {
             foreach ($models as $model) {
                 $model->loadRelations(static::$with);
             }
         }
-        
+
         return $models;
     }
 
@@ -172,19 +181,19 @@ abstract class Model
         return isset($this->$primaryKey);
     }
 
-    private static function getTable(): string
+    public static function getTable(): string
     {
         $reflection = new ReflectionClass(static::class);
         $attributes = $reflection->getAttributes(Table::class);
 
         if (empty($attributes)) {
-            throw new \RuntimeException('Model missing #[Table] attribute');
+            throw new \RuntimeException("Model missing #[Table] attribute");
         }
 
         return $attributes[0]->newInstance()->name;
     }
 
-    private static function getPrimaryKey(): string
+    public static function getPrimaryKey(): string
     {
         $reflection = new ReflectionClass(static::class);
 
@@ -199,7 +208,7 @@ abstract class Model
             }
         }
 
-        throw new \RuntimeException('No primary key defined');
+        throw new \RuntimeException("No primary key defined");
     }
 
     private function getColumns(): array
@@ -218,17 +227,16 @@ abstract class Model
 
     private function performInsert(array $data): bool
     {
-        $result = (new QueryBuilder(
-            self::getConnection(),
-            static::getTable()
-        ))->insert($data);
+        $result = $this->getQueryBuilder() // Use container-resolved QueryBuilder
+            ->setTable(static::getTable()) // Set table dynamically
+            ->insert($data);
 
         if ($result) {
             $primaryKey = $this->getPrimaryKey();
             $this->$primaryKey = $result;
         }
 
-        return (bool)$result;
+        return (bool) $result;
     }
 
     private function performUpdate(array $data): bool
@@ -236,57 +244,63 @@ abstract class Model
         $primaryKey = $this->getPrimaryKey();
         $value = $this->$primaryKey ?? null;
 
-        if ($value === null) return false;
+        if ($value === null) {
+            return false;
+        }
 
-        return (new QueryBuilder(
-                self::getConnection(),
-                static::getTable()
-            ))
-                ->where($primaryKey, '=', $value)
-                ->update($data)
-            > 0;
+        return $this->getQueryBuilder() // Use container-resolved QueryBuilder
+            ->setTable(static::getTable()) // Set table dynamically
+            ->where($primaryKey, "=", $value)
+            ->update($data) > 0;
     }
-    
+
     /**
      * Define a one-to-many relationship
      */
-    protected function hasMany(string $relatedClass, ?string $foreignKey = null, ?string $localKey = null): array
-    {
+    protected function hasMany(
+        string $relatedClass,
+        ?string $foreignKey = null,
+        ?string $localKey = null
+    ): array {
         $localKey = $localKey ?? $this->getPrimaryKey();
-        $foreignKey = $foreignKey ?? strtolower((new \ReflectionClass($this))->getShortName()) . '_id';
-        
+        $foreignKey =
+            $foreignKey ??
+            strtolower((new \ReflectionClass($this))->getShortName()) . "_id";
+
         $localKeyValue = $this->$localKey;
-        
-        return (new QueryBuilder(
-            self::getConnection(),
-            $relatedClass::getTable()
-        ))
-            ->where($foreignKey, '=', $localKeyValue)
+
+        return $this->getQueryBuilder() // Use container-resolved QueryBuilder
+            ->setTable($relatedClass::getTable()) // Set related table dynamically
+            ->where($foreignKey, "=", $localKeyValue)
             ->get($relatedClass);
     }
-    
+
     /**
      * Define a many-to-one relationship
      */
-    protected function belongsTo(string $relatedClass, ?string $foreignKey = null, ?string $ownerKey = null): ?object
-    {
-        $foreignKey = $foreignKey ?? strtolower((new \ReflectionClass($relatedClass))->getShortName()) . '_id';
+    protected function belongsTo(
+        string $relatedClass,
+        ?string $foreignKey = null,
+        ?string $ownerKey = null
+    ): ?object {
+        $foreignKey =
+            $foreignKey ??
+            strtolower((new \ReflectionClass($relatedClass))->getShortName()) .
+                "_id";
         $ownerKey = $ownerKey ?? (new $relatedClass())->getPrimaryKey();
-        
+
         $foreignKeyValue = $this->$foreignKey;
-        
+
         if ($foreignKeyValue === null) {
             return null;
         }
-        
-        return (new QueryBuilder(
-            self::getConnection(),
-            $relatedClass::getTable()
-        ))
-            ->where($ownerKey, '=', $foreignKeyValue)
+
+        return $this->getQueryBuilder() // Use container-resolved QueryBuilder
+            ->setTable($relatedClass::getTable()) // Set related table dynamically
+            ->where($ownerKey, "=", $foreignKeyValue)
             ->first($relatedClass);
     }
-    
+
     /**
      * Define a many-to-many relationship
      */
@@ -297,37 +311,52 @@ abstract class Model
         ?string $relatedPivotKey = null
     ): array {
         $thisClass = static::class;
-        
+
         // Generate pivot table name if not provided
         if ($pivotTable === null) {
             $segments = [
                 strtolower((new \ReflectionClass($thisClass))->getShortName()),
-                strtolower((new \ReflectionClass($relatedClass))->getShortName())
+                strtolower(
+                    (new \ReflectionClass($relatedClass))->getShortName()
+                ),
             ];
             sort($segments);
-            $pivotTable = implode('_', $segments);
+            $pivotTable = implode("_", $segments);
         }
-        
+
         // Generate key names if not provided
-        $foreignPivotKey = $foreignPivotKey ?? strtolower((new \ReflectionClass($thisClass))->getShortName()) . '_id';
-        $relatedPivotKey = $relatedPivotKey ?? strtolower((new \ReflectionClass($relatedClass))->getShortName()) . '_id';
-        
+        $foreignPivotKey =
+            $foreignPivotKey ??
+            strtolower((new \ReflectionClass($thisClass))->getShortName()) .
+                "_id";
+        $relatedPivotKey =
+            $relatedPivotKey ??
+            strtolower((new \ReflectionClass($relatedClass))->getShortName()) .
+                "_id";
+
         $localKey = $this->getPrimaryKey();
         $localKeyValue = $this->$localKey;
-        
-        $query = new QueryBuilder(self::getConnection(), $relatedClass::getTable());
-        $query->select($relatedClass::getTable() . '.*');
+
+        $query = $this->getQueryBuilder() // Use container-resolved QueryBuilder
+            ->setTable($relatedClass::getTable()); // Set related table dynamically
+        $query->select($relatedClass::getTable() . ".*");
         $query->join(
             $pivotTable,
-            $pivotTable . '.' . $relatedPivotKey,
-            '=',
-            $relatedClass::getTable() . '.' . (new $relatedClass())->getPrimaryKey()
+            $pivotTable . "." . $relatedPivotKey,
+            "=",
+            $relatedClass::getTable() .
+                "." .
+                (new $relatedClass())->getPrimaryKey()
         );
-        $query->where($pivotTable . '.' . $foreignPivotKey, '=', $localKeyValue);
-        
+        $query->where(
+            $pivotTable . "." . $foreignPivotKey,
+            "=",
+            $localKeyValue
+        );
+
         return $query->get($relatedClass);
     }
-    
+
     /**
      * Load the given relationships
      */
@@ -339,40 +368,41 @@ abstract class Model
             }
         }
     }
-    
+
     /**
      * Set the relationships that should be eager loaded
      */
     public static function with(array $relations): QueryBuilder
     {
         static::$with = $relations;
-        
-        return (new QueryBuilder(
-            self::getConnection(),
-            static::getTable()
-        ));
+
+        $instance = new static(); // Create instance to access getQueryBuilder()
+
+        return $instance
+            ->getQueryBuilder() // Use container-resolved QueryBuilder
+            ->setTable(static::getTable()); // Set table dynamically
     }
-    
+
     /**
      * Apply a scope to the query
      */
     public static function scope(string $scope, ...$parameters): QueryBuilder
     {
-        $query = new QueryBuilder(
-            self::getConnection(),
-            static::getTable()
-        );
-        
-        $scopeMethod = 'scope' . ucfirst($scope);
-        
+        $instance = new static(); // Create instance to access getQueryBuilder()
+
+        $query = $instance
+            ->getQueryBuilder() // Use container-resolved QueryBuilder
+            ->setTable(static::getTable()); // Set table dynamically
+
+        $scopeMethod = "scope" . ucfirst($scope);
+
         if (method_exists(static::class, $scopeMethod)) {
-            $instance = new static();
-            $instance->$scopeMethod($query, ...$parameters);
+            $instance->$scopeMethod($query, ...$parameters); // Instance already created
         }
-        
+
         return $query;
     }
-    
+
     /**
      * Force delete a soft deleted model
      */
@@ -381,17 +411,16 @@ abstract class Model
         $primaryKey = $this->getPrimaryKey();
         $value = $this->$primaryKey ?? null;
 
-        if ($value === null) return false;
+        if ($value === null) {
+            return false;
+        }
 
-        return (new QueryBuilder(
-                self::getConnection(),
-                $this->getTable()
-            ))
-                ->where($primaryKey, '=', $value)
-                ->delete()
-            > 0;
+        return $this->getQueryBuilder() // Use container-resolved QueryBuilder
+            ->setTable(static::getTable()) // Set table dynamically
+            ->where($primaryKey, "=", $value)
+            ->delete() > 0;
     }
-    
+
     /**
      * Restore a soft deleted model
      */
@@ -400,21 +429,20 @@ abstract class Model
         if (!$this->softDelete) {
             return false;
         }
-        
+
         $primaryKey = $this->getPrimaryKey();
         $value = $this->$primaryKey ?? null;
 
-        if ($value === null) return false;
+        if ($value === null) {
+            return false;
+        }
 
-        return (new QueryBuilder(
-                self::getConnection(),
-                $this->getTable()
-            ))
-                ->where($primaryKey, '=', $value)
-                ->update([$this->deletedAtColumn => null])
-            > 0;
+        return $this->getQueryBuilder() // Use container-resolved QueryBuilder
+            ->setTable(static::getTable()) // Set table dynamically
+            ->where($primaryKey, "=", $value)
+            ->update([$this->deletedAtColumn => null]) > 0;
     }
-    
+
     /**
      * Customize debug info to respect hidden properties
      */
@@ -422,25 +450,39 @@ abstract class Model
     {
         $debugInfo = [];
         $reflection = new ReflectionClass($this);
-        
+
         // Include public properties except those in hidden array
-        foreach ($reflection->getProperties(ReflectionProperty::IS_PUBLIC) as $property) {
+        foreach (
+            $reflection->getProperties(ReflectionProperty::IS_PUBLIC)
+            as $property
+        ) {
             $name = $property->getName();
             if (!in_array($name, $this->hidden) && !$property->isStatic()) {
                 $debugInfo[$name] = $this->$name;
             }
         }
-        
+
         // Include protected/private properties that should be visible for debugging
         // but exclude the ones in the hidden array
-        foreach ($reflection->getProperties(ReflectionProperty::IS_PROTECTED | ReflectionProperty::IS_PRIVATE) as $property) {
+        foreach (
+            $reflection->getProperties(
+                ReflectionProperty::IS_PROTECTED |
+                    ReflectionProperty::IS_PRIVATE
+            )
+            as $property
+        ) {
             $name = $property->getName();
-            if ($name === 'hidden' || $name === 'original' || $name === 'softDelete' || $name === 'deletedAtColumn') {
+            if (
+                $name === "hidden" ||
+                $name === "original" ||
+                $name === "softDelete" ||
+                $name === "deletedAtColumn"
+            ) {
                 $property->setAccessible(true);
                 $debugInfo[$name] = $property->getValue($this);
             }
         }
-        
+
         return $debugInfo;
     }
 }

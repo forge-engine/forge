@@ -32,7 +32,7 @@ final class User extends Model
     #[Column("timestamp", nullable: true)]
     public ?string $deleted_at = null;
 
-    protected bool $softDelete = true;
+    protected bool $softDelete = false;
     protected array $hidden = ["password"];
 
     public function isAdmin(): bool

@@ -9,7 +9,6 @@ use Forge\Core\DI\Container;
 use Forge\CLI\Application;
 use Forge\Core\Autoloader;
 
-require BASE_PATH . "/src/CLI/Application.php";
 require BASE_PATH . "/src/Core/Autoloader.php";
 Autoloader::register();
 
@@ -19,8 +18,9 @@ Forge\Core\Config\EnvParser::load(BASE_PATH . "/.env");
 $container = Container::getInstance();
 
 // Setup container and register services
-$container = Bootstrap::setupContainer();
+$container = Bootstrap::setupCliContainer();
 
 $app = new Application($container);
+
 exit($app->run($argv));
 

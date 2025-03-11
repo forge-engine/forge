@@ -55,7 +55,8 @@ final class Router
     public function dispatch(Request $request): mixed
     {
         $uri = $request->serverParams["REQUEST_URI"];
-        $method = $request->serverParams["REQUEST_METHOD"];
+        $method = $request->getMethod();
+        $path = parse_url($uri, PHP_URL_PATH);
 
         $path = parse_url($uri, PHP_URL_PATH);
 

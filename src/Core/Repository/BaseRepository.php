@@ -27,7 +27,7 @@ abstract class BaseRepository
         $this->queryBuilder = $queryBuilder;
         $this->modelClass = $modelClass;
         $this->dtoClass = $dtoClass;
-        $this->queryBuilder->table($modelClass::getTable());
+        $this->queryBuilder->setTable($modelClass::getTable());
     }
 
     /**

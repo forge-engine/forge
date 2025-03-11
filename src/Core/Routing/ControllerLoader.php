@@ -5,16 +5,13 @@ declare(strict_types=1);
 namespace Forge\Core\Routing;
 
 use Forge\Core\DI\Container;
-use ReflectionClass;
 
 final class ControllerLoader
 {
     public function __construct(
         private Container $container,
-        private string    $controllerDir
-    )
-    {
-    }
+        private string $controllerDir
+    ) {}
 
     /** Auto-register controllers from directory
      * @throws \ReflectionException
@@ -29,12 +26,12 @@ final class ControllerLoader
 
     private function fileToClass(string $file): string
     {
-        $basePath = BASE_PATH . '/app/Controllers/';
+        $basePath = BASE_PATH . "/app/Controllers/";
         $className = str_replace(
-            [$basePath, '.php', '/'],
-            ['', '', '\\'],
+            [$basePath, ".php", "/"],
+            ["", "", "\\"],
             $file
         );
-        return 'App\\Controllers\\' . $className;
+        return "App\\Controllers\\" . $className;
     }
 }

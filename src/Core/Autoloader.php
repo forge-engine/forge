@@ -8,7 +8,7 @@ final class Autoloader
 {
     private static array $paths = [
         "App" => BASE_PATH . "/app",
-        "Forge" => BASE_PATH . "/src/",
+        "Forge" => BASE_PATH . "/src",
         "Forge\Modules" => BASE_PATH . "/modules",
         "App\View\Components" => BASE_PATH . "/app/views/components",
         "App\View\Layouts" => BASE_PATH . "/apps/views/layouts",
@@ -33,7 +33,8 @@ final class Autoloader
             if (str_starts_with($className, $prefix)) {
                 $relativeClass = substr($className, strlen($prefix));
                 $parts = explode("\\", $relativeClass);
-                $file = $baseDir . "/" . implode("/", $parts) . ".php";
+                $file =
+                    $baseDir . implode(DIRECTORY_SEPARATOR, $parts) . ".php";
 
                 if (file_exists($file)) {
                     require $file;

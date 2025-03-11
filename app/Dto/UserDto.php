@@ -10,9 +10,11 @@ final readonly class UserDto extends BaseDto
 {
     public function __construct(
         public int $id,
-        public string $name,
+        public string $username,
         public string $email,
         public string $password,
-        public \DateTimeImmutable $createdAt
+        public ?\DateTimeImmutable $created_at = null,
+        public ?\DateTimeImmutable $updated_at = null,
+        public ?\DateTimeImmutable $deleted_at = null
     ) {}
 }

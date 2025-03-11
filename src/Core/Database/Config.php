@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace Forge\Core\Database;
 
-use Forge\Core\DI\Attributes\Service;
-
-#[Service]
 final class Config
 {
     private array $driverOptions = [

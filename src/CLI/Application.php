@@ -33,7 +33,7 @@ final class Application
 
         $commandName = $argv[1];
 
-        if ($commandName === 'help') {
+        if ($commandName === "help") {
             $helpCommand = $this->container->make(HelpCommand::class);
             $helpCommand->execute($this->commands);
             return 0;
@@ -57,7 +57,6 @@ final class Application
     private function registerCoreCommands(): void
     {
         $this->registerCommand(ServeCommand::class);
-        $this->registerCommand(HelpCommand::class);
         $this->registerCommand(MakeMigrationCommand::class);
         $this->registerCommand(MigrateCommand::class);
         //$this->registerCommand(RollbackCommand::class);

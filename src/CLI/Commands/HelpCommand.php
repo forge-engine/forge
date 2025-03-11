@@ -11,30 +11,31 @@ use Forge\Core\DI\Container;
 #[Service]
 class HelpCommand extends Command
 {
-    public function getName(): string
+    public function __construct(private Container $container) {}
+
+    public static function getName(): string
     {
-        return 'help';
+        return "help";
     }
 
-    public function getDescription(): string
+    public static function getDescription(): string
     {
-        return 'Displays help for available commands.';
+        return "Displays help for available commands.";
     }
 
     /**
      * @throws \ReflectionException
      */
-    public function execute(array $args): int
+    public function execute(array $commandClasses): int
     {
         $this->info("Forge Framework CLI Tool");
         $this->info("Available commands:");
 
-        foreach ($args as $commandClass) {
-            $command = Container::getInstance()->make($commandClass);
+        foreach ($commandClasses as $commandClass) {
             echo sprintf(
                 "  %-20s %s\n",
-                $command->getName(),
-                $command->getDescription()
+                $commandClass::getName(),
+                $commandClass::getDescription()
             );
         }
 

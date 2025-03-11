@@ -7,6 +7,7 @@ namespace Forge\Core\DI;
 use Closure;
 use Forge\Core\DI\Attributes\Service;
 use ReflectionClass;
+use RuntimeException;
 
 final class Container
 {
@@ -36,13 +37,12 @@ final class Container
         $reflection = new ReflectionClass($class);
         $attributes = $reflection->getAttributes(Service::class);
 
-        // Use Service attribute if present
         $serviceAttr = $attributes[0] ?? null;
         $id = $serviceAttr ? $serviceAttr->newInstance()->id : $class;
 
         $this->services[$id ?? $class] = [
-            'class' => $class,
-            'singleton' => $serviceAttr?->singleton ?? true
+            "class" => $class,
+            "singleton" => $serviceAttr?->singleton ?? true,
         ];
     }
 
@@ -51,19 +51,22 @@ final class Container
         return array_keys($this->services);
     }
 
-    public function bind(string $id, Closure|string $concrete, bool $singleton = false): void
-    {
+    public function bind(
+        string $id,
+        Closure|string $concrete,
+        bool $singleton = false
+    ): void {
         $this->services[$id] = [
-            'class' => $concrete,
-            'singleton' => $singleton
+            "class" => $concrete,
+            "singleton" => $singleton,
         ];
     }
 
     public function singleton(string $abstract, Closure|string $concrete): void
     {
         $this->services[$abstract] = [
-            'class' => $concrete,
-            'singleton' => true
+            "class" => $concrete,
+            "singleton" => true,
         ];
     }
 
@@ -79,7 +82,10 @@ final class Container
      */
     public function tagged(string $tag): array
     {
-        return array_map(fn($abstract) => $this->make($abstract), $this->tags[$tag] ?? []);
+        return array_map(
+            fn($abstract) => $this->make($abstract),
+            $this->tags[$tag] ?? []
+        );
     }
 
     public function setParameter(string $key, mixed $value): void
@@ -107,7 +113,7 @@ final class Container
             throw new \RuntimeException("Service $abstract not found");
         }
 
-        $concrete = $config['class'];
+        $concrete = $config["class"];
 
         if ($concrete instanceof Closure) {
             $object = $concrete($this);
@@ -115,7 +121,7 @@ final class Container
             $object = $this->build($concrete);
         }
 
-        if ($config['singleton']) {
+        if ($config["singleton"]) {
             $this->instances[$abstract] = $object;
         }
 
@@ -125,20 +131,83 @@ final class Container
     /**
      * @throws \ReflectionException
      */
-    public function get(string $id): object
+    public function get(string $id)
     {
-        if (isset($this->instances[$id])) {
-            return $this->instances[$id];
+        if (isset($this->services[$id])) {
+            $serviceConfig = $this->services[$id];
+            if ($serviceConfig["class"] instanceof \Closure) {
+                return $serviceConfig["class"]($this);
+            }
+            if (isset($this->instances[$id])) {
+                return $this->instances[$id];
+            }
+            $instance = $this->build($serviceConfig["class"]);
+            if ($serviceConfig["singleton"] ?? false) {
+                $this->instances[$id] = $instance;
+            }
+            return $instance;
         }
 
-        $config = $this->services[$id] ?? throw new \RuntimeException("Service $id not found");
-        $instance = $this->make($id);
-
-        if ($config['singleton']) {
-            $this->instances[$id] = $instance;
+        if (class_exists($id)) {
+            return $this->resolve($id);
         }
 
-        return $instance;
+        throw new \RuntimeException("Service not found in container: " . $id);
+    }
+    /** Check if a service ID is registered
+     */
+    public function has(string $id): bool
+    {
+        return isset($this->services[$id]);
+    }
+    /** Resolve a class and its dependencies using autowiring
+     * @throws \ReflectionException
+     */
+    private function resolve(string $class): object
+    {
+        $reflector = new ReflectionClass($class);
+        $constructor = $reflector->getConstructor();
+
+        if (!$constructor) {
+            return new $class();
+        }
+
+        $dependencies = [];
+        foreach ($constructor->getParameters() as $parameter) {
+            $type = $parameter->getType();
+
+            if (!$type) {
+                throw new RuntimeException(
+                    "Cannot resolve parameter {$parameter->name} in {$class} because its type is not hinted."
+                );
+            }
+
+            if ($type->isBuiltin()) {
+                throw new RuntimeException(
+                    "Cannot resolve parameter {$parameter->name} in {$class} because it is a built-in type and cannot be auto-resolved."
+                );
+            }
+
+            if ($type instanceof \ReflectionNamedType) {
+                $dependencyClass = $type->getName();
+                try {
+                    $dependencies[] = $this->get($dependencyClass); // Recursively resolve dependency
+                } catch (RuntimeException $e) {
+                    throw new RuntimeException(
+                        "Failed to resolve dependency {$dependencyClass} for parameter {$parameter->getName()} in {$class}: " .
+                            $e->getMessage(),
+                        0,
+                        $e
+                    );
+                }
+            } else {
+                throw new RuntimeException(
+                    "Cannot resolve parameter {$parameter->name} in {$class}. Unsupported type: " .
+                        $type
+                );
+            }
+        }
+        return $reflector->newInstanceArgs($dependencies);
     }
 
     /** Build a class with dependencies
@@ -148,7 +217,7 @@ final class Container
     {
         $reflector = new ReflectionClass($class);
 
-        if (!$constructor = $reflector->getConstructor()) {
+        if (!($constructor = $reflector->getConstructor())) {
             return new $class();
         }
 
@@ -157,13 +226,17 @@ final class Container
             $type = $parameter->getType();
 
             if (!$type || $type->isBuiltin()) {
-                throw new \RuntimeException("Cannot resolve parameter {$parameter->name} in {$class}");
+                throw new \RuntimeException(
+                    "Cannot resolve parameter {$parameter->name} in {$class}"
+                );
             }
 
             if ($type instanceof \ReflectionNamedType) {
                 $dependencies[] = $this->make($type->getName());
             } else {
-                throw new \RuntimeException("Cannot resolve parameter {$parameter->name} in {$class}. Unsupported type.");
+                throw new \RuntimeException(
+                    "Cannot resolve parameter {$parameter->name} in {$class}. Unsupported type."
+                );
             }
         }
 

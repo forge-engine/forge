@@ -12,6 +12,8 @@ use RuntimeException;
 #[Service]
 final class QueryBuilder
 {
+    private PDO $pdo;
+    private string $table;
     private array $select = [];
     private array $where = [];
     private array $params = [];
@@ -23,7 +25,17 @@ final class QueryBuilder
     private ?int $offset = null;
     private bool $inTransaction = false;
 
-    public function __construct(private PDO $pdo, private string $table) {}
+    public function __construct(PDO $pdo)
+    {
+        $this->pdo = $pdo;
+        $this->table = "";
+    }
+
+    public function setTable(string $table): self
+    {
+        $this->table = $table;
+        return $this;
+    }
 
     public function select(string ...$columns): self
     {
@@ -352,24 +364,78 @@ final class QueryBuilder
      * @template T of object
      * @param PDOStatement $statement
      * @param class-string<T> $dtoClass
-     * @return array<T>
+     * @return T|null
      */
-    private function hydrateAll(
-        PDOStatement $statement,
-        string $dtoClass
-    ): array {
-        return $statement->fetchAll(PDO::FETCH_CLASS, $dtoClass);
+    private function hydrate(PDOStatement $statement, string $dtoClass): ?object
+    {
+        $data = $statement->fetch(PDO::FETCH_ASSOC);
+        if (!$data) {
+            return null;
+        }
+        return $this->createDtoFromData($data, $dtoClass);
     }
 
     /**
      * @template T of object
      * @param PDOStatement $statement
      * @param class-string<T> $dtoClass
-     * @return T|null
+     * @return array<T>
      */
-    private function hydrate(PDOStatement $statement, string $dtoClass): ?object
+    private function hydrateAll(
+        PDOStatement $statement,
+        string $dtoClass
+    ): array {
+        $dataArray = $statement->fetchAll(PDO::FETCH_ASSOC);
+        if (empty($dataArray)) {
+            return [];
+        }
+        $dtos = [];
+        foreach ($dataArray as $data) {
+            $dtos[] = $this->createDtoFromData($data, $dtoClass);
+        }
+        return $dtos;
+    }
+
+    /**
+     * @template T of object
+     * @param array<string, mixed> $data
+     * @param class-string<T> $dtoClass
+     * @return T
+     */
+    private function createDtoFromData(array $data, string $dtoClass): object
     {
-        return $statement->fetchObject($dtoClass) ?: null;
+        $reflectionClass = new \ReflectionClass($dtoClass);
+        $constructorParams = [];
+
+        foreach (
+            $reflectionClass->getConstructor()->getParameters()
+            as $param
+        ) {
+            $name = $param->getName();
+            if (array_key_exists($name, $data)) {
+                $value = $data[$name];
+                $paramType = $param->getType();
+
+                if (
+                    $paramType instanceof \ReflectionNamedType &&
+                    $paramType->getName() === "DateTimeImmutable" &&
+                    is_string($value)
+                ) {
+                    try {
+                        $constructorParams[$name] = new \DateTimeImmutable(
+                            $value
+                        );
+                    } catch (\Exception $e) {
+                        $constructorParams[$name] = null;
+                    }
+                } else {
+                    $constructorParams[$name] = $value;
+                }
+            } else {
+                $constructorParams[$name] = null;
+            }
+        }
+        return $reflectionClass->newInstanceArgs($constructorParams);
     }
 
     private function prepareStatement(): PDOStatement

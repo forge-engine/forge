@@ -4,21 +4,21 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
-use App\Models\User;
 use App\Repositories\UserRepository;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Routing\Route;
 use Forge\Core\Http\Request;
+use http\Client\Response;
 
 #[Service]
 class HomeController
 {
-    public function __construct() {}
+    public function __construct(private UserRepository $userRepository) {}
 
     #[Route("/")]
     public function welcome(Request $request): string
     {
-        $user = User::find(1);
+        $user = $this->userRepository->findAll();
         $data = [
             "title" => "Welcome to Forge Framework",
             "alerts" => [
@@ -28,6 +28,32 @@ class HomeController
             "user" => $user,
         ];
         return view("home/index", $data);
+    }
+
+    #[Route("/", "POST")]
+    public function welcomePost(Request $request): string
+    {
+        $data = [
+            "username" => $request->postData["username"],
+            "password" => $request->postData["password"],
+            "email" => $request->postData["email"],
+        ];
+        $this->userRepository->create($data);
+
+        return "<h1> Successfully registered!</h1>";
+    }
+
+    #[Route("/{id}", "PATCH")]
+    public function updateUser(Request $request, array $params): string
+    {
+        $id = (int) $params["id"];
+        $data = [
+            "username" => $request->postData["username"],
+            "email" => $request->postData["email"],
+        ];
+        $this->userRepository->update($id, $data);
+
+        return "<h1> Successfully updated!</h1>";
     }
 
     #[Route("/users")]
