@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Repositories\UserRepository;
 use Forge\Core\DI\Attributes\Service;
+use Forge\Core\Http\Attributes\Middleware;
 use Forge\Core\Routing\Route;
 use Forge\Core\Http\Request;
 
@@ -30,6 +31,7 @@ class HomeController
     }
 
     #[Route("/", "POST")]
+    #[Middleware("App\Middlewares\AuthMiddleware")]
     public function welcomePost(Request $request): string
     {
         $data = [
@@ -43,6 +45,7 @@ class HomeController
     }
 
     #[Route("/{id}", "PATCH")]
+    #[Middleware("App\Middlewares\AuthMiddleware")]
     public function updateUser(Request $request, array $params): string
     {
         $id = (int) $params["id"];

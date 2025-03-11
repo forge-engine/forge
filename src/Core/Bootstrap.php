@@ -135,10 +135,8 @@ final class Bootstrap
         $classMap = self::loadClassMapCache();
 
         if ($classMap) {
-            // Use cached class map
             foreach ($classMap as $class => $filepath) {
                 if (class_exists($class)) {
-                    // Check if class still exists (optional, for robustness)
                     try {
                         $reflectionClass = new ReflectionClass($class);
                         if (
@@ -149,20 +147,21 @@ final class Bootstrap
                             $container->register($class);
                         }
                     } catch (\ReflectionException $e) {
-                        // Handle reflection error if needed, maybe log it
                     }
                 }
             }
-            return; // Skip directory scanning if cache is used
+            return;
         }
 
         $serviceDirectories = [
             BASE_PATH . "/app/Repositories",
+            BASE_PATH . "/app/Middlewares",
             BASE_PATH . "/app/Services",
             BASE_PATH . "/src/Core/Database",
+            BASE_PATH . "/src/Core/Http/Middlewares",
         ];
 
-        $newClassMap = []; // To build a new class map if cache is not used
+        $newClassMap = [];
 
         foreach ($serviceDirectories as $directory) {
             if (is_dir($directory)) {
@@ -182,7 +181,7 @@ final class Bootstrap
 
                                 if (!empty($serviceAttribute)) {
                                     $container->register($class);
-                                    $newClassMap[$class] = $filepath; // Add to new class map
+                                    $newClassMap[$class] = $filepath;
                                 }
                             } catch (\ReflectionException $e) {
                                 $class . " - " . $e->getMessage() . "\n";
@@ -192,7 +191,7 @@ final class Bootstrap
                 }
             }
         }
-        self::generateClassMapCache($newClassMap); // Generate cache after scanning
+        self::generateClassMapCache($newClassMap);
     }
 
     /**
@@ -248,10 +247,9 @@ final class Bootstrap
                     return $cachedData;
                 }
             } catch (\Exception $e) {
-                // Cache file might be corrupted, ignore and regenerate
             }
         }
-        return null; // No valid cache found
+        return null;
     }
 
     /**
@@ -261,7 +259,7 @@ final class Bootstrap
     private static function generateClassMapCache(array $classMap): void
     {
         if (!is_dir(dirname(self::CLASS_MAP_CACHE_FILE))) {
-            mkdir(dirname(self::CLASS_MAP_CACHE_FILE), 0777, true); // Create cache directory if it doesn't exist
+            mkdir(dirname(self::CLASS_MAP_CACHE_FILE), 0777, true);
         }
 
         $cacheContent = "<?php return " . var_export($classMap, true) . ";";

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Forge\CLI;
 
+use Forge\CLI\Commands\ClearCacheCommand;
 use Forge\CLI\Commands\HelpCommand;
 use Forge\CLI\Commands\MakeMigrationCommand;
 use Forge\CLI\Commands\ServeCommand;
@@ -59,6 +60,7 @@ final class Application
         $this->registerCommand(ServeCommand::class);
         $this->registerCommand(MakeMigrationCommand::class);
         $this->registerCommand(MigrateCommand::class);
+        $this->registerCommand(ClearCacheCommand::class);
         //$this->registerCommand(RollbackCommand::class);
     }
 

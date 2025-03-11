@@ -8,7 +8,7 @@ trait OutputHelper
 {
     protected function info(string $message): void
     {
-        $this->output("\033[0;32m" . $message . "\033[0m");
+        $this->output("\033[0;34m" . $message . "\033[0m");
     }
 
     protected function warning(string $message): void
@@ -41,7 +41,7 @@ trait OutputHelper
         }
     }
 
-    protected function line(string $message = ''): void
+    protected function line(string $message = ""): void
     {
         $this->output($message);
     }
