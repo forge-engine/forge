@@ -1,5 +1,9 @@
 <?php
-$year = date('Y');
+use Forge\Core\View\Component;
+/**
+    @var string $title
+    @var string $content
+*/
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -9,7 +13,7 @@ $year = date('Y');
     <meta name="author" content=""/>
     <meta name="viewport"
           content="user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, width=device-width"/>
-    <title><?= section('title') ?? 'Default Title' ?></title>
+    <title><?= $title ?? "Default Title" ?></title>
 
     <style>
         body {
@@ -26,9 +30,8 @@ $year = date('Y');
 </head>
 <body>
 <div class="container">
-    @content()
-
-    @component('footer', ["year" => $year])
+    <?= $content ?>
+    <?= Component::render("footer", ["year" => date("Y")]) ?>
 </div>
 </body>
 </html>

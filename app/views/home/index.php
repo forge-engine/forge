@@ -1,18 +1,15 @@
 <?php
-
 use App\Dto\UserDto;
+use Forge\Core\View\Component;
+
 /**
  * @var string $title
  * @var string $message
  * @var UserDto $user
  */
+
+layout("main");
 ?>
-
-<?php layout("main"); ?>
-
-@section('title')
-<?= e($title) ?>
-@endsection
 
 <h2>Engine Status</h2>
 <ul>
@@ -41,7 +38,7 @@ use App\Dto\UserDto;
     <button type="submit">Create User</button>
 </form>
 
-{{$title}}
-
-@component('alert', ['type' => 'info', 'children' => 'This is a secure PHP framework'])
-@endcomponent
+<?= Component::render("alert", [
+    "type" => "success",
+    "children" => "Success message",
+]) ?>

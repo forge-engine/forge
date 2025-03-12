@@ -13,7 +13,9 @@ use Forge\Core\Http\Request;
 #[Service]
 class HomeController
 {
-    public function __construct(private UserRepository $userRepository) {}
+    public function __construct(private UserRepository $userRepository)
+    {
+    }
 
     #[Route("/")]
     public function welcome(Request $request): string
@@ -27,6 +29,7 @@ class HomeController
             ],
             "user" => $user,
         ];
+
         return view("home/index", $data);
     }
 
@@ -48,7 +51,7 @@ class HomeController
     #[Middleware("App\Middlewares\AuthMiddleware")]
     public function updateUser(Request $request, array $params): string
     {
-        $id = (int) $params["id"];
+        $id = (int)$params["id"];
         $data = [
             "username" => $request->postData["username"],
             "email" => $request->postData["email"],
