@@ -55,7 +55,7 @@ if (!function_exists("route")) {
  * @return string Returns the rendered view content.
  */
 if (!function_exists("view")) {
-    function view(string $view, array $data = []): string
+    function view(string $view, array $data = []): \Forge\Core\Http\Response
     {
         return (new View(Container::getInstance()))->render($view, $data);
     }
@@ -82,7 +82,7 @@ if (!function_exists("e")) {
 if (!function_exists("raw")) {
     function raw(mixed $value): string
     {
-        return (string) $value;
+        return (string)$value;
     }
 }
 

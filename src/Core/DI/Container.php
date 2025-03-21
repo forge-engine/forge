@@ -6,6 +6,8 @@ namespace Forge\Core\DI;
 
 use Closure;
 use Forge\Core\DI\Attributes\Service;
+use Forge\Exceptions\MissingServiceException;
+use Forge\Exceptions\ResolveParameterException;
 use ReflectionClass;
 use RuntimeException;
 
@@ -99,7 +101,8 @@ final class Container
     }
 
     /**
-     * @throws \ReflectionException
+     * @param string $abstract
+     * @throws MissingServiceException
      */
     public function make(string $abstract): object
     {
@@ -110,7 +113,7 @@ final class Container
         $config = $this->services[$abstract] ?? null;
 
         if (!$config) {
-            throw new \RuntimeException("Service $abstract not found");
+            throw new MissingServiceException($abstract);
         }
 
         $concrete = $config["class"];
@@ -129,7 +132,9 @@ final class Container
     }
 
     /**
-     * @throws \ReflectionException
+     * Get service by id from the container
+     * @param string $id
+     * @throws MissingServiceException
      */
     public function get(string $id)
     {
@@ -152,7 +157,7 @@ final class Container
             return $this->resolve($id);
         }
 
-        throw new \RuntimeException("Service not found in container: " . $id);
+        throw new MissingServiceException($id);
     }
     /** Check if a service ID is registered
      */
@@ -160,8 +165,8 @@ final class Container
     {
         return isset($this->services[$id]);
     }
-    /** Resolve a class and its dependencies using autowiring
-     * @throws \ReflectionException
+    /** Resolve a class and its dependencies using auto wiring
+     * @throws ResolveParameterException
      */
     private function resolve(string $class): object
     {
@@ -177,41 +182,34 @@ final class Container
             $type = $parameter->getType();
 
             if (!$type) {
-                throw new RuntimeException(
-                    "Cannot resolve parameter {$parameter->name} in {$class} because its type is not hinted."
-                );
+                throw new ResolveParameterException("Cannot resolve parameter {$parameter->name} in {$class} because its type is not hinted.");
             }
 
             if ($type->isBuiltin()) {
-                throw new RuntimeException(
-                    "Cannot resolve parameter {$parameter->name} in {$class} because it is a built-in type and cannot be auto-resolved."
-                );
+                throw new ResolveParameterException("Cannot resolve parameter {$parameter->name} in {$class} because it is a built-in type and cannot be auto-resolved.");
             }
 
             if ($type instanceof \ReflectionNamedType) {
                 $dependencyClass = $type->getName();
                 try {
-                    $dependencies[] = $this->get($dependencyClass); // Recursively resolve dependency
+                    $dependencies[] = $this->get($dependencyClass);
                 } catch (RuntimeException $e) {
-                    throw new RuntimeException(
-                        "Failed to resolve dependency {$dependencyClass} for parameter {$parameter->getName()} in {$class}: " .
-                            $e->getMessage(),
+                    throw new ResolveParameterException("Failed to resolve dependency {$dependencyClass} for parameter {$parameter->getName()} in {$class}: " .
+                        $e->getMessage(),
                         0,
                         $e
                     );
                 }
             } else {
-                throw new RuntimeException(
-                    "Cannot resolve parameter {$parameter->name} in {$class}. Unsupported type: " .
-                        $type
-                );
+                throw new ResolveParameterException("Cannot resolve parameter {$parameter->name} in {$class}. Unsupported type: " .
+                    $type);
             }
         }
         return $reflector->newInstanceArgs($dependencies);
     }
 
     /** Build a class with dependencies
-     * @throws \ReflectionException
+     * @throws ResolveParameterException
      */
     private function build(string $class): object
     {
@@ -226,17 +224,13 @@ final class Container
             $type = $parameter->getType();
 
             if (!$type || $type->isBuiltin()) {
-                throw new \RuntimeException(
-                    "Cannot resolve parameter {$parameter->name} in {$class}"
-                );
+                throw new ResolveParameterException("Cannot resolve parameter {$parameter->name} in {$class}");
             }
 
             if ($type instanceof \ReflectionNamedType) {
                 $dependencies[] = $this->make($type->getName());
             } else {
-                throw new \RuntimeException(
-                    "Cannot resolve parameter {$parameter->name} in {$class}. Unsupported type."
-                );
+                throw new ResolveParameterException("Cannot resolve parameter {$parameter->name} in {$class}. Unsupported type.");
             }
         }
 

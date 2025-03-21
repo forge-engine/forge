@@ -6,19 +6,28 @@ namespace Forge\Core\Http;
 final readonly class Request
 {
     private array $headers;
+    private string $uri;
+    private Session $session;
 
     public function __construct(
-        public array $queryParams,
-        public array $postData,
-        public array $serverParams,
-        public string $requestMethod
-    ) {
+        public array  $queryParams,
+        public array  $postData,
+        public array  $serverParams,
+        public string $requestMethod,
+        public array  $cookies,
+        Session       $session,
+    )
+    {
         $this->headers = $this->parseHeadersFromServerParams($serverParams);
+        $this->session = $session;
     }
 
     public static function createFromGlobals(): self
     {
         $method = $_SERVER["REQUEST_METHOD"];
+        $postData = $_POST;
+        $cookies = self::sanitize($_COOKIE);
+
         if ($method === "POST") {
             if (isset($_POST["_method"])) {
                 $spoofedMethod = strtoupper($_POST["_method"]);
@@ -26,9 +35,39 @@ final readonly class Request
                     $method = $spoofedMethod;
                 }
             }
+
+            if (isset($_SERVER["CONTENT_TYPE"]) && $_SERVER["CONTENT_TYPE"] === "application/json") {
+                $rawBody = file_get_contents("php://input");
+                $jsonData = json_decode($rawBody, true);
+                if (is_array($jsonData)) {
+                    $postData = array_merge($postData, $jsonData);
+                }
+            }
         }
 
-        return new self($_GET, $_POST, $_SERVER, $method);
+        $session = new Session();
+        return new self($_GET, $postData, $_SERVER, $method, $cookies, $session);
+    }
+
+    /**
+     * @return array<<missing>,string>
+     */
+    private static function sanitize(array $data): array
+    {
+        $sanitized = [];
+        foreach ($data as $key => $value) {
+            if (is_array($value)) {
+                $sanitized[$key] = self::sanitize($value);
+            } else {
+                $sanitized[$key] = htmlspecialchars($value, ENT_QUOTES, 'UTF-8');
+            }
+        }
+        return $sanitized;
+    }
+
+    public function getUri(): string
+    {
+        return parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
     }
 
     /**
@@ -49,7 +88,7 @@ final readonly class Request
      * @param string|null $default Default value to return if header is not found
      * @return string|null Header value or $default if not found
      */
-    public function getHeader(string $name, string $default = null): ?string
+    public function getHeader(string $name, ?string $default = null): ?string
     {
         $normalizedName = strtolower($name); // Normalize to lowercase
         return $this->headers[$normalizedName] ?? $default;
@@ -83,11 +122,10 @@ final readonly class Request
         $headers = [];
         foreach ($serverParams as $key => $value) {
             if (str_starts_with($key, "HTTP_")) {
-                $name = strtolower(str_replace("HTTP_", "", $key)); // Normalize header name
-                $name = str_replace("_", "-", $name); // Replace underscores with hyphens (standard HTTP header format)
+                $name = strtolower(str_replace("HTTP_", "", $key));
+                $name = str_replace("_", "-", $name);
                 $headers[$name] = $value;
             } elseif ($key === "CONTENT_TYPE") {
-                // Handle Content-Type and Content-Length separately
                 $headers["content-type"] = $value;
             } elseif ($key === "CONTENT_LENGTH") {
                 $headers["content-length"] = $value;

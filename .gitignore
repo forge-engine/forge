@@ -20,8 +20,9 @@
 /storage/logs/*
 /storage/database.sqlite
 /storage/memory.sqlite
-/storate/framework/modules/*
-/storage/framewok/tmp/*
+/storage/framework/modules/*
+/storage/framework/tmp/*
+/storage/framework/cache/*
 /storage/*.sqlite
 
 
@@ -35,6 +36,8 @@
 *.sublime-project
 .vscode/
 *.code-workspace
+.fleet/
+.nova/*
 
 # Ignore OS-specific files
 .DS_Store

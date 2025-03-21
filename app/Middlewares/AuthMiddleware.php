@@ -3,13 +3,13 @@ declare(strict_types=1);
 
 namespace App\Middlewares;
 
-use Forge\Core\Contracts\MiddlewareInterface;
 use Forge\Core\DI\Attributes\Service;
+use Forge\Core\Http\Middleware;
 use Forge\Core\Http\Request;
 use Forge\Core\Http\Response;
 
 #[Service]
-class AuthMiddleware implements MiddlewareInterface
+final class AuthMiddleware extends Middleware
 {
     public function handle(Request $request, callable $next): Response
     {

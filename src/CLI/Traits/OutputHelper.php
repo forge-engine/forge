@@ -26,7 +26,22 @@ trait OutputHelper
         $this->output("\033[0;33m" . $message . "\033[0m");
     }
 
-    protected function array(array $data, string $title = null): void
+    protected function debug(string $message): void
+    {
+        echo "\033[35m{$message}\033[0m\n";
+    }
+
+    protected function log(string $message): void
+    {
+        echo "[" . date('Y-m-d H:i:s') . "] {$message}\n";
+    }
+
+    protected function prompt(string $message): void
+    {
+        echo "\033[36m{$message}\033[0m ";
+    }
+
+    protected function array(array $data, ?string $title = null): void
     {
         if ($title) {
             $this->info($title);

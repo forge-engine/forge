@@ -5,26 +5,28 @@ namespace Forge\Core\View;
 
 use Forge\Core\Bootstrap;
 use Forge\Core\DI\Container;
+use Forge\Core\Http\Response;
 
 final class View
 {
     private static ?string $layout = null;
     private static array $sections = [];
     private static string $currentSection = "";
-
     private static array $cache = [];
 
     public function __construct(
         private Container $container,
-        private string $viewPath = BASE_PATH . "/app/views",
-        private string $cachePath = BASE_PATH . "/storage/framework/views"
-    ) {
+        private string    $viewPath = BASE_PATH . "/app/views",
+        private string    $componentPath = BASE_PATH . "/app/views/components",
+        private string    $cachePath = BASE_PATH . "/storage/framework/views"
+    )
+    {
         if (!is_dir($this->cachePath)) {
             mkdir($this->cachePath, 0755, true);
         }
     }
 
-    public function render(string $view, array $data = []): string
+    public function render(string $view, array $data = []): Response
     {
         $viewContent = $this->compileView($view, $data);
 
@@ -33,7 +35,7 @@ final class View
             $viewContent = $this->compileLayout(self::$layout, $layoutData);
         }
         self::$layout = null;
-        return $viewContent;
+        return new Response($viewContent);
     }
 
     private function compileView(string $view, array $data): string
@@ -52,18 +54,6 @@ final class View
         return ob_get_clean();
     }
 
-    /**
-     * Render a view directly without layout. For components.
-     *
-     * @param string $viewPath
-     * @param array  $data
-     * @return string
-     */
-    public function renderDirectly(string $viewPath, array $data = []): string
-    {
-        return $this->compileView($viewPath, $data);
-    }
-
     private function compileLayout(string $layout, array $data): string
     {
         return $this->compileView("layouts/{$layout}", $data);
@@ -76,7 +66,7 @@ final class View
 
     private function compileComponent(string $view, array $data): string
     {
-        $viewFile = "{$this->viewPath}/components/{$view}.php";
+        $viewFile = "{$this->componentPath}/{$view}.php";
         $cacheFile = "{$this->cachePath}/" . md5($view) . ".php";
 
         if ($this->shouldCompile($viewFile, $cacheFile)) {

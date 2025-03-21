@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Forge\Core;
 
+use Forge\Exceptions\ClassNotFoundException;
+
 final class Autoloader
 {
     private static array $paths = [
@@ -43,7 +45,6 @@ final class Autoloader
             }
         }
 
-        error_log("Autoload failed: " . $className);
-        throw new \RuntimeException("Class {$className} not found");
+        throw new ClassNotFoundException($className);
     }
 }

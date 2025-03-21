@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 namespace App\Controllers;
@@ -7,18 +6,24 @@ namespace App\Controllers;
 use App\Repositories\UserRepository;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Http\Attributes\Middleware;
+use Forge\Core\Http\Response;
 use Forge\Core\Routing\Route;
 use Forge\Core\Http\Request;
+use Forge\Traits\ControllerHelper;
 
 #[Service]
-class HomeController
+#[Middleware("Forge\Core\Http\Middlewares\CorsMiddleware")]
+#[Middleware("Forge\Core\Http\Middlewares\CompressionMiddleware")]
+final class HomeController
 {
+    use ControllerHelper;
+    
     public function __construct(private UserRepository $userRepository)
     {
     }
 
     #[Route("/")]
-    public function welcome(Request $request): string
+    public function welcome(Request $request): Response
     {
         $user = $this->userRepository->findAll();
         $data = [
@@ -30,12 +35,11 @@ class HomeController
             "user" => $user,
         ];
 
-        return view("home/index", $data);
+        return $this->view(view: "home/index", data: $data);
     }
 
     #[Route("/", "POST")]
-    #[Middleware("App\Middlewares\AuthMiddleware")]
-    public function welcomePost(Request $request): string
+    public function welcomePost(Request $request): Response
     {
         $data = [
             "username" => $request->postData["username"],
@@ -44,12 +48,12 @@ class HomeController
         ];
         $this->userRepository->create($data);
 
-        return "<h1> Successfully registered!</h1>";
+        return $this->jsonResponse(['success' => true]);
     }
 
     #[Route("/{id}", "PATCH")]
     #[Middleware("App\Middlewares\AuthMiddleware")]
-    public function updateUser(Request $request, array $params): string
+    public function updateUser(Request $request, array $params): Response
     {
         $id = (int)$params["id"];
         $data = [
@@ -58,25 +62,25 @@ class HomeController
         ];
         $this->userRepository->update($id, $data);
 
-        return "<h1> Successfully updated!</h1>";
+        return new Response("<h1> Successfully updated!</h1>");
     }
 
     #[Route("/users")]
-    public function users(Request $request): string
+    public function users(Request $request): Response
     {
         echo "<pre>";
         print_r($request);
         echo "</pre>";
-        return "Users";
+        return new Response("Users");
     }
 
     #[Route("/users/{id}")]
-    public function user(Request $request, array $params): string
+    public function user(Request $request, array $params): Response
     {
         echo "<pre>";
         print_r($request);
         print_r($params);
         echo "</pre>";
-        return "User id {$params["id"]}";
+        return new Response("User id {$params["id"]}");
     }
 }

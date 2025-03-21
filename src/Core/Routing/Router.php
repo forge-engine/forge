@@ -3,11 +3,13 @@ declare(strict_types=1);
 
 namespace Forge\Core\Routing;
 
-use Forge\Core\Contracts\MiddlewareInterface;
 use Forge\Core\DI\Container;
 use Forge\Core\Http\Attributes\Middleware;
+use Forge\Core\Http\Middleware as HttpMiddleware;
 use ReflectionClass;
 use Forge\Core\Http\Request;
+use Forge\Exceptions\InvalidMiddlewareException;
+use Forge\Exceptions\RouteNotFoundException;
 
 final class Router
 {
@@ -84,7 +86,7 @@ final class Router
         }
 
         if (!$routeFound) {
-            throw new \RuntimeException("Route not found: $method $path");
+            throw new RouteNotFoundException($method, $path);
         }
 
         $pipeline = array_reduce(
@@ -94,10 +96,8 @@ final class Router
                 $next
             ) {
                 $middlewareInstance = $this->container->make($middlewareClass);
-                if (!($middlewareInstance instanceof MiddlewareInterface)) {
-                    throw new \RuntimeException(
-                        "Middleware class '$middlewareClass' must implement MiddlewareInterface."
-                    );
+                if (!($middlewareInstance instanceof HttpMiddleware)) {
+                    throw new InvalidMiddlewareException($middlewareClass);
                 }
                 return $middlewareInstance->handle($req, $next);
             },

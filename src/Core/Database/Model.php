@@ -6,6 +6,8 @@ namespace Forge\Core\Database;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Database\QueryBuilder;
 use Forge\Core\DI\Container;
+use Forge\Exceptions\MissingPrimaryKeyException;
+use Forge\Exceptions\MissingTableAttributeException;
 use ReflectionClass;
 use ReflectionProperty;
 
@@ -31,7 +33,6 @@ abstract class Model
 
     private function getQueryBuilder(): QueryBuilder
     {
-        echo "Debug: BaseModel::getQueryBuilder() called!\n";
         return Container::getInstance()->get(QueryBuilder::class);
     }
 
@@ -109,7 +110,6 @@ abstract class Model
                 ->update([$this->deletedAtColumn => date("Y-m-d H:i:s")]) > 0;
         }
 
-        // Otherwise perform a hard delete
         return $this->getQueryBuilder()
             ->setTable($this->getTable())
             ->where($primaryKey, "=", $value)
@@ -125,7 +125,6 @@ abstract class Model
             ->setTable(static::getTable())
             ->where(static::getPrimaryKey(), "=", $id);
 
-        // Apply soft delete constraint if enabled
         if ($instance->softDelete) {
             $query->whereNull($instance->deletedAtColumn);
         }
@@ -141,20 +140,18 @@ abstract class Model
 
     public static function all(): array
     {
-        $instance = new static(); // Create instance to access properties like $softDelete
+        $instance = new static(); 
 
         $query = $instance
-            ->getQueryBuilder() // Use container-resolved QueryBuilder
-            ->setTable(static::getTable()); // Set table dynamically
+            ->getQueryBuilder()
+            ->setTable(static::getTable()); 
 
-        // Apply soft delete constraint if enabled
         if ($instance->softDelete) {
             $query->whereNull($instance->deletedAtColumn);
         }
 
         $models = $query->get(static::class);
 
-        // Load eager loaded relations if any
         if (!empty(static::$with) && !empty($models)) {
             foreach ($models as $model) {
                 $model->loadRelations(static::$with);
@@ -187,7 +184,7 @@ abstract class Model
         $attributes = $reflection->getAttributes(Table::class);
 
         if (empty($attributes)) {
-            throw new \RuntimeException("Model missing #[Table] attribute");
+            throw new MissingTableAttributeException();
         }
 
         return $attributes[0]->newInstance()->name;
@@ -208,7 +205,7 @@ abstract class Model
             }
         }
 
-        throw new \RuntimeException("No primary key defined");
+        throw new MissingPrimaryKeyException();
     }
 
     private function getColumns(): array
@@ -227,8 +224,8 @@ abstract class Model
 
     private function performInsert(array $data): bool
     {
-        $result = $this->getQueryBuilder() // Use container-resolved QueryBuilder
-            ->setTable(static::getTable()) // Set table dynamically
+        $result = $this->getQueryBuilder()
+            ->setTable(static::getTable())
             ->insert($data);
 
         if ($result) {
@@ -248,8 +245,8 @@ abstract class Model
             return false;
         }
 
-        return $this->getQueryBuilder() // Use container-resolved QueryBuilder
-            ->setTable(static::getTable()) // Set table dynamically
+        return $this->getQueryBuilder()
+            ->setTable(static::getTable()) 
             ->where($primaryKey, "=", $value)
             ->update($data) > 0;
     }
@@ -269,8 +266,8 @@ abstract class Model
 
         $localKeyValue = $this->$localKey;
 
-        return $this->getQueryBuilder() // Use container-resolved QueryBuilder
-            ->setTable($relatedClass::getTable()) // Set related table dynamically
+        return $this->getQueryBuilder()
+            ->setTable($relatedClass::getTable())
             ->where($foreignKey, "=", $localKeyValue)
             ->get($relatedClass);
     }
@@ -295,8 +292,8 @@ abstract class Model
             return null;
         }
 
-        return $this->getQueryBuilder() // Use container-resolved QueryBuilder
-            ->setTable($relatedClass::getTable()) // Set related table dynamically
+        return $this->getQueryBuilder()
+            ->setTable($relatedClass::getTable())
             ->where($ownerKey, "=", $foreignKeyValue)
             ->first($relatedClass);
     }
@@ -312,7 +309,6 @@ abstract class Model
     ): array {
         $thisClass = static::class;
 
-        // Generate pivot table name if not provided
         if ($pivotTable === null) {
             $segments = [
                 strtolower((new \ReflectionClass($thisClass))->getShortName()),
@@ -324,7 +320,6 @@ abstract class Model
             $pivotTable = implode("_", $segments);
         }
 
-        // Generate key names if not provided
         $foreignPivotKey =
             $foreignPivotKey ??
             strtolower((new \ReflectionClass($thisClass))->getShortName()) .
@@ -337,8 +332,8 @@ abstract class Model
         $localKey = $this->getPrimaryKey();
         $localKeyValue = $this->$localKey;
 
-        $query = $this->getQueryBuilder() // Use container-resolved QueryBuilder
-            ->setTable($relatedClass::getTable()); // Set related table dynamically
+        $query = $this->getQueryBuilder()
+            ->setTable($relatedClass::getTable());
         $query->select($relatedClass::getTable() . ".*");
         $query->join(
             $pivotTable,
@@ -376,11 +371,11 @@ abstract class Model
     {
         static::$with = $relations;
 
-        $instance = new static(); // Create instance to access getQueryBuilder()
+        $instance = new static();
 
         return $instance
-            ->getQueryBuilder() // Use container-resolved QueryBuilder
-            ->setTable(static::getTable()); // Set table dynamically
+            ->getQueryBuilder()
+            ->setTable(static::getTable());
     }
 
     /**
@@ -388,16 +383,16 @@ abstract class Model
      */
     public static function scope(string $scope, ...$parameters): QueryBuilder
     {
-        $instance = new static(); // Create instance to access getQueryBuilder()
+        $instance = new static();
 
         $query = $instance
-            ->getQueryBuilder() // Use container-resolved QueryBuilder
-            ->setTable(static::getTable()); // Set table dynamically
+            ->getQueryBuilder()
+            ->setTable(static::getTable());
 
         $scopeMethod = "scope" . ucfirst($scope);
 
         if (method_exists(static::class, $scopeMethod)) {
-            $instance->$scopeMethod($query, ...$parameters); // Instance already created
+            $instance->$scopeMethod($query, ...$parameters);
         }
 
         return $query;
@@ -415,8 +410,8 @@ abstract class Model
             return false;
         }
 
-        return $this->getQueryBuilder() // Use container-resolved QueryBuilder
-            ->setTable(static::getTable()) // Set table dynamically
+        return $this->getQueryBuilder()
+            ->setTable(static::getTable())
             ->where($primaryKey, "=", $value)
             ->delete() > 0;
     }
@@ -437,8 +432,8 @@ abstract class Model
             return false;
         }
 
-        return $this->getQueryBuilder() // Use container-resolved QueryBuilder
-            ->setTable(static::getTable()) // Set table dynamically
+        return $this->getQueryBuilder()
+            ->setTable(static::getTable())
             ->where($primaryKey, "=", $value)
             ->update([$this->deletedAtColumn => null]) > 0;
     }
@@ -451,7 +446,6 @@ abstract class Model
         $debugInfo = [];
         $reflection = new ReflectionClass($this);
 
-        // Include public properties except those in hidden array
         foreach (
             $reflection->getProperties(ReflectionProperty::IS_PUBLIC)
             as $property
@@ -462,8 +456,6 @@ abstract class Model
             }
         }
 
-        // Include protected/private properties that should be visible for debugging
-        // but exclude the ones in the hidden array
         foreach (
             $reflection->getProperties(
                 ReflectionProperty::IS_PROTECTED |

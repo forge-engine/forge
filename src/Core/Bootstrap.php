@@ -29,12 +29,22 @@ final class Bootstrap
     {
         self::loadEnvironment();
         self::setupErrorHandling();
+        self::initSession();
 
         self::setupDatabase();
         $container = self::setupContainer();
         $router = self::setupRouter($container);
 
         return new Kernel($router, $container);
+    }
+    
+    private static function initSession(): void
+    {
+        ini_set('session.cookie_httponly', true);
+        ini_set('session.cookie_secure', true);
+        ini_set('session.cookie_samesite', 'Strict');
+        ini_set('session.use_strict_mode', true);
+        ini_set('session.use_only_cookies', true);
     }
 
     private static function loadEnvironment(): void
