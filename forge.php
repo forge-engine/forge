@@ -9,10 +9,10 @@ use Forge\Core\DI\Container;
 use Forge\CLI\Application;
 use Forge\Core\Autoloader;
 
-require BASE_PATH . "/src/Core/Autoloader.php";
+require BASE_PATH . "/engine/Core/Autoloader.php";
 Autoloader::register();
 
-require BASE_PATH . "/src/Core/Config/EnvParser.php";
+require BASE_PATH . "/engine/Core/Config/EnvParser.php";
 Forge\Core\Config\EnvParser::load(BASE_PATH . "/.env");
 
 $container = Container::getInstance();

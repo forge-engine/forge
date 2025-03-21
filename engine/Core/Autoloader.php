@@ -10,7 +10,7 @@ final class Autoloader
 {
     private static array $paths = [
         "App" => BASE_PATH . "/app",
-        "Forge" => BASE_PATH . "/src",
+        "Forge" => BASE_PATH . "/engine",
         "Forge\Modules" => BASE_PATH . "/modules",
         "App\View\Components" => BASE_PATH . "/app/views/components",
         "App\View\Layouts" => BASE_PATH . "/apps/views/layouts",

@@ -9,8 +9,8 @@ if (preg_match('/\.env$/i', $_SERVER["REQUEST_URI"])) {
 
 define("BASE_PATH", dirname(__DIR__));
 
-require BASE_PATH . "/src/Core/Autoloader.php";
-require_once BASE_PATH . "/src/Core/Support/helpers.php";
+require BASE_PATH . "/engine/Core/Autoloader.php";
+require_once BASE_PATH . "/engine/Core/Support/helpers.php";
 
 use Forge\Core\Autoloader;
 use Forge\Core\Bootstrap;
