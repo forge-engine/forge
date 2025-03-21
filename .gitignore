@@ -24,6 +24,8 @@
 /storage/framework/tmp/*
 /storage/framework/cache/*
 /storage/*.sqlite
+/storage/database/*
+/storage/framework/logs/*
 
 
 # Ignore cache and logs
