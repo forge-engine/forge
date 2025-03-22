@@ -6,6 +6,7 @@ namespace Forge\CLI;
 
 use Forge\CLI\Commands\ClearCacheCommand;
 use Forge\CLI\Commands\HelpCommand;
+use Forge\CLI\Commands\KeyGenerateCommand;
 use Forge\CLI\Commands\MakeMigrationCommand;
 use Forge\CLI\Commands\ServeCommand;
 use Forge\CLI\Commands\MigrateCommand;
@@ -20,7 +21,7 @@ final class Application
     private static int $instanceCount = 0;
     private int $instanceId;
     private static ?self $instance = null;
-    
+
 
     private function __construct(Container $container)
     {
@@ -28,7 +29,7 @@ final class Application
         $this->container = $container;
         $this->registerCoreCommands();
     }
-    
+
     public static function getInstance(Container $container): self
     {
         if (!self::$instance) {
@@ -36,12 +37,12 @@ final class Application
         }
         return self::$instance;
     }
-    
+
     public function getCommands(): array
     {
         return $this->commands;
     }
-    
+
     public function getInstanceId(): int
     {
         return $this->instanceId;
@@ -87,6 +88,7 @@ final class Application
         $this->registerCommand(MakeMigrationCommand::class);
         $this->registerCommand(MigrateCommand::class);
         $this->registerCommand(ClearCacheCommand::class);
+        $this->registerCommand(KeyGenerateCommand::class);
         //$this->registerCommand(RollbackCommand::class);
     }
 
@@ -97,19 +99,19 @@ final class Application
     {
         $reflectionClass = new ReflectionClass($commandClass);
         $commandAttribute = $reflectionClass->getAttributes(CLICommand::class)[0] ?? null;
-        
+
         if ($commandAttribute) {
             $commandInterface = $commandAttribute->newInstance();
             $this->container->register($commandClass);
             $this->commands[$commandInterface->name] = [$commandClass, $commandInterface->description];
         }
     }
-    
+
     public function registerCommandClass(string $commandClass, string $name, string $description)
     {
         $reflectionClass = new ReflectionClass($commandClass);
         $commandAttribute = $reflectionClass->getAttributes(CLICommand::class)[0] ?? null;
-        
+
         if ($commandAttribute) {
             $commandInstance = $commandAttribute->newInstance();
             $this->container->register($commandClass);
