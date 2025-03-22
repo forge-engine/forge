@@ -5,19 +5,11 @@ declare(strict_types=1);
 namespace Forge\CLI\Commands;
 
 use Forge\CLI\Command;
+use Forge\Core\Module\Attributes\CLICommand;
 
+#[CLICommand(name: 'make:migration', description: 'Create a new migration file')]
 class MakeMigrationCommand extends Command
 {
-    public static function getName(): string
-    {
-        return "make:migration";
-    }
-
-    public static function getDescription(): string
-    {
-        return "Create a new migration file";
-    }
-
     public function execute(array $args): int
     {
         if (empty($args[0])) {

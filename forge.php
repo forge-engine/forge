@@ -20,7 +20,7 @@ $container = Container::getInstance();
 // Setup container and register services
 $container = Bootstrap::setupCliContainer();
 
-$app = new Application($container);
+$app = $container->get(Application::class);
 
 exit($app->run($argv));
 

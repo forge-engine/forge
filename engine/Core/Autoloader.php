@@ -11,7 +11,7 @@ final class Autoloader
     private static array $paths = [
         "App" => BASE_PATH . "/app",
         "Forge" => BASE_PATH . "/engine",
-        "Forge\Modules" => BASE_PATH . "/modules",
+        "App\Modules" => BASE_PATH . "/modules",
         "App\View\Components" => BASE_PATH . "/app/views/components",
         "App\View\Layouts" => BASE_PATH . "/apps/views/layouts",
     ];
@@ -21,7 +21,7 @@ final class Autoloader
         spl_autoload_register([self::class, "load"]);
     }
 
-    private static function addPath(string $namespace, string $path): void
+    public static function addPath(string $namespace, string $path): void
     {
         self::$paths[$namespace] = $path;
     }

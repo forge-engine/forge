@@ -18,6 +18,7 @@ use Forge\Core\Http\Request;
 
 Autoloader::register();
 
-$kernel = Bootstrap::init();
+$bootstrap = Bootstrap::getInstance();
+$kernel = $bootstrap->getKernel();
 $response = $kernel->handler(Request::createFromGlobals());
 $response->send();

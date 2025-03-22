@@ -5,7 +5,9 @@ namespace Forge\CLI\Commands;
 
 use Forge\CLI\Command;
 use Forge\CLI\Traits\OutputHelper;
+use Forge\Core\Module\Attributes\CLICommand;
 
+#[CLICommand(name: 'clear:cache', description: 'Clears the application cache')]
 class ClearCacheCommand extends Command
 {
     use OutputHelper;
@@ -14,15 +16,6 @@ class ClearCacheCommand extends Command
         BASE_PATH . "/storage/framework/cache/class-map.php";
     private const VIEW_CACHE_DIR = BASE_PATH . "/storage/framework/views";
 
-    public static function getName(): string
-    {
-        return "clear:cache";
-    }
-
-    public static function getDescription(): string
-    {
-        return "Clears the application cache.";
-    }
 
     public function execute(array $args): int
     {

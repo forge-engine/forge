@@ -5,19 +5,11 @@ declare(strict_types=1);
 namespace Forge\CLI\Commands;
 
 use Forge\CLI\Command;
+use Forge\Core\Module\Attributes\CLICommand;
 
+#[CLICommand(name: 'serve', description: 'Start the PHP Development Server')]
 class ServeCommand extends Command
 {
-    public static function getName(): string
-    {
-        return "serve";
-    }
-
-    public static function getDescription(): string
-    {
-        return "Start the PHP Development Server";
-    }
-
     public function execute(array $args): int
     {
         $host = $this->argument("host", $args) ?? "localhost";

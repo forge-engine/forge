@@ -10,16 +10,41 @@ use Forge\CLI\Commands\MakeMigrationCommand;
 use Forge\CLI\Commands\ServeCommand;
 use Forge\CLI\Commands\MigrateCommand;
 use Forge\Core\DI\Container;
+use Forge\Core\Module\Attributes\CLICommand;
+use ReflectionClass;
 
 final class Application
 {
     private array $commands = [];
     private Container $container;
+    private static int $instanceCount = 0;
+    private int $instanceId;
+    private static ?self $instance = null;
+    
 
-    public function __construct(Container $container)
+    private function __construct(Container $container)
     {
+        $this->instanceId = ++self::$instanceCount;
         $this->container = $container;
         $this->registerCoreCommands();
+    }
+    
+    public static function getInstance(Container $container): self
+    {
+        if (!self::$instance) {
+            self::$instance = new self($container);
+        }
+        return self::$instance;
+    }
+    
+    public function getCommands(): array
+    {
+        return $this->commands;
+    }
+    
+    public function getInstanceId(): int
+    {
+        return $this->instanceId;
     }
 
     /**
@@ -40,9 +65,10 @@ final class Application
             return 0;
         }
 
-        foreach ($this->commands as $commandClass) {
-            $command = $this->container->make($commandClass);
-            if ($command->getName() === $commandName) {
+        foreach ($this->commands as $name => $commandInfo) {
+            if ($name === $commandName) {
+                $commandClass = $commandInfo[0];
+                $command = $this->container->make($commandClass);
                 $args = array_slice($argv, 2);
                 $command->execute($args);
                 return 0;
@@ -65,12 +91,30 @@ final class Application
     }
 
     /**
-     * @throws \ReflectionException
+     * @throws ReflectionException
      */
     private function registerCommand(string $commandClass): void
     {
-        $this->container->register($commandClass);
-        $this->commands[] = $commandClass;
+        $reflectionClass = new ReflectionClass($commandClass);
+        $commandAttribute = $reflectionClass->getAttributes(CLICommand::class)[0] ?? null;
+        
+        if ($commandAttribute) {
+            $commandInterface = $commandAttribute->newInstance();
+            $this->container->register($commandClass);
+            $this->commands[$commandInterface->name] = [$commandClass, $commandInterface->description];
+        }
+    }
+    
+    public function registerCommandClass(string $commandClass, string $name, string $description)
+    {
+        $reflectionClass = new ReflectionClass($commandClass);
+        $commandAttribute = $reflectionClass->getAttributes(CLICommand::class)[0] ?? null;
+        
+        if ($commandAttribute) {
+            $commandInstance = $commandAttribute->newInstance();
+            $this->container->register($commandClass);
+            $this->commands[$commandInstance->name] = [$commandClass, $commandInstance->description];
+        }
     }
 
     /**

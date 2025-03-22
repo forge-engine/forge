@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Forge\Core\Database;
 
-final class Config
+final class DatabaseConfig
 {
     private array $driverOptions = [
         "sqlite" => [

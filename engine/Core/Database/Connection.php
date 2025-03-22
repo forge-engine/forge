@@ -10,7 +10,7 @@ final class Connection
 {
     private PDO $pdo;
 
-    public function __construct(Config $config)
+    public function __construct(DatabaseConfig $config)
     {
         $dsn = $config->getDsn();
         $pdoOptionsToUse = [

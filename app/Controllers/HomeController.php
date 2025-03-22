@@ -3,8 +3,11 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Modules\ExampleModule\ExampleModule;
+use App\Modules\ExampleModule\Services\ExampleService;
 use App\Repositories\UserRepository;
 use Forge\Core\DI\Attributes\Service;
+use Forge\Core\DI\Container;
 use Forge\Core\Http\Attributes\Middleware;
 use Forge\Core\Http\Response;
 use Forge\Core\Routing\Route;
@@ -18,7 +21,7 @@ final class HomeController
 {
     use ControllerHelper;
     
-    public function __construct(private UserRepository $userRepository)
+    public function __construct(private UserRepository $userRepository, private ExampleService $exampleService)
     {
     }
 
@@ -33,7 +36,9 @@ final class HomeController
                 ["type" => "info", "message" => "New features available"],
             ],
             "user" => $user,
+            "exampleService" => $this->exampleService
         ];
+        
 
         return $this->view(view: "home/index", data: $data);
     }

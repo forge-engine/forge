@@ -6,18 +6,12 @@ namespace Forge\CLI\Commands;
 
 use Forge\CLI\Command;
 use Forge\Core\Database\Migrator;
+use Forge\Core\Module\Attributes\CLICommand;
 
+#[CLICommand(name: 'migrate', description: 'Run database migrations')]
 class MigrateCommand extends Command
 {
     public function __construct(private Migrator $migrator) {}
-    public static function getName(): string
-    {
-        return "migrate";
-    }
-    public static function getDescription(): string
-    {
-        return "Run database migrations";
-    }
 
     public function execute(array $args): int
     {
