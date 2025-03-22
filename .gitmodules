@@ -7,3 +7,6 @@
 [submodule "modules-registry"]
 	path = modules-registry
 	url = https://github.com/forge-engine/modules.git
+[submodule "engine"]
+	path = engine
+	url = https://github.com/forge-engine/framework.git
