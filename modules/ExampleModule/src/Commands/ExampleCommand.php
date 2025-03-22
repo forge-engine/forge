@@ -13,7 +13,6 @@ class ExampleCommand extends Command
 	public function __construct(private Config $config)
 	{
 		$settingOne = $config->get('example_module.setting_one');
-		echo $settingOne;
 	}
 	public function execute(array $args): int
 	{

@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Forge\Core;
@@ -7,14 +8,17 @@ use Forge\CLI\Application;
 use Forge\CLI\Commands\HelpCommand;
 use Forge\Core\Config\Config;
 use Forge\Core\DI\Attributes\Service;
-use Forge\Core\Database\{DatabaseConfig, Connection};
+use Forge\Core\Database\DatabaseConfig;
+use Forge\Core\Database\Connection;
 use Forge\Core\Config\Environment;
 use Forge\Core\Config\EnvParser;
 use Forge\Core\DI\Container;
 use Forge\Core\Database\Migrator;
 use Forge\Core\Http\Kernel;
+use Forge\Core\Module\LifecycleHookName;
 use Forge\Core\Module\ModuleLoader;
-use Forge\Core\Routing\{ControllerLoader, Router};
+use Forge\Core\Routing\ControllerLoader;
+use Forge\Core\Routing\Router;
 use PDO;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -25,22 +29,22 @@ require_once('Version.php');
 final class Bootstrap
 {
     private const CLASS_MAP_CACHE_FILE =
-        BASE_PATH . "/storage/framework/cache/class-map.php";
+          BASE_PATH . "/storage/framework/cache/class-map.php";
     private static array $hooks = [];
-    
+
     private static bool $modulesLoaded = false;
-    
+
     private static ?self $instance = null;
-    
+
     private ?Kernel $kernel = null;
-    
+
     private static bool $cliContainerSetup = false;
-    
-    private function  __construct()
+
+    private function __construct()
     {
         $this->kernel = $this->init();
     }
-    
+
     public static function getInstance(): self
     {
         if (!self::$instance) {
@@ -55,17 +59,17 @@ final class Bootstrap
     private static function init(): Kernel
     {
         self::loadEnvironment();
-        self::setupErrorHandling();
+        self::initErrorHandling();
         self::initSession();
 
         self::setupDatabase();
         $container = self::setupContainer();
         $router = self::setupRouter($container);
-        self::triggerHook('app.booted');
+        self::triggerHook(LifecycleHookName::APP_BOOTED);
 
         return new Kernel($router, $container);
     }
-    
+
     private static function initSession(): void
     {
         ini_set('session.cookie_httponly', true);
@@ -85,7 +89,7 @@ final class Bootstrap
         Environment::getInstance();
     }
 
-    private static function setupErrorHandling(): void
+    private static function initErrorHandling(): void
     {
         ini_set(
             "display_errors",
@@ -97,7 +101,7 @@ final class Bootstrap
     public static function shouldCacheViews(): bool
     {
         return Environment::getInstance()->get("VIEW_CACHE") &&
-            !Environment::getInstance()->isDevelopment();
+                !Environment::getInstance()->isDevelopment();
     }
 
     private static function setupDatabase(): void
@@ -109,23 +113,22 @@ final class Bootstrap
 
     public static function setupContainer(): Container
     {
-        
         $env = Environment::getInstance();
 
         $container = Container::getInstance();
-            
-        $container->singleton(Config::class, function() {
+
+        $container->singleton(Config::class, function () {
             return new Config(BASE_PATH . '/config');
         });
-        
-        $container->singleton(Application::class, function() use ($container){
+
+        $container->singleton(Application::class, function () use ($container) {
             $application = Application::getInstance($container);
             return $application;
         });
 
         self::initConnection($container, $env);
         self::loadModulesOnce($container);
-        
+
         self::autoDiscoverServices($container);
 
         return $container;
@@ -135,16 +138,16 @@ final class Bootstrap
         if (self::$cliContainerSetup) {
             return Container::getInstance();
         }
-        
-        
+
+
         $env = Environment::getInstance();
         $container = Container::getInstance();
-            
-        $container->singleton(Config::class, function() {
+
+        $container->singleton(Config::class, function () {
             return new Config(BASE_PATH . '/config');
         });
-        
-        $container->singleton(Application::class, function() use ($container) {
+
+        $container->singleton(Application::class, function () use ($container) {
             $application = Application::getInstance($container);
             return $application;
         });
@@ -161,12 +164,12 @@ final class Bootstrap
         });
 
         self::autoDiscoverServices($container);
-            
+
         self::$cliContainerSetup = true;
-  
+
         return $container;
     }
-    
+
     private static function loadModulesOnce(Container $container): void
     {
         if (!self::$modulesLoaded) {
@@ -174,19 +177,21 @@ final class Bootstrap
             self::$modulesLoaded = true;
         }
     }
-    
+
     private static function initModules(Container $container): void
     {
-        $container->singleton(ModuleLoader::class, function() use ($container) {
+        $container->singleton(ModuleLoader::class, function () use ($container) {
             return new ModuleLoader(
                 container: $container,
                 config: $container->get(Config::class)
             );
         });
-        
+
         /*** @var ModuleLoader $moduleLoader */
         $moduleLoader = $container->get(ModuleLoader::class);
         $moduleLoader->loadModules();
+
+        self::triggerHook(LifecycleHookName::AFTER_MODULE_LOAD);
     }
 
     private static function initConnection(
@@ -198,8 +203,8 @@ final class Bootstrap
             return new DatabaseConfig(
                 driver: $env->get("DB_DRIVER"),
                 database: $env->get("DB_DRIVER") === "sqlite"
-                    ? BASE_PATH . $env->get("DB_NAME")
-                    : $env->get("DB_NAME"),
+                          ? BASE_PATH . $env->get("DB_NAME")
+                          : $env->get("DB_NAME"),
                 host: $env->get("DB_HOST"),
                 username: $env->get("DB_USER"),
                 password: $env->get("DB_PASS"),
@@ -221,17 +226,17 @@ final class Bootstrap
     private static function autoDiscoverServices(Container $container): void
     {
         $classMap = self::loadClassMapCache();
-    
+
         if ($classMap) {
             foreach ($classMap as $class => $filepath) {
                 if (class_exists($class)) {
                     try {
                         $reflectionClass = new ReflectionClass($class);
                         if (
-                            !$reflectionClass->isInterface() &&
-                            !$reflectionClass->isAbstract() &&
-                            !empty($reflectionClass->getAttributes(Service::class))
-                        ) {
+                                     !$reflectionClass->isInterface() &&
+                                     !$reflectionClass->isAbstract() &&
+                                     !empty($reflectionClass->getAttributes(Service::class))
+                                ) {
                             $container->register($class);
                         }
                     } catch (\ReflectionException $e) {
@@ -241,39 +246,39 @@ final class Bootstrap
             }
             return;
         }
-    
+
         $serviceDirectories = [
-            BASE_PATH . "/app/Repositories",
-            BASE_PATH . "/app/Middlewares",
-            BASE_PATH . "/app/Services",
-            BASE_PATH . "/engine/Core/Database",
-            BASE_PATH . "/engine/Core/Http/Middlewares",
-        ];
-    
+                BASE_PATH . "/app/Repositories",
+                BASE_PATH . "/app/Middlewares",
+                BASE_PATH . "/app/Services",
+                BASE_PATH . "/engine/Core/Database",
+                BASE_PATH . "/engine/Core/Http/Middlewares",
+          ];
+
         $newClassMap = [];
-    
+
         foreach ($serviceDirectories as $directory) {
             if (is_dir($directory)) {
                 $directoryIterator = new RecursiveDirectoryIterator($directory);
                 $iterator = new RecursiveIteratorIterator($directoryIterator);
-    
+
                 foreach ($iterator as $file) {
                     if ($file->isFile() && $file->getExtension() === "php") {
                         $filepath = $file->getPathname();
-    
+
                         if (strpos($filepath, '/config/') !== false) {
                             continue;
                         }
-    
+
                         $class = self::fileToClass($filepath, BASE_PATH);
                         if (class_exists($class)) {
                             try {
                                 $reflectionClass = new ReflectionClass($class);
                                 if (
-                                    !$reflectionClass->isInterface() &&
-                                    !$reflectionClass->isAbstract() &&
-                                    !empty($reflectionClass->getAttributes(Service::class))
-                                ) {
+                                                !$reflectionClass->isInterface() &&
+                                                !$reflectionClass->isAbstract() &&
+                                                !empty($reflectionClass->getAttributes(Service::class))
+                                          ) {
                                     $container->register($class);
                                     $newClassMap[$class] = $filepath;
                                 }
@@ -291,22 +296,22 @@ final class Bootstrap
     /**
      * Helper function to convert file path to class name
      */
-private static function fileToClass(
-         string $filepath,
-         string $basePath
-     ): string {
-         $relativePath = str_replace($basePath, "", $filepath);
-         $class = str_replace([".php", "/"], ["", "\\"], $relativePath);
-     
-         $class = ltrim($class, "\\");
-         if (str_starts_with($class, "engine\\Core\\")) {
-             $class = str_replace("engine\\Core\\", "Forge\\Core\\", $class);
-         } elseif (str_starts_with($class, "app\\")) {
-             $class = str_replace("app\\", "App\\", $class);
-         }
-         // Remove the elseif for modules
-         return $class;
-     }
+    private static function fileToClass(
+        string $filepath,
+        string $basePath
+    ): string {
+        $relativePath = str_replace($basePath, "", $filepath);
+        $class = str_replace([".php", "/"], ["", "\\"], $relativePath);
+
+        $class = ltrim($class, "\\");
+        if (str_starts_with($class, "engine\\Core\\")) {
+            $class = str_replace("engine\\Core\\", "Forge\\Core\\", $class);
+        } elseif (str_starts_with($class, "app\\")) {
+            $class = str_replace("app\\", "App\\", $class);
+        }
+        // Remove the elseif for modules
+        return $class;
+    }
 
     /**
      * @throws \ReflectionException
@@ -360,20 +365,22 @@ private static function fileToClass(
         $cacheContent = "<?php return " . var_export($classMap, true) . ";";
         file_put_contents(self::CLASS_MAP_CACHE_FILE, $cacheContent);
     }
-    
-   public static function addHook(string $hookName, callable|array $callback): void
-   {
-       if (is_callable($callback)) {
-           self::$hooks[$hookName][] = $callback;
-       } elseif (is_array($callback) && isset($callback[0]) && isset($callback[1])) {
-           self::$hooks[$hookName][] = $callback;
-       }
-   }
-    
-    public static function triggerHook(string $hookName, ...$args): void
+
+    public static function addHook(LifecycleHookName $hookName, callable|array $callback): void
     {
-        if (isset(self::$hooks[$hookName])) {
-            foreach (self::$hooks[$hookName] as $callback) {
+        $name = $hookName->value;
+        if (is_callable($callback)) {
+            self::$hooks[$name][] = $callback;
+        } elseif (is_array($callback) && isset($callback[0]) && isset($callback[1])) {
+            self::$hooks[$name][] = $callback;
+        }
+    }
+
+    public static function triggerHook(LifecycleHookName $hookName, ...$args): void
+    {
+        $name = $hookName->value;
+        if (isset(self::$hooks[$name])) {
+            foreach (self::$hooks[$name] as $callback) {
                 if (is_callable($callback)) {
                     call_user_func_array($callback, $args);
                 } elseif (is_array($callback) && count($callback) === 2) {
@@ -383,10 +390,10 @@ private static function fileToClass(
                 }
             }
         } else {
-            error_log("No Hooks Registered for: " . $hookName);
+            error_log("No Hooks Registered for: " . $name);
         }
     }
-    
+
     public function getKernel(): ?Kernel
     {
         return $this->kernel;

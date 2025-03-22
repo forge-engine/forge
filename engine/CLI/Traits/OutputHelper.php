@@ -70,4 +70,61 @@ trait OutputHelper
     {
         echo $message . PHP_EOL;
     }
+
+    protected function table(array $headers, array $rows): void
+    {
+        if (empty($headers) || empty($rows)) {
+            return;
+        }
+
+        // Calculate column widths
+        $columnsWidth = array_map('strlen', $headers);
+        foreach ($rows as $row) {
+            if (is_array($row)) {
+                foreach ($row as $key => $value) {
+                    $columnIndex = array_search($key, $headers, true);
+                    if ($columnIndex !== false) {
+                        $columnsWidth[$columnIndex] = max($columnsWidth[$columnIndex], strlen((string) $value));
+                    }
+                }
+            } elseif (is_object($row)) {
+                foreach ($headers as $index => $header) {
+                    if (isset($row->$header)) {
+                        $columnsWidth[$index] = max($columnsWidth[$index], strlen((string) $row->$header));
+                    }
+                }
+            }
+        }
+
+        // Output header
+        $this->line('| ' . implode(' | ', array_map(function ($header, $width) {
+            return str_pad($header, $width);
+        }, $headers, $columnsWidth)) . ' |');
+
+        // Output separator
+        $separator = '+';
+        foreach ($columnsWidth as $width) {
+            $separator .= str_repeat('-', $width + 2) . '+';
+        }
+        $this->line($separator);
+
+        // Output rows
+        foreach ($rows as $row) {
+            $rowOutput = '| ';
+            if (is_array($row)) {
+                foreach ($headers as $header) {
+                    $value = $row[$header] ?? '';
+                    $columnIndex = array_search($header, $headers, true);
+                    $rowOutput .= str_pad((string) $value, $columnsWidth[$columnIndex]) . ' | ';
+                }
+            } elseif (is_object($row)) {
+                foreach ($headers as $header) {
+                    $value = $row->$header ?? '';
+                    $columnIndex = array_search($header, $headers, true);
+                    $rowOutput .= str_pad((string) $value, $columnsWidth[$columnIndex]) . ' | ';
+                }
+            }
+            $this->line(rtrim($rowOutput, '| '));
+        }
+    }
 }

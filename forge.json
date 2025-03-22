@@ -1,7 +1,6 @@
 {
-	"name": "Forge Framework"
-	"modules": {
-		"forge-engine/framework": "0.1.0",
-		"forge-package-manager": "0.1.0"
-	}
+    "name": "Forge Framework",
+    "modules": {
+        "forge-engine/framework": "0.1.0"
+    }
 }
