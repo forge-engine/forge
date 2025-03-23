@@ -1,6 +1,7 @@
 {
     "name": "Forge Framework",
     "modules": {
-        "forge-engine/framework": "0.1.0"
+        "forge-engine/framework": "0.1.0",
+        "forge-storage": "1.0.0"
     }
 }

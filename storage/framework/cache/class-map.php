@@ -4,4 +4,5 @@
   'Forge\\Core\\Database\\QueryBuilder' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/engine/Core/Database/QueryBuilder.php',
   'Forge\\Core\\Http\\Middlewares\\CorsMiddleware' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/engine/Core/Http/Middlewares/CorsMiddleware.php',
   'Forge\\Core\\Http\\Middlewares\\CompressionMiddleware' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/engine/Core/Http/Middlewares/CompressionMiddleware.php',
+  'Forge\\Core\\Services\\TemplateGenerator' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/engine/Core/Services/TemplateGenerator.php',
 );

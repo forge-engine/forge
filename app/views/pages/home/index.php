@@ -1,6 +1,5 @@
 <?php
 use App\Dto\UserDto;
-use App\Modules\ExampleModule\Services\ExampleService;
 use Forge\Core\View\Component;
 
 /**

@@ -1,13 +1,11 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Controllers;
 
-use App\Modules\ExampleModule\ExampleModule;
-use App\Modules\ExampleModule\Services\ExampleService;
 use App\Repositories\UserRepository;
 use Forge\Core\DI\Attributes\Service;
-use Forge\Core\DI\Container;
 use Forge\Core\Http\Attributes\Middleware;
 use Forge\Core\Http\Response;
 use Forge\Core\Routing\Route;
@@ -20,8 +18,8 @@ use Forge\Traits\ControllerHelper;
 final class HomeController
 {
     use ControllerHelper;
-    
-    public function __construct(private UserRepository $userRepository, private ExampleService $exampleService)
+
+    public function __construct(private UserRepository $userRepository)
     {
     }
 
@@ -35,12 +33,11 @@ final class HomeController
                 ["type" => "success", "message" => "Installation successful!"],
                 ["type" => "info", "message" => "New features available"],
             ],
-            "user" => $user,
-            "exampleService" => $this->exampleService
+            "user" => $user
         ];
-        
 
-        return $this->view(view: "home/index", data: $data);
+
+        return $this->view(view: "pages/home/index", data: $data);
     }
 
     #[Route("/", "POST")]

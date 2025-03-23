@@ -1,3 +1,10 @@
 {
-    "modules": []
+    "modules": {
+        "forge-storage": {
+            "version": "1.0.0",
+            "registry": "forge-engine-modules",
+            "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-storage/1.0.0/1.0.0.zip",
+            "integrity": "7d3768d1e0fdaf8f0f7e9e95e4e34a4a6a3cd237e2ffd56c3031dacb17259b91"
+        }
+    }
 }

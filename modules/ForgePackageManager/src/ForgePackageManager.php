@@ -28,14 +28,14 @@ final class ForgePackageManager
     }
 
     #[LifecycleHook(hook: LifecycleHookName::APP_BOOTED)]
-    public function onAppbooted(): void
+    public function onAppBooted(): void
     {
-        error_log("[ForgePackageManager]: Application booted");
+        //error_log("[ForgePackageManager]: Application booted");
     }
 
     #[LifecycleHook(hook: LifecycleHookName::AFTER_MODULE_REGISTER)]
     public function onAfterModuleRegister(): void
     {
-        error_log("[ForgePackageManager]: After Module register");
+        //error_log("[ForgePackageManager]: After Module register");
     }
 }
