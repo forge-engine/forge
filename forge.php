@@ -23,4 +23,3 @@ $container = Bootstrap::setupCliContainer();
 $app = $container->get(Application::class);
 
 exit($app->run($argv));
-

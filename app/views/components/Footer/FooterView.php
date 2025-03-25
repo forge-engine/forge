@@ -5,6 +5,13 @@
  * @var array $props
  */
 ?>
-<footer>
-    <p>&copy; <?= $props["year"] ?> Forge engine</p>
+<footer class="footer">
+    <nav>
+        <ul class="footer__menu">
+            <li><a href="#" class="footer__link">Privacy Policy</a></li>
+            <li><a href="#" class="footer__link">Terms of Service</a></li>
+            <li><a href="#" class="footer__link">Support</a></li>
+        </ul>
+    </nav>
+    <p class="footer__copy">&copy; <?= $props["year"] ?> ForgeCMS. All rights reserved.</p>
 </footer>

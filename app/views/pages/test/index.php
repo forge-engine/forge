@@ -7,7 +7,47 @@ use Forge\Core\View\Component;
 
 layout("main");
 ?>
+<div class="container">
+    <h1>Welcome <?=$title?></h1>
 
-<h2>Welcome <?=$title?></h2>
+    <?= Component::render("alert", ["type" => "success","children" => "Success message"])?>
+    <article class="card">
+        <h2 class="card--title">Card Title</h2>
+        <div class="card--body">
+            <p class="text-xl">Card content</p>
+            <button class="button button--secondary">Learn More</button>
+        </div>
+    </article>
 
-<?= Component::render("alert", ["type" => "success","children" => "Success message"])?>
+    <!-- Flexbox example -->
+    <div class="flex flex--between flex--wrap mt-sm mb-sm">
+        <div class="card">...</div>
+        <div class="card">...</div>
+        <div class="card">...</div>
+        <div class="card">...</div>
+        <div class="card">...</div>
+    </div>
+
+    <!-- Grid example -->
+    <div class="grid grid--2">
+        <div class="card">...</div>
+        <div class="card">...</div>
+        <div class="card">...</div>
+        <div class="card">...</div>
+        <div class="card">...</div>
+        <div class="card">...</div>
+    </div>
+
+    <!-- Form example -->
+    <section>
+        <form class="form">
+            <div class="form--group">
+                <label class="form--label">Email</label>
+                <input type="email" class="form--input">
+                <div class="form--error form--error--show">Invalid email</div>
+            </div>
+            <button class="button">Submit</button>
+        </form>
+    </section>
+    <span class="loader"></span>
+</div>
