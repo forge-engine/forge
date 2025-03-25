@@ -9,6 +9,9 @@ layout("main");
 ?>
 <div class="container">
     <h1>Welcome <?=$title?></h1>
+    <?php if (session()->has('user_id')): ?>
+    <h3>Welcome user <?=e(session()->get('user_id'))?></h3>
+    <?php endif; ?>
 
     <?= Component::render("alert", ["type" => "success","children" => "Success message"])?>
     <article class="card">

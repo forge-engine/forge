@@ -13,6 +13,8 @@ use Forge\Core\Http\Request;
 use Forge\Traits\ControllerHelper;
 
 #[Service]
+#[Middleware("Forge\Core\Http\Middlewares\SessionMiddleware")]
+#[Middleware("Forge\Core\Http\Middlewares\CookieMiddleware")]
 #[Middleware("Forge\Core\Http\Middlewares\CorsMiddleware")]
 #[Middleware("Forge\Core\Http\Middlewares\CompressionMiddleware")]
 final class HomeController
