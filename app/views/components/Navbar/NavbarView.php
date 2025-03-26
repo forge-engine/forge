@@ -1,7 +1,7 @@
 <?php
 /**
- * Navbar component view.
- * @package app\views\components\Navbar
+ * NavBar component view.
+ * @package app\views\components\NavBar
  * @var array $props
  */
 ?>

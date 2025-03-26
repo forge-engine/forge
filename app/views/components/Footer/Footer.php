@@ -7,17 +7,11 @@ namespace App\View\Components\Footer;
 use Forge\Core\View\BaseComponent;
 use Forge\Core\View\Component;
 
-#[Component("footer")]
+#[Component(name: "footer")]
 class Footer extends BaseComponent
 {
-    public function __construct(array $props = [])
-    {
-        parent::__construct($props);
-    }
-
     public function render(): mixed
     {
-        $data = ["props" => $this->props];
-        return $this->renderview("Footer/FooterView", $data);
+        return $this->renderview("Footer/FooterView");
     }
 }

@@ -16,7 +16,7 @@ use Forge\Core\Module\LifecycleHookName;
 
 #[Module(name: 'ExampleModule', description: 'An example module for demostration purporse', order: 99)]
 #[Service]
-#[Compatibility(framework: '^0.1.0', php: '>=8.2')]
+#[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
 final class ExampleModule
 {

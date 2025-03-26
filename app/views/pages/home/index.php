@@ -1,6 +1,5 @@
 <?php
 use App\Dto\UserDto;
-use Forge\Core\View\Component;
 
 /**
  * @var string $title
@@ -10,18 +9,19 @@ use Forge\Core\View\Component;
 
 layout("main");
 ?>
-
 <section class="container">
     <h2>Engine Status</h2>
     <ul>
-        <li>PHP Version <?= e(PHP_VERSION) ?></li>
-        <li>Database Driver: <?= e($_ENV["DB_DRIVER"]) ?></li>
+        <li>PHP Version <?= PHP_VERSION ?></li>
+        <li>Database Driver: <?= $_ENV["DB_DRIVER"] ?></li>
     </ul>
 
     <h3>User information</h3>
     <pre>
     <?php print_r($user); ?>
     </pre>
+
+    <?= component("flash-message")?>
 
     <section>
         <form action="" method="POST" class="form">
@@ -34,18 +34,12 @@ layout("main");
         </form>
     </section>
     <?php if ($user):?>
-    <form action="/<?= $user[0]->id ?>" method="POST" class="form">
+    <form action="/<?= $user->id ?>" method="POST" class="form">
         <input type="hidden" name="_method" value="PATCH">
-        <input class="form--input" type="text" name="username" placeholder="Username" value="<?= $user[0]
-            ->username ?>" required>
-        <input type="email" name="email" placeholder="Email" value="<?= $user[0]
-            ->email ?>" required>
-        <button class="button" type="submit">Create User</button>
+        <input class="form--input" type="text" name="username" placeholder="Username" value="<?= $user->username ?>" required>
+        <input type="email" name="email" placeholder="Email" value="<?= $user->email ?>" required>
+        <button class="button" type="submit">Update User</button>
     </form>
     <?php endif; ?>
 
-    <?= Component::render("alert", [
-        "type" => "success",
-        "children" => "Success message",
-    ]) ?>
     </div>

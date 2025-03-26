@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use Forge\Core\DI\Attributes\Service;
-use Forge\Core\Http\Attributes\Middleware;
 use Forge\Core\Http\CookieJar;
 use Forge\Core\Http\Response;
 use Forge\Core\Routing\Route;
@@ -14,10 +13,6 @@ use Forge\Core\Session\SessionInterface;
 use Forge\Traits\ControllerHelper;
 
 #[Service]
-#[Middleware("Forge\Core\Http\Middlewares\SessionMiddleware")]
-#[Middleware("Forge\Core\Http\Middlewares\CookieMiddleware")]
-#[Middleware("Forge\Core\Http\Middlewares\CorsMiddleware")]
-#[Middleware("Forge\Core\Http\Middlewares\CompressionMiddleware")]
 final class TestController
 {
     use ControllerHelper;

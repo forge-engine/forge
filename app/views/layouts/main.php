@@ -20,11 +20,11 @@ use Forge\Core\View\Component;
 </head>
 
 <body>
-    <?= Component::render("navbar") ?>
+    <?= Component::render("nav-bar")?>
     <div class="main">
         <?= $content ?>
     </div>
-    <?= Component::render("footer", ["year" => date("Y")]) ?>
+    <?= Component::render("footer") ?>
 </body>
 
 </html>

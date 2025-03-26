@@ -5,6 +5,5 @@ use App\View\Components\Alert\AlertPropsDto;
 ?>
 
 <div class="alert alert--<?= $alert->type ?? "info" ?>">
-    <strong><?= $alert->type ?? "Alert" ?></strong>
-    <?= $alert->children ?>
+    <?= $alert['children'] ?>
 </div>

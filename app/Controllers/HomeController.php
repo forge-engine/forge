@@ -6,17 +6,16 @@ namespace App\Controllers;
 
 use App\Repositories\UserRepository;
 use Forge\Core\DI\Attributes\Service;
+use Forge\Core\Helpers\Flash;
+use Forge\Core\Helpers\Redirect;
 use Forge\Core\Http\Attributes\Middleware;
 use Forge\Core\Http\Response;
 use Forge\Core\Routing\Route;
 use Forge\Core\Http\Request;
+use Forge\Exceptions\ValidationException;
 use Forge\Traits\ControllerHelper;
 
 #[Service]
-#[Middleware("Forge\Core\Http\Middlewares\SessionMiddleware")]
-#[Middleware("Forge\Core\Http\Middlewares\CookieMiddleware")]
-#[Middleware("Forge\Core\Http\Middlewares\CorsMiddleware")]
-#[Middleware("Forge\Core\Http\Middlewares\CompressionMiddleware")]
 final class HomeController
 {
     use ControllerHelper;
@@ -28,7 +27,7 @@ final class HomeController
     #[Route("/")]
     public function welcome(Request $request): Response
     {
-        $user = $this->userRepository->findAll();
+        $user = $this->userRepository->findById(1);
         $data = [
             "title" => "Welcome to Forge Framework",
             "alerts" => [
@@ -43,16 +42,23 @@ final class HomeController
     }
 
     #[Route("/", "POST")]
+    //#[Middleware('App\Middlewares\AuthMiddleware')]
     public function welcomePost(Request $request): Response
     {
-        $data = [
-            "username" => $request->postData["username"],
-            "password" => $request->postData["password"],
-            "email" => $request->postData["email"],
-        ];
-        $this->userRepository->create($data);
+        try {
+            $this->validateRegistration($request);
 
-        return $this->jsonResponse(['success' => true]);
+            $this->userRepository->create([
+                "username" => $request->postData["username"],
+                "password" => password_hash($request->postData["password"], PASSWORD_BCRYPT),
+                "email" => $request->postData["email"],
+            ]);
+
+            Flash::set("success", "User registered successfully");
+            return Redirect::to("/");
+        } catch (ValidationException) {
+            return Redirect::to("/");
+        }
     }
 
     #[Route("/{id}", "PATCH")]
@@ -86,5 +92,22 @@ final class HomeController
         print_r($params);
         echo "</pre>";
         return new Response("User id {$params["id"]}");
+    }
+
+    private function validateRegistration(Request $request): void
+    {
+        $rules = [
+            "username" => ["required", "min:3"],
+            "email" => ["required", "email", "unique:users,email"],
+            "password" => ["required", "min:8"]
+        ];
+
+        $customMessages = [
+            "required" => "The :field field is required!",
+            "min" => "The :field field must be at least :value characters.",
+            "unique" => "The :field is already taken."
+        ];
+
+        $request->validate($rules, $customMessages);
     }
 }

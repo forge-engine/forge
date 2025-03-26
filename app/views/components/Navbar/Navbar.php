@@ -7,11 +7,11 @@ namespace App\View\Components\Navbar;
 use Forge\Core\View\BaseComponent;
 use Forge\Core\View\Component;
 
-#[Component(name: "navbar", useDto: false)]
-class Navbar extends BaseComponent
+#[Component(name: "nav-bar")]
+class NavBar extends BaseComponent
 {
     public function render(): mixed
     {
-        return $this->renderview("navbar/NavbarView");
+        return $this->renderview("NavBar/NavbarView");
     }
 }

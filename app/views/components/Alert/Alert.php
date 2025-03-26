@@ -21,6 +21,6 @@ class Alert extends BaseComponent
         $data = [
             "alert" => $this->props,
         ];
-        return $this->renderview("alert/AlertView", $data);
+        return $this->renderview("Alert/AlertView", $data);
     }
 }

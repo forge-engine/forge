@@ -13,5 +13,5 @@
             <li><a href="#" class="footer__link">Support</a></li>
         </ul>
     </nav>
-    <p class="footer__copy">&copy; <?= $props["year"] ?> ForgeCMS. All rights reserved.</p>
+    <p class="footer__copy">&copy; <?= date('Y') ?> ForgeCMS. All rights reserved.</p>
 </footer>

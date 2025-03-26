@@ -8,5 +8,4 @@
   'Forge\\Core\\Http\\Middlewares\\CompressionMiddleware' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/engine/Core/Http/Middlewares/CompressionMiddleware.php',
   'Forge\\Core\\Http\\CookieJar' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/engine/Core/Http/CookieJar.php',
   'Forge\\Core\\Services\\TemplateGenerator' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/engine/Core/Services/TemplateGenerator.php',
-  'Forge\\Core\\Session\\Session' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/engine/Core/Session/Session.php',
 );
