@@ -42,7 +42,7 @@ final class HomeController
     }
 
     #[Route("/", "POST")]
-    //#[Middleware('App\Middlewares\AuthMiddleware')]
+   //#[Middleware('App\Middlewares\AuthMiddleware')]
     public function welcomePost(Request $request): Response
     {
         try {

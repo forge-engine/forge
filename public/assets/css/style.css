@@ -382,17 +382,17 @@ img {
   border: 1px solid transparent;
 
   &.alert--success {
-	background: hsl(145 63% 95%);
+	background: var(--color-success);
 	border-color: var(--color-success);
   }
 
   &.alert--error {
-	background: hsl(360 80% 95%);
+	background: var(--color-error);
 	border-color: var(--color-error);
   }
   
   &.alert--info {
-    background: hsl(360 80% 95%);
+    background: var(--color-info);
     border-color: var(--color-info);
   }
 }
