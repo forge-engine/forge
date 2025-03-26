@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Modules\ForgeLogger\Commands;
@@ -7,17 +8,23 @@ use Forge\CLI\Command;
 use Forge\Core\Config\Config;
 use Forge\Core\Module\Attributes\CLICommand;
 
-#[CLICommand(name: 'forge-logger:greet', description: 'An example command to greet the user')]
+#[CLICommand(name: 'clear:log', description: 'Clear application logs')]
 class ForgeLoggerCommand extends Command
 {
-	public function __construct(private Config $config)
-	{
-		$settingOne = $config->get('forgelogger.example');
-	}
-	public function execute(array $args): int
-	{
-		$name = $this->argument('name', $args) ?? 'Guest';
-		$this->info("Hello, " . $name . " from the ForgeLogger");
-		return 0;
-	}
+    public function __construct(private Config $config)
+    {
+    }
+    public function execute(array $args): int
+    {
+        $path = $this->config->get('app.log.path', BASE_PATH . '/storage/logs/forge.log');
+
+        if (file_exists($path)) {
+            unlink($path);
+            $this->success("Logs cleared successfully");
+            return 0;
+        }
+
+        $this->info("No log file found");
+        return 1;
+    }
 }

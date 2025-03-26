@@ -1,7 +1,7 @@
 {
 	"$schema": "./../../engine/Core/Schema/module-schema.json",
 	"name": "ForgeLogger",
-	"version": "1.0.0",
+	"version": "0.1.0",
 	"description": "A brief description of the module.",
 	"type": "generic",
 	"order": 100,
