@@ -1,0 +1,17 @@
+{
+	"$schema": "./../../engine/Core/Schema/module-schema.json",
+	"name": "ForgeErrorHandler",
+	"version": "0.1.0",
+	"description": "An error handler by Forge",
+	"type": "generic",
+	"order": 100,
+	"cli": {
+		"commands": []
+	},
+	"tags": [],
+	"config": {
+		"defaults": {}
+	},
+	"author": "Your name",
+	"license: ""
+}

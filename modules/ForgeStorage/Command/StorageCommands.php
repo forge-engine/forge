@@ -2,8 +2,8 @@
 
 namespace Forge\Modules\ForgeStorage\Command;
 
+use Forge\CLI\Traits\OutputHelper;
 use Forge\Core\Contracts\Command\CommandInterface;
-use Forge\Core\Traits\OutputHelper;
 
 class StorageCommands implements CommandInterface
 {

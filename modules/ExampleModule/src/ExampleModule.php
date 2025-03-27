@@ -25,9 +25,9 @@ final class ExampleModule
         $container->bind(ExampleInterface::class, ExampleService::class);
     }
 
-    #[LifecycleHook(hook: LifecycleHookName::APP_BOOTED)]
-    public function onAppBooted(): void
+    #[LifecycleHook(hook: LifecycleHookName::AFTER_MODULE_REGISTER)]
+    public function onAfterModuleRegister(): void
     {
-        error_log("ExampleModule: Application has booted!");
+        //error_log("[ForgeExampleModule]: After Module register");
     }
 }

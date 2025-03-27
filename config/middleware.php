@@ -4,6 +4,7 @@ return [
     'global' => [
         \Forge\Core\Http\Middlewares\CorsMiddleware::class,
         \Forge\Core\Http\Middlewares\CompressionMiddleware::class,
+        \Forge\Core\Http\Middlewares\SanitizeInputMiddleware::class,
     ],
     'web' => [
         \Forge\Core\Http\Middlewares\SessionMiddleware::class,

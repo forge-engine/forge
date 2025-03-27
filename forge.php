@@ -18,7 +18,7 @@ Forge\Core\Config\EnvParser::load(BASE_PATH . "/.env");
 $container = Container::getInstance();
 
 // Setup container and register services
-$container = Bootstrap::setupCliContainer();
+$container = Bootstrap::initCliContainer();
 
 $app = $container->get(Application::class);
 
