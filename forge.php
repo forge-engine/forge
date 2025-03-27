@@ -4,20 +4,19 @@ declare(strict_types=1);
 
 define("BASE_PATH", __DIR__);
 
-use Forge\Core\Bootstrap;
+use Forge\Core\Bootstrap\Bootstrap;
 use Forge\Core\DI\Container;
 use Forge\CLI\Application;
 use Forge\Core\Autoloader;
+use Forge\Core\Config\EnvParser;
 
 require BASE_PATH . "/engine/Core/Autoloader.php";
-Autoloader::register();
-
 require BASE_PATH . "/engine/Core/Config/EnvParser.php";
-Forge\Core\Config\EnvParser::load(BASE_PATH . "/.env");
+
+Autoloader::register();
+EnvParser::load(BASE_PATH . "/.env");
 
 $container = Container::getInstance();
-
-// Setup container and register services
 $container = Bootstrap::initCliContainer();
 
 $app = $container->get(Application::class);
