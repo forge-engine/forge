@@ -16,6 +16,7 @@ use Forge\Exceptions\ValidationException;
 use Forge\Traits\ControllerHelper;
 
 #[Service]
+#[Middleware('web')]
 final class HomeController
 {
     use ControllerHelper;
