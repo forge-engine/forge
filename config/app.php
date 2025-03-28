@@ -10,5 +10,5 @@ return [
     "log" => [
         'driver' =>  $_ENV["LOG_DRIVER"] ?? "syslog",
         'path' => BASE_PATH .  "/storage/logs/forge.log"
-    ]
+    ],
 ];

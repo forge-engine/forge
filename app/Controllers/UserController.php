@@ -7,12 +7,14 @@ namespace App\Controllers;
 use App\Repositories\UserRepository;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Http\Attributes\ApiRoute;
+use Forge\Core\Http\Attributes\Middleware;
 use Forge\Core\Http\Request;
 use Forge\Core\Http\Response;
 use Forge\Exceptions\UserNotFoundException;
 use Forge\Traits\ControllerHelper;
 
 #[Service]
+#[Middleware('api')]
 final class UserController
 {
     use ControllerHelper;

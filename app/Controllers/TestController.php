@@ -11,11 +11,13 @@ use Forge\Core\Routing\Route;
 use Forge\Core\Http\Request;
 use Forge\Core\Session\SessionInterface;
 use Forge\Traits\ControllerHelper;
+use Forge\Traits\ResponseHelper;
 
 #[Service]
 final class TestController
 {
     use ControllerHelper;
+    use ResponseHelper;
 
     public function __construct(private SessionInterface $session, private CookieJar $cookies)
     {
@@ -32,5 +34,11 @@ final class TestController
         ];
 
         return $this->view(view: "pages/test/index", data: $data)->withCookie($cookie);
+    }
+
+    #[Route("/test/failure")]
+    public function failure(Request $request): Response
+    {
+        return $this->createErrorResponse($request, 'Simulate failure', 500);
     }
 }
