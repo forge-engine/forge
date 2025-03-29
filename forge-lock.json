@@ -11,6 +11,24 @@
             "registry": "forge-engine-modules",
             "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-package-manager/0.1.0/0.1.0.zip",
             "integrity": "c75c3c9cde075dc95c008cd8aaf1aeb603f9da16bddcacbddacc5faf5c191901"
+        },
+        "forge-logger": {
+            "version": "0.1.0",
+            "registry": "forge-engine-modules",
+            "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-logger/0.1.0/0.1.0.zip",
+            "integrity": "8def0730460d208b0de2b339e79d44ca8d5cbe6b36409e5c406c95d7d2808e4a"
+        },
+        "forge-error-handler": {
+            "version": "0.1.0",
+            "registry": "forge-engine-modules",
+            "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-error-handler/0.1.0/0.1.0.zip",
+            "integrity": "6b59bfc2b8547a2440eeb5473185bed31e3927d0f5a28b0ae06be3f95601fb30"
+        },
+        "forge-auth": {
+            "version": "0.1.0",
+            "registry": "forge-engine-modules",
+            "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-auth/0.1.0/0.1.0.zip",
+            "integrity": "27d86c506a6785e0e635f328c44f935708c5054b8008273d276cccdb4006f2d7"
         }
     }
 }

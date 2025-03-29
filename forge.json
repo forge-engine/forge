@@ -3,6 +3,9 @@
     "modules": {
         "forge-engine/framework": "0.1.0",
         "forge-storage": "1.0.0",
-        "forge-package-manager": "0.1.0"
+        "forge-package-manager": "0.1.0",
+        "forge-logger": "0.1.0",
+        "forge-error-handler": "0.1.0",
+        "forge-auth": "0.1.0"
     }
 }
