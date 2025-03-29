@@ -380,6 +380,7 @@ img {
   padding: var(--space-unit);
   border-radius: var(--radius-base);
   border: 1px solid transparent;
+  color: var(--color-neutral-100);
 
   &.alert--success {
 	background: var(--color-success);

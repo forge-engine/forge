@@ -14,4 +14,9 @@ return [
     'jwt' => [
         'secret' => 'your-very-secure-secret-key',
     ],
+    'password' => [
+        'password_cost' => 12,
+        'max_login_attempts' => 3,
+        'lockout_time' => 300 // 5 minutes
+    ]
 ];

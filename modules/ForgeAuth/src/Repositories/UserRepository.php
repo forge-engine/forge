@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Repositories;
+namespace App\Modules\ForgeAuth\Repositories;
 
-use App\Dto\UserDto;
-use App\Models\User;
+use App\Modules\ForgeAuth\Dto\UserDto;
+use App\Modules\ForgeAuth\Models\User;
 use Forge\Core\Repository\BaseRepository;
 use Forge\Core\Database\QueryBuilder;
 use Forge\Core\DI\Attributes\Service;
