@@ -34,9 +34,8 @@ final class HomeController
          $user = $this->userRepository->findById(1);
          $data = [
                 "title" => "Welcome to Forge Framework",
-                "user" => $user
+                "user" => $user->sanitize()
           ];
-
 
          return $this->view(view: "pages/home/index", data: $data);
      }
