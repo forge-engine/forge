@@ -21,15 +21,15 @@ use Forge\CLI\Traits\OutputHelper;
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
 final class ForgeAuthModule
 {
-	use OutputHelper;
-	public function register(Container $container): void
-	{
-		$container->bind(ForgeAuthInterface::class, ForgeAuthService::class);
-	}
+    use OutputHelper;
+    public function register(Container $container): void
+    {
+        $container->bind(ForgeAuthInterface::class, ForgeAuthService::class);
+    }
 
-	#[LifecycleHook(hook: LifecycleHookName::AFTER_MODULE_REGISTER)]
-	public function onAfterModuleRegister(): void
-	{
-		//error_log("ForgeAuth:  registered!");
-	}
+    #[LifecycleHook(hook: LifecycleHookName::AFTER_MODULE_REGISTER)]
+    public function onAfterModuleRegister(): void
+    {
+        //error_log("ForgeAuth:  registered!");
+    }
 }

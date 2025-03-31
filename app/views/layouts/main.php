@@ -25,6 +25,8 @@ use Forge\Core\View\Component;
         <?= $content ?>
     </div>
     <?= Component::render("footer") ?>
+
+    <script src="/assets/js/htmx.min.js" defer></script>
 </body>
 
 </html>

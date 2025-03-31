@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\ForgeAuth\Repositories;
+namespace App\Modules\ForgeStorage\Repositories;
 
-use App\Modules\ForgeAuth\Dto\UserDto;
-use App\Modules\ForgeAuth\Models\User;
+use App\Modules\ForgeStorage\Dto\StorageDto;
+use App\Modules\ForgeStorage\Models\Storage;
 use Forge\Core\Repository\BaseRepository;
 use Forge\Core\Database\QueryBuilder;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Helpers\Url;
 
-#[Service]
-final class UserRepository extends BaseRepository
+#[Service(singleton: false)]
+final class StorageRepository extends BaseRepository
 {
     public function __construct(protected QueryBuilder $queryBuilder)
     {
-        parent::__construct($queryBuilder, User::class, UserDto::class);
+        parent::__construct($queryBuilder, Storage::class, StorageDto::class);
     }
 
-    /** @return array<UserDto> */
+    /** @return array<StorageDto> */
     public function findAll(): array
     {
         return parent::findAll();
@@ -32,19 +32,30 @@ final class UserRepository extends BaseRepository
         ->limit($limit)
         ->offset($offset)
         ->orderBy('created_at', 'ASC')
-        ->get(UserDto::class);
+        ->get(StorageDto::class);
     }
 
-    public function findById(mixed $id): ?UserDto
-    {
-        return parent::findById($id);
-    }
-
-    public function findByEmail(string $email): ?UserDto
+    public function countFilesBucket(string $bucket): int
     {
         return $this->queryBuilder
-            ->where("email", "=", $email)
-            ->first(UserDto::class);
+        ->where("bucket", "=", $bucket)
+        ->count();
+    }
+
+    public function findStorageRecordsByBucket(string $bucket, int $limit = 20, $offset = 0): array
+    {
+        return $this->queryBuilder
+        ->select("*")
+        ->where("bucket", "=", $bucket)
+        ->limit($limit)
+        ->offset($offset)
+        ->orderBy('created_at', 'ASC')
+        ->get(StorageDto::class);
+    }
+
+    public function findById(mixed $id): ?StorageDto
+    {
+        return parent::findById($id);
     }
 
     public function create(array $data): int|false

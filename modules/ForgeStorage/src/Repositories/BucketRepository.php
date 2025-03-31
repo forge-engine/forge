@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\ForgeAuth\Repositories;
+namespace App\Modules\ForgeStorage\Repositories;
 
-use App\Modules\ForgeAuth\Dto\UserDto;
-use App\Modules\ForgeAuth\Models\User;
+use App\Modules\ForgeStorage\Dto\BucketDto;
+use App\Modules\ForgeStorage\Models\Bucket;
 use Forge\Core\Repository\BaseRepository;
 use Forge\Core\Database\QueryBuilder;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Helpers\Url;
 
 #[Service]
-final class UserRepository extends BaseRepository
+final class BucketRepository extends BaseRepository
 {
     public function __construct(protected QueryBuilder $queryBuilder)
     {
-        parent::__construct($queryBuilder, User::class, UserDto::class);
+        parent::__construct($queryBuilder, Bucket::class, BucketDto::class);
     }
 
-    /** @return array<UserDto> */
+    /** @return array<BucketDto> */
     public function findAll(): array
     {
         return parent::findAll();
@@ -32,19 +32,20 @@ final class UserRepository extends BaseRepository
         ->limit($limit)
         ->offset($offset)
         ->orderBy('created_at', 'ASC')
-        ->get(UserDto::class);
+        ->get(BucketDto::class);
     }
 
-    public function findById(mixed $id): ?UserDto
-    {
-        return parent::findById($id);
-    }
-
-    public function findByEmail(string $email): ?UserDto
+    public function findByName(string $bucket): ?BucketDto
     {
         return $this->queryBuilder
-            ->where("email", "=", $email)
-            ->first(UserDto::class);
+        ->select("*")
+        ->where("name", "=", $bucket)
+        ->first(BucketDto::class);
+    }
+
+    public function findById(mixed $id): ?BucketDto
+    {
+        return parent::findById($id);
     }
 
     public function create(array $data): int|false

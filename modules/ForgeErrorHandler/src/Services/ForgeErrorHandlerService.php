@@ -15,7 +15,7 @@ use Forge\Traits\PathHelper;
 use Throwable;
 
 #[Service]
-#[Provides(interface: ForgeErrorHandlerInterface::class, version: '0.1.0')]
+#[Provides(interface: ForgeErrorHandlerInterface::class, version: '0.1.1')]
 #[Requires]
 final class ForgeErrorHandlerService implements ForgeErrorHandlerInterface
 {
@@ -61,12 +61,6 @@ final class ForgeErrorHandlerService implements ForgeErrorHandlerInterface
         error_log("Exception caught in ForgeErrorHandlerService:");
         error_log("File: " . $e->getFile());
         error_log("Line: " . $e->getLine());
-        error_log("Trace:");
-        $trace = $e->getTrace();
-        for ($i = 0; $i < min(5, count($trace)); $i++) {
-            error_log("#" . $i . " " . $trace[$i]['file'] . ":" . $trace[$i]['line'] . " " . $trace[$i]['function'] . "()");
-        }
-        error_log("Full trace as string:");
         error_log($e->getTraceAsString());
         $this->handle($e, Request::createFromGlobals())->send();
         exit(1);

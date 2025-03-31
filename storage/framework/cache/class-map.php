@@ -1,6 +1,5 @@
 <?php return array (
   'App\\Middlewares\\AuthMiddleware' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/app/Middlewares/AuthMiddleware.php',
-  'Forge\\Core\\Database\\QueryBuilder' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/engine/Core/Database/QueryBuilder.php',
   'Forge\\Core\\Http\\Middlewares\\CookieMiddleware' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/engine/Core/Http/Middlewares/CookieMiddleware.php',
   'Forge\\Core\\Http\\Middlewares\\IpWhiteListMiddleware' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/engine/Core/Http/Middlewares/IpWhiteListMiddleware.php',
   'Forge\\Core\\Http\\Middlewares\\CorsMiddleware' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/engine/Core/Http/Middlewares/CorsMiddleware.php',

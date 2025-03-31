@@ -2,24 +2,24 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\ForgeAuth\Repositories;
+namespace App\Modules\ForgeStorage\Repositories;
 
-use App\Modules\ForgeAuth\Dto\UserDto;
-use App\Modules\ForgeAuth\Models\User;
+use App\Modules\ForgeStorage\Dto\TemporaryUrlDto;
+use App\Modules\ForgeStorage\Models\TemporaryUrl;
 use Forge\Core\Repository\BaseRepository;
 use Forge\Core\Database\QueryBuilder;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Helpers\Url;
 
 #[Service]
-final class UserRepository extends BaseRepository
+final class TemporaryUrlRepository extends BaseRepository
 {
     public function __construct(protected QueryBuilder $queryBuilder)
     {
-        parent::__construct($queryBuilder, User::class, UserDto::class);
+        parent::__construct($queryBuilder, TemporaryUrl::class, TemporaryUrlDto::class);
     }
 
-    /** @return array<UserDto> */
+    /** @return array<TemporaryUrlDto> */
     public function findAll(): array
     {
         return parent::findAll();
@@ -32,19 +32,21 @@ final class UserRepository extends BaseRepository
         ->limit($limit)
         ->offset($offset)
         ->orderBy('created_at', 'ASC')
-        ->get(UserDto::class);
+        ->get(TemporaryUrlDto::class);
     }
 
-    public function findById(mixed $id): ?UserDto
-    {
-        return parent::findById($id);
-    }
-
-    public function findByEmail(string $email): ?UserDto
+    public function findByCleanPath(string $cleanPath): ?TemporaryUrlDto
     {
         return $this->queryBuilder
-            ->where("email", "=", $email)
-            ->first(UserDto::class);
+        ->select("*")
+        ->where("clean_path", "=", $cleanPath)
+        ->first(TemporaryUrlDto::class);
+    }
+
+
+    public function findById(mixed $id): ?TemporaryUrlDto
+    {
+        return parent::findById($id);
     }
 
     public function create(array $data): int|false
