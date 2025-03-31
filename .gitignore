@@ -12,6 +12,7 @@
 # Ignore temporary files and logs
 /storage/*.key
 /storage/*.log
+/storage/app/*
 /storage/cache/*
 /storage/sessions/*
 /storage/framework/views/*
