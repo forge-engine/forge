@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\ForgeNexus\Services;
+namespace App\Modules\ForgeHub\Services;
 
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Module\Attributes\Provides;
 use Forge\Core\Module\Attributes\Requires;
-use App\Modules\ForgeNexus\Contracts\ForgeNexusInterface;
+use App\Modules\ForgeHub\Contracts\ForgeHubInterface;
 
 #[Service]
-#[Provides(interface: ForgeNexusInterface::class, version: '0.1.0')]
+#[Provides(interface: ForgeHubInterface::class, version: '0.1.0')]
 #[Requires]
-final class ForgeNexusService implements ForgeNexusInterface
+final class ForgeNexusService implements ForgeHubInterface
 {
-    public function __construct()
+    public function __construct(/** private AnotherServiceInterface $anotherService */)
     {
     }
     public function doSomething(): string

@@ -177,6 +177,17 @@ final class ForgeErrorHandlerService implements ForgeErrorHandlerInterface
 
     private function logError(Throwable $e, Request $request): void
     {
+        $logDir = dirname($this->logPath);
+
+        if (!is_dir($logDir)) {
+            mkdir($logDir, 0775, true);
+        }
+
+        if (!file_exists($this->logPath)) {
+            touch($this->logPath);
+            chmod($this->logPath, 0664);
+        }
+
         $log = sprintf(
             "[%s] %s: %s in %s:%d\n%s\n\nRequest: %s %s\n\nSession: %s\n\n",
             date('Y-m-d H:i:s'),

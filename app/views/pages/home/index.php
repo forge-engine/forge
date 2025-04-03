@@ -1,5 +1,5 @@
 <?php
-use App\Dto\UserDto;
+use App\Modules\ForgeAuth\Dto\UserDto;
 
 /**
  * @var string $title

@@ -1,8 +1,8 @@
 {
 	"$schema": "./../../engine/Core/Schema/module-schema.json",
-	"name": "ForgeNexus",
+	"name": "ForgeHub",
 	"version": "0.1.0",
-	"description": "CMS for Forge Framework",
+	"description": "Administration Hub for Forge Framework",
 	"type": "generic",
 	"order": 100,
 	"cli": {
