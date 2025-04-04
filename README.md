@@ -66,4 +66,4 @@ Forge aims to strike a balance between lightweight micro-frameworks and more com
 
 ## License
 
-MIT
+MITcd
