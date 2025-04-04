@@ -1,0 +1,17 @@
+{
+	"$schema": "./../../engine/Core/Schema/module-schema.json",
+	"name": "ForgeNotification",
+	"version": "0.1.0",
+	"description": "A notification channel by forge",
+	"type": "generic",
+	"order": 100,
+	"cli": {
+		"commands": []
+	},
+	"tags": [],
+	"config": {
+		"defaults": {}
+	},
+	"author": "Your name",
+	"license: ""
+}
