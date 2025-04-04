@@ -1,0 +1,41 @@
+{
+    "$schema": "./../../engine/Core/Schema/module-schema.json",
+    "name": "forge-static-gen",
+    "version": "1.0.0",
+    "description": "A Basic Static Site Generator by Forge",
+    "type": "generic",
+    "order": 100,
+    "provides": [
+        "Forge\\Modules\\Contacts\\ForgeStaticGenInterface@1.0.0"
+    ],
+    "requires": [
+        "MarkDownInterface@1.0.0"
+    ],
+    "lifecycleHooks": [
+        "beforeBoot",
+        "afterBoot",
+        "beforeModuleLoad",
+        "afterModuleLoad",
+        "beforeModuleRegister",
+        "afterModuleRegister",
+        "afterConfigLoaded"
+    ],
+    "class": "Forge\\Modules\\ForgeStaticGen\\ForgeStaticGenModule",
+    "cli": {
+        "commands": [
+            "static:build"
+        ]
+    },
+    "tags": [],
+    "config": {
+        "defaults": {}
+    },
+    "compatibility": {
+        "framework": ">=0.0.1",
+        "php": "^8.3"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/forge-engine/modules"
+    }
+}

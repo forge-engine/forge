@@ -6,6 +6,7 @@ namespace App\Controllers;
 
 use App\Modules\ForgeAuth\Repositories\UserRepository;
 use App\Modules\ForgeAuth\Services\ForgeAuthService;
+use Forge\Core\Debug\Metrics;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Helpers\Flash;
 use Forge\Core\Helpers\Redirect;
@@ -33,7 +34,10 @@ final class HomeController
     #[Route("/")]
      public function index(): Response
      {
+         Metrics::start('db_load_one_record_test');
          $user = $this->userRepository->findById(1);
+         Metrics::stop('db_load_one_record_test');
+
          $data = [
                 "title" => "Welcome to Forge Framework",
                 "user" => $user->sanitize()
