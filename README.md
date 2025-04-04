@@ -26,7 +26,6 @@ Forge Engine comes packed with features designed to empower developers:
 * **Powerful Routing System:** A flexible and expressive routing system for defining your application's endpoints.
 * **Extensible Middleware System:** Allows you to easily add custom logic to the request/response cycle.
 * **Database Abstraction Layer:** Provides a consistent and convenient way to interact with various database systems.
-* **Event System:** Enables you to build decoupled and reactive applications through an event-driven architecture.
 * **CLI Application Building:** Tools for creating powerful and interactive command-line interfaces.
 
 ## Documentation

@@ -1,6 +1,7 @@
 # Ignore sensitive environment files
 .env
 !.env.example
+.DS_Store
 
 # Ignore compiled source code
 /vendor/
