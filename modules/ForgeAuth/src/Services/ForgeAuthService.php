@@ -18,7 +18,7 @@ use Forge\Core\Helpers\Flash;
 use Forge\Core\Session\SessionInterface;
 
 #[Service]
-#[Provides(interface: ForgeAuthInterface::class, version: '0.1.1')]
+#[Provides(interface: ForgeAuthInterface::class, version: '0.1.2')]
 #[Requires(SessionInterface::class)]
 #[Requires(Config::class)]
 #[Requires(UserRepository::class)]

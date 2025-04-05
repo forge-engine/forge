@@ -62,25 +62,4 @@ final class BucketRepository extends BaseRepository
     {
         return parent::delete($id);
     }
-
-    public function paginate(int $page, int $perPage, string $baseUrl): array
-    {
-        $offset = ($page - 1) * $perPage;
-        $users = $this->find($perPage, $offset);
-        $total = $this->queryBuilder->count();
-        $totalPages = (int) ceil($total / $perPage);
-
-        $links = Url::generateLinks($baseUrl, $page, $perPage, $totalPages);
-
-        return [
-          'data' => $users,
-          'meta' => [
-              'total' => $total,
-              'page' => $page,
-              'perPage' => $perPage,
-              'totalPages' => $totalPages,
-              'links' => $links
-          ]
-        ];
-    }
 }

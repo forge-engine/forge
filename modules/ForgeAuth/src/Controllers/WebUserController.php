@@ -12,12 +12,14 @@ use Forge\Core\Http\Response;
 use Forge\Core\Routing\Route;
 use Forge\Exceptions\UserNotFoundException;
 use Forge\Traits\ControllerHelper;
+use Forge\Traits\PaginationHelper;
 
 #[Service]
 #[Middleware('web')]
 final class WebUserController
 {
     use ControllerHelper;
+    use PaginationHelper;
 
     public function __construct(private UserRepository $userRepository)
     {
@@ -26,25 +28,25 @@ final class WebUserController
     #[Route('/users')]
     public function index(Request $request): Response
     {
-        $page = isset($request->queryParams['page']) && is_numeric($request->queryParams['page']) ? (int)$request->queryParams['page'] : 1;
-        $limit = isset($request->queryParams['per_page']) && is_numeric($request->queryParams['per_page']) ? (int)$request->queryParams['per_page'] : 10;
+        $paginationParams = $this->getPaginationParams($request);
 
-        $page = max(1, $page);
-        $limit = max(1, $limit);
-
-        $baseUrl = $request->getUrl();
-
-        $result = $this->userRepository->paginate($page, $limit, $baseUrl);
+        $result = $this->userRepository->paginate(
+            $paginationParams['page'],
+            $paginationParams['limit'],
+            $paginationParams['column'],
+            $paginationParams['direction'],
+            $paginationParams['search']
+        );
         return $this->apiResponse($result['data'])
             ->withMeta($result['meta']);
     }
 
     #[Route('/users/{id}')]
-    public function show(Request $request, array $params): Response
+    public function show(Request $request, string $id): Response
     {
-        $id = (int)$params["id"];
+        $userId = (int)$id;
         try {
-            $user = $this->userRepository->findById($id);
+            $user = $this->userRepository->findById($userId);
             return $this->apiResponse($user);
         } catch (UserNotFoundException $e) {
             return $this->apiError('User not found', 404);

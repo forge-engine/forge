@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 define("BASE_PATH", dirname(__DIR__));
 
+require_once BASE_PATH . "/engine/Core/Support/helpers.php";
 require BASE_PATH . "/engine/Core/Autoloader.php";
 
 // Register autoloader

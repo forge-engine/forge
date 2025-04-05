@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 define("BASE_PATH", __DIR__);
+require_once BASE_PATH . "/engine/Core/Support/helpers.php";
 
 use Forge\Core\Bootstrap\Bootstrap;
 use Forge\Core\DI\Container;

@@ -15,7 +15,7 @@ use App\Modules\ForgeLogger\Drivers\SysLogDriver;
 use Forge\Core\Config\Config;
 
 #[Service]
-#[Provides(interface: ForgeLoggerInterface::class, version: '0.1.0')]
+#[Provides(interface: ForgeLoggerInterface::class, version: '0.1.1')]
 #[Requires]
 final class ForgeLoggerService implements ForgeLoggerInterface
 {
@@ -46,5 +46,17 @@ final class ForgeLoggerService implements ForgeLoggerInterface
     {
         $driver = $this->drivers[$this->driver] ?? $this->drivers['null'];
         $driver->write("[".date('Y-m-d H:i:s')."] [$level] $message");
+    }
+
+    public function debug(string $message, array $context = []): void
+    {
+        $driver = $this->drivers[$this->driver] ?? $this->drivers['null'];
+        $logMessage = "[" . date('Y-m-d H:i:s') . "] [DEBUG] $message";
+
+        if (!empty($context)) {
+            $logMessage .= " " . json_encode($context);
+        }
+
+        $driver->write($logMessage);
     }
 }
