@@ -10,3 +10,6 @@
 [submodule "engine"]
 	path = engine
 	url = git@github.com:forge-engine/framework.git
+[submodule "forge-starter"]
+	path = forge-starter
+	url = git@github.com:forge-engine/forge-starter.git
