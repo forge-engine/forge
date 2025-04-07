@@ -1,0 +1,17 @@
+{
+	"$schema": "./../../engine/Core/Schema/module-schema.json",
+	"name": "ForgeWelcome",
+	"version": "0.1.0",
+	"description": "A playground by forge",
+	"type": "generic",
+	"order": 100,
+	"cli": {
+		"commands": []
+	},
+	"tags": [],
+	"config": {
+		"defaults": {}
+	},
+	"author": "Your name",
+	"license: ""
+}
