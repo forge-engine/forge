@@ -7,7 +7,7 @@ use App\Modules\ForgeAuth\Dto\UserDto;
  * @var UserDto $user
  */
 
-layout("main");
+layout(name: "main", loadFromModule: false);
 ?>
 <section class="container">
     <h2>User area</h2>

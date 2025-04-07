@@ -40,7 +40,7 @@ final class HomeController
 
          $data = [
                 "title" => "Welcome to Forge Framework",
-                "user" => $user->sanitize()
+                "user" => $user
           ];
 
          return $this->view(view: "pages/home/index", data: $data);

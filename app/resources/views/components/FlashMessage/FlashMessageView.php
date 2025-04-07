@@ -2,11 +2,11 @@
 use Forge\Core\View\Component;
 use Forge\Core\Helpers\Flash;
 
-$flashMessages = Flash::flat();
+$flashMessages = Flash::flat() ?? [];
 ?>
-<?php if (!empty($flatMessages)): ?>
+<?php if (!empty($flashMessages)): ?>
     <div>
-        <?php foreach ($flatMessages as $msg): ?>
+        <?php foreach ($flashMessages as $msg): ?>
             <?=
                 Component::render("alert", [
                     "type" => $msg["type"],

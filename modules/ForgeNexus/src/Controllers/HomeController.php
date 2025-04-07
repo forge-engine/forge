@@ -16,9 +16,15 @@ final class HomeController
 {
     use ControllerHelper;
 
-    #[Route("/nexus/{otp}")]
-    public function index(): Response
+    #[Route("/nexus/auth/{otp}")]
+    public function index(string $otp): Response
     {
         return $this->view(view: "pages/index", data: []);
+    }
+
+    #[Route("/nexus/dashboard")]
+    public function dashboard(): Response
+    {
+        return $this->view(view: "pages/dashboard", data: []);
     }
 }

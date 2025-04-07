@@ -31,7 +31,7 @@ final class DashboardController
 
          $data = [
                 "title" => "Welcome to Forge Framework",
-                "user" => $user->sanitize()
+                "user" => $user
           ];
 
          return $this->view(view: "pages/dashboard/index", data: $data);
