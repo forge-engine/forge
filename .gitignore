@@ -29,6 +29,9 @@
 /storage/database/*
 /storage/framework/logs/*
 
+#
+/engine/Core/Module/module_registry.php
+
 
 # Ignore cache and logs
 *.log
