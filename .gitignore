@@ -25,6 +25,7 @@
 /storage/framework/modules/*
 /storage/framework/tmp/*
 /storage/framework/cache/*
+/storage/framework/cache/modules/
 /storage/*.sqlite
 /storage/database/*
 /storage/framework/logs/*
