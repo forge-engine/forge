@@ -16,6 +16,7 @@ use Forge\Core\View\Component;
     <meta name="viewport" content="user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, width=device-width" />
     <link rel="stylesheet" href="<?=asset(resource: 'css/style.css')?>" />
     <link rel="stylesheet" href="<?=asset(resource: 'css/custom.css')?>" />
+    <?= module_styles('forge-ui', ['media' => 'screen'])?>
     <title><?= $title ?? "Default Title" ?></title>
 </head>
 
@@ -27,6 +28,7 @@ use Forge\Core\View\Component;
     <?= Component::render(name: "footer", loadFromModule: false, props: []) ?>
 
     <script defer src="<?=asset(resource: 'js/htmx.min.js')?>" defer></script>
+    <?= module_scripts('forge-ui', ['async' => true]) ?>
 </body>
 
 </html>

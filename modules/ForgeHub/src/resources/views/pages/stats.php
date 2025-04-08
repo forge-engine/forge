@@ -2,7 +2,7 @@
 
 use Forge\Core\Helpers\Format;
 
-layout("main");
+layout("main", loadFromModule: false);
 ?>
 <div class="container mt-sm">
     <h1 class="mb-sm">Framework Metrics</h1>
