@@ -1,8 +1,10 @@
 <?php
 
+define("BASE_PATH", __DIR__);
 const FRAMEWORK_REPO_URL = 'https://github.com/forge-engine/framework-registry';
 const FRAMEWORK_FORGE_JSON_PATH_IN_REPO = 'forge.json';
 const FRAMEWORK_REPO_BRANCH = 'main';
+const FRAMEWORK_MODULE_REGISTRY = BASE_PATH . '/engine/Core/Module/module_registry.php';
 
 
 $specifiedVersion = null;
@@ -91,6 +93,7 @@ if (!extractZip($zipFilePath, $extractionPath)) {
 }
 
 unlink($zipFilePath);
+unlink(FRAMEWORK_MODULE_REGISTRY);
 
 echo "\nForge Framework version {$versionToInstall} installed successfully inside the 'engine' folder!\n";
 echo "You can now use 'php forge.php' to manage your project and modules.\n";

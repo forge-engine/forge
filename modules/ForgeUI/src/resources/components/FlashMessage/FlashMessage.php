@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\ForgeUI\Resources\Components\FlashMessage;
+namespace App\Modules\ForgeUi\Resources\Components\FlashMessage;
 
 use Forge\Core\View\BaseComponent;
 use Forge\Core\View\Component;

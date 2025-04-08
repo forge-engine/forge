@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\ForgeUI;
+namespace App\Modules\ForgeUi;
 
 use Forge\Core\DI\Container;
 use Forge\Core\Module\Attributes\Compatibility;

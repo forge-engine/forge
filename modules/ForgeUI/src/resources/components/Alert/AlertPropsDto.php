@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\ForgeUI\Resources\Components\Alert;
+namespace App\Modules\ForgeUi\Resources\Components\Alert;
 
 class AlertPropsDto
 {

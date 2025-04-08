@@ -1,6 +1,6 @@
 {
 	"$schema": "./../../engine/Core/Schema/module-schema.json",
-	"name": "ForgeUI",
+	"name": "ForgeUi",
 	"version": "0.1.0",
 	"description": "A UI component module by forge.",
 	"type": "generic",
