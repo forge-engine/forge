@@ -13,7 +13,7 @@ use Forge\Core\Module\Attributes\LifecycleHook;
 use Forge\Core\Module\LifecycleHookName;
 use Forge\CLI\Traits\OutputHelper;
 
-#[Module(name: 'ForgeUI', description: 'A UI component module by forge.', order: 99)]
+#[Module(name: 'ForgeUi', description: 'A UI component module by forge.', order: 99)]
 #[Service]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
