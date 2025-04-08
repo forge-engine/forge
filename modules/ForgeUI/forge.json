@@ -1,8 +1,8 @@
 {
 	"$schema": "./../../engine/Core/Schema/module-schema.json",
-	"name": "ForgeWelcome",
+	"name": "ForgeUI",
 	"version": "0.1.0",
-	"description": "A playground by forge",
+	"description": "A UI component module by forge.",
 	"type": "generic",
 	"order": 100,
 	"cli": {

@@ -1,5 +1,6 @@
 <?php
 use App\Modules\ForgeAuth\Dto\UserDto;
+use Forge\Core\View\Component;
 
 /**
  * @var string $title
@@ -7,7 +8,7 @@ use App\Modules\ForgeAuth\Dto\UserDto;
  * @var UserDto $user
  */
 
-layout("main");
+layout(name: "main", loadFromModule: false);
 ?>
 <section class="container">
     <h2>Engine Status</h2>
@@ -21,7 +22,8 @@ layout("main");
     <?php print_r($user); ?>
     </pre>
 
-    <?= component("flash-message")?>
+
+    <?= Component::render(name: "forge-ui:flash-message", loadFromModule: true)?>
 
     <section>
         <form action="" method="POST" class="form">
