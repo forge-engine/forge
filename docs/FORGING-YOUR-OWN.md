@@ -28,7 +28,7 @@ To fully own and rebrand your Forge stack, fork the following repositories:
 - [forge-engine/forge-starter](https://github.com/forge-engine/forge-starter) – a ready-to-go project template with minimal setup
 
 ### Modules
-- [forge-engine/modules](https://github.com/forge-engine/modules) – all optional, official Forge modules live here (auth, storage, logger, etc.)
+- [forge-engine/modules](https://github.com/forge-engine/modules) – all optional, official Forge modules live here (auth, storage, view engine, etc.)
 
 ### Installer
 - [forge-engine/installer](https://github.com/forge-engine/installer) – bash script for bootstrapping a new project quickly
