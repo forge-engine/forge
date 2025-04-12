@@ -6,8 +6,6 @@
         "forge-package-manager": "0.1.0",
         "forge-logger": "0.1.0",
         "forge-error-handler": "0.1.0",
-        "forge-auth": "0.1.0",
-        "forge-welcome": "0.1.0",
-        "acidlake-test": "1.0.0"
+        "forge-auth": "0.1.0"
     }
 }
