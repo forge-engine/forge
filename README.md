@@ -1,69 +1,90 @@
-# Forge Engine - Craft Your Web Applications
+# Forge
 
-Imagine a blacksmith at their forge. They have the heat, the hammer, and the tools to shape raw materials into powerful creations. That's the essence of **Forge Engine**. It's a personal project built from a desire to explore a different paradigm in PHP web development, offering you, the developer (the blacksmith), a lean, modular, and performant foundation to craft your web applications – your powerful tools and creations.
+**Forge is a PHP framework for builders, not followers.**
 
-Forge Engine is built with a focus on leveraging the latest PHP features, providing a unique blend of speed and control, empowering you to forge your digital masterpieces.
+It's not trying to be the next Symfony, CodeIgniter, Laravel, etc. It's not here to please everyone. It's here because I wanted a fast, simple, no-magic framework that puts *me* in control. That's what Forge is. If that works for you too, welcome.
 
-## Framework Philosophy
+---
 
-Just like a skilled blacksmith understands their materials and tools, Forge Engine was created with the following guiding principles in mind:
+## Philosophy
 
-* **Embrace Modern PHP - The Raw Materials:** Forge is built from the ground up using the latest advancements in PHP, including attributes, enums, and strict typing. We believe in harnessing the full potential of the language – your raw materials – for a more robust and enjoyable development experience.
-* **True Modularity - The Interchangeable Tools:** Forge adopts a fully modular architecture where core functionalities are implemented as truly independent modules. This allows you to choose and integrate only the modules you need, like selecting the right tool for the job, leading to exceptionally lean applications with minimal dependencies. This design promotes flexibility and adaptability for various project scales.
-* **Focus on Developer Understanding - Mastering the Craft:** We are committed to providing a framework that is clear, intuitive, and well-documented. Our goal is to empower you with a deep understanding of your application's inner workings, avoiding "magic" and promoting explicit control over your craft.
-* **Independent Module Management - Your Personal Toolkit:** Forge features its own straightforward Package Manager, designed specifically for managing Forge modules. This allows for seamless installation, updates, and removal of modules, fostering a rich ecosystem of reusable components – your personal toolkit – that can be easily integrated into your projects, all without relying on external package managers.
-* **Performance through Design - The Heat of the Forge:** While not the sole focus, Forge's architecture, leveraging modern PHP and a modular approach, naturally leads to efficient resource utilization and fast execution, allowing you to forge your creations quickly and effectively.
+Forge is not here to be everything for everyone.  
+It’s not here to mimic other frameworks.  
+It’s here to give you a strong, minimal foundation you can **own**.
 
-## Key Features
+You’re not a user. You’re a builder.
 
-Forge Engine offers a set of features designed to provide a powerful yet streamlined development experience, equipping you with the tools of the trade:
+- If you use Forge, it belongs to you now. Your rules. Your way.  
+- You get a solid base, and updates if you want them.  
+- If my direction doesn’t fit yours — fork it, and forge your own path.  
+- I’ll keep publishing modules and improvements that help me build real-world apps. You’re free to take what helps, ignore what doesn’t.
 
-* **Built for PHP 8.2+:** Takes full advantage of the latest PHP features for improved code quality, performance, and developer experience.
-* **Fully Modular Architecture:** Core functionalities are separated into truly independent modules, allowing for highly tailored application setups with only the necessary components.
-* **Forge Package Manager:** A dedicated package manager for discovering, installing, and managing Forge modules.
-* **Attribute-Driven Configuration:** Utilizes PHP attributes for cleaner and more declarative configuration of framework features and module settings.
-* **Strongly Typed Codebase:** Employs strict typing throughout the codebase to enhance code reliability and facilitate early error detection.
-* **Native Dependency Injection Container:** A built-in dependency injection container promotes loose coupling and makes your code more testable and maintainable.
-* **Efficient Routing System:** A fast and flexible routing system for defining your application's endpoints.
-* **Extensible Middleware System:** Allows you to easily add custom logic to the request/response cycle.
-* **Lightweight ORM:** An included Object-Relational Mapper for convenient database interactions.
-* **Native PHP View Engine:** Utilizes standard PHP for views, offering simplicity and performance.
-* **Caching System:** Built-in support for caching to enhance application speed.
-* **CLI Application Building:** Tools for creating powerful and interactive command-line interfaces.
+This isn’t a product. This is a toolbox.
 
-## Why Forge Engine? - Your Blacksmith's Forge
+---
 
-Forge Engine offers a compelling alternative for developers – the blacksmiths of the web – seeking a framework that prioritizes:
+## What’s In The Box
 
-* **Performance:** Built with efficiency in mind, leveraging modern PHP features and a lean architecture, allowing you to forge high-performance applications.
-* **Modularity and Control:** A truly modular design allows you to include only what you need, giving you greater control over your application's dependencies and footprint, enabling precise crafting.
-* **Understanding and Transparency:** By avoiding "magic" and external dependencies, Forge encourages a deeper understanding of the underlying mechanisms, empowering you to master your craft fully.
-* **Modern Development Practices:** Embraces the latest PHP features for a more robust and enjoyable development experience, providing you with the most up-to-date techniques.
+- Simple, fast dependency injection container  
+- Native PHP view engine with layouts and components  
+- Modular structure (install only what you need)  
+- Zero dependencies, zero magic  
+- Built-in router, static site generator, storage, and more  
+- Module system with life cycle hooks  
+- CLI for installing modules, project, scaffold commands etc.
 
-Forge aims to strike a balance between lightweight micro-frameworks and more comprehensive, dependency-heavy solutions, offering a sweet spot for projects that benefit from speed, modularity, and a clear understanding of the codebase – your personal forge for building exceptional web applications.
+Everything is structured for clarity. No magic files. No guesswork.
 
-## Documentation
+---
 
-- [Forge Engine Documentation](https://forge-engine.github.io/)
-- [Forge Organization on GitHub](https://github.com/forge-engine/forge)
-- [Forge Engine Repository](https://github.com/forge-engine/forge)
-- [Forge Module Registry](https://github.com/forge-engine/modules/)
-- [Forge Framework Repository](https://github.com/forge-engine/framework)
-- [Forge Framework Registry](https://github.com/forge-engine/framework-registry)
-- [Forge Installer](https://github.com/forge-engine/installer)
+## Install
 
-## Getting Started
+### With the Installer (Recommended)
 
-(Add basic installation instructions here, e.g., a simple download or using the Forge Installer)
+```bash
+bash <(curl -Ls https://raw.githubusercontent.com/forge-engine/installer/main/installer.sh)
+```
 
-## Usage
+### Manually
 
--
+```bash
+git clone https://github.com/forge-engine/forge-starter
+cd forge-starter
+cp env-example .env
+php install.php
+php forge.php key:generate
+php forge.php package:install-project
+```
 
-## Contributing
+---
 
--
+## Modules
+
+Forge starts minimal (under 400KB), and you add modules as needed.
+
+```bash
+php forge.php package:install-module forge-auth
+php forge.php package:install-module forge-storage
+```
+
+Or clone from [github.com/forge-engine/modules](https://github.com/forge-engine/modules) and drop them in `/modules`.
+
+I publish modules that help me build real-world projects. If something’s too specific, I won’t. Or I’ll release a simplified version.
+
+---
+
+## Want to Make Your Own Framework?
+
+Do it. I’ll even show you how.  
+See: [`FORGING-YOUR-OWN.md`](./docs/FORGING-YOUR-OWN.md)
+
+You can rename the CLI, change the bootstrap flow, use your own registry — everything is yours now. That’s the point.
+
+---
 
 ## License
 
-MITcd
+MIT — take it, use it, change it.  
+Just don’t whine if it’s not what you expected.  
+Nobody owes you anything. Build your own vision.
+

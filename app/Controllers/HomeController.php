@@ -26,69 +26,70 @@ final class HomeController
     use SecurityHelper;
 
     public function __construct(
-        private UserRepository $userRepository,
+        private UserRepository   $userRepository,
         private ForgeAuthService $forgeAuthService
-    ) {
+    )
+    {
     }
 
     #[Route("/")]
-     public function index(): Response
-     {
-         Metrics::start('db_load_one_record_test');
-         $user = $this->userRepository->findById(1);
-         Metrics::stop('db_load_one_record_test');
+    public function index(): Response
+    {
+        Metrics::start('db_load_one_record_test');
+        $user = $this->userRepository->findById(1);
+        Metrics::stop('db_load_one_record_test');
 
-         $data = [
-                "title" => "Welcome to Forge Framework",
-                "user" => $user
-          ];
+        $data = [
+            "title" => "Welcome to Forge Framework",
+            "user" => $user
+        ];
 
-         return $this->view(view: "pages/home/index", data: $data);
-     }
+        return $this->view(view: "pages/home/index", data: $data);
+    }
 
     #[Route("/", "POST")]
-     public function register(Request $request): Response
-     {
-         try {
-             $this->validateRegistration($request);
-             $credentials = $this->sanitize($request->postData);
+    public function register(Request $request): Response
+    {
+        try {
+            $this->validateRegistration($request);
+            $credentials = $this->sanitize($request->postData);
 
-             $this->forgeAuthService->register($credentials);
+            $this->forgeAuthService->register($credentials);
 
-             Flash::set("success", "User registered successfully");
-             return Redirect::to("/");
-         } catch (ValidationException) {
-             return Redirect::to("/");
-         }
-     }
+            Flash::set("success", "User registered successfully");
+            return Redirect::to("/");
+        } catch (ValidationException) {
+            return Redirect::to("/");
+        }
+    }
 
     #[Route("/{id}", "PATCH")]
-     #[Middleware("App\Middlewares\AuthMiddleware")]
-     public function updateUser(Request $request, array $params): Response
-     {
-         $id = (int)$params["id"];
-         $data = [
-                "username" => $request->postData["username"],
-                "email" => $request->postData["email"],
-          ];
-         $this->userRepository->update($id, $data);
+    #[Middleware("App\Middlewares\AuthMiddleware")]
+    public function updateUser(Request $request, array $params): Response
+    {
+        $id = (int)$params["id"];
+        $data = [
+            "username" => $request->postData["username"],
+            "email" => $request->postData["email"],
+        ];
+        $this->userRepository->update($id, $data);
 
-         return new Response("<h1> Successfully updated!</h1>");
-     }
+        return new Response("<h1> Successfully updated!</h1>");
+    }
 
     private function validateRegistration(Request $request): void
     {
         $rules = [
-                "username" => ["required", "min:3"],
-                "email" => ["required", "email", "unique:users,email"],
-                "password" => ["required", "min:8"]
-          ];
+            "username" => ["required", "min:3"],
+            "email" => ["required", "email", "unique:users,email"],
+            "password" => ["required", "min:8"]
+        ];
 
         $customMessages = [
-                "required" => "The :field field is required!",
-                "min" => "The :field field must be at least :value characters.",
-                "unique" => "The :field is already taken."
-          ];
+            "required" => "The :field field is required!",
+            "min" => "The :field field must be at least :value characters.",
+            "unique" => "The :field is already taken."
+        ];
 
         $request->validate($rules, $customMessages);
     }
