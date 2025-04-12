@@ -35,6 +35,12 @@
             "registry": "forge-engine-modules",
             "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-welcome/0.1.0/0.1.0.zip",
             "integrity": "8086c3d3620f6a7cd39da4d02366374895cf1817e4e4b36648cfde720f195f94"
+        },
+        "acidlake-test": {
+            "version": "1.0.0",
+            "registry": "acidlake-modules",
+            "url": "https://raw.githubusercontent.com/acidlake/acidlake-modules/main/modules/acidlake-test/1.0.0/1.0.0.zip",
+            "integrity": "c47d7ff5e8797a8c919d15e1b07e14ee24cad0cd349843fb2817ec06513d673a"
         }
     }
 }

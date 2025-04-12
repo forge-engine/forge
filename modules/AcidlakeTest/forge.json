@@ -1,0 +1,33 @@
+{
+    "$schema": "https://raw.githubusercontent.com/upperdo/forge-schemas/refs/heads/main/schemas/modules/schema.json",
+    "name": "acidlake-test",
+    "version": "1.0.0",
+    "description": "Acidlake test module",
+    "type": "test",
+    "order": 100,
+    "provides": [
+        "AcidLakeTestInterface@1.0"
+    ],
+    "requires": [],
+    "lifecycleHooks": [],
+    "class": "Forge\\Modules\\Router\\TestModule",
+    "cli": {
+        "commands": [
+            "route:list"
+        ]
+    },
+    "tags": [
+        "test"
+    ],
+    "config": {
+        "defaults": {}
+    },
+    "compatibility": {
+        "framework": ">=0.0.1",
+        "php": "^8.3"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/forge-engine/modules"
+    }
+}

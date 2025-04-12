@@ -76,6 +76,8 @@ final class PackageManagerService implements PackageManagerInterface
             $downloadUrl = $moduleLockInfo['url'] ?? null;
             $expectedIntegrity = $moduleLockInfo['integrity'] ?? null;
             $registryName = $moduleLockInfo['registry'] ?? self::OFFICIAL_REGISTRY_NAME;
+            $registryDetails = $this->getRegistryByName($registryName);
+            $token = $registryDetails['personal_token'] ?? null;
 
             if (!$versionToInstall || !$downloadUrl || !$expectedIntegrity) {
                 $this->error("Incomplete lock information for module '{$moduleName}'. Skipping.");
@@ -108,7 +110,7 @@ final class PackageManagerService implements PackageManagerInterface
 
             if (!file_exists($moduleCachePath)) {
                 $this->info("Downloading module {$moduleName} from {$downloadUrl}...");
-                $integrityHash = $this->downloadFile($downloadUrl, $moduleCachePath);
+                $integrityHash = $this->downloadFile($downloadUrl, $moduleCachePath, $token);
                 if (!$integrityHash) {
                     $this->error("Failed to download module {$moduleName} from URL in lock file: {$downloadUrl}");
                     $installErrors = true;
@@ -146,6 +148,16 @@ final class PackageManagerService implements PackageManagerInterface
         }
     }
 
+    private function getRegistryByName(string $name): array
+    {
+        foreach ($this->registries as $registry) {
+            if ($registry['name'] === $name) {
+                return $registry;
+            }
+        }
+        return $this->getDefaultRegistryDetails();
+    }
+
     public function installModule(string $moduleName, ?string $version = null, ?string $forceCache = null): void
     {
         $this->info("Installing module: {$moduleName}" . ($version ? " version {$version}" : " (latest)"));
@@ -172,6 +184,7 @@ final class PackageManagerService implements PackageManagerInterface
 
         $moduleDownloadPathInRepo = $versionDetails['url'];
         $registryDetails = $this->getRegistryDetailsForModule($moduleName);
+        $token = $registryDetails['personal_token'] ?? null;
         $registryRawBaseUrl = $this->getRegistryRawBaseUrl($registryDetails);
         $moduleInstallFolderName = $this->generateModuleInstallFolderName($moduleName);
         $moduleCacheFileName = $moduleInstallFolderName . '-' . $versionToInstall . '.zip';
@@ -182,7 +195,7 @@ final class PackageManagerService implements PackageManagerInterface
 
         if ($forceCache === 'force' || !file_exists($moduleCachePath)) {
             $this->info("Downloading module {$moduleName} version {$versionToInstall} from {$githubZipUrl}...");
-            $integrityHash = $this->downloadFile($githubZipUrl, $moduleCachePath);
+            $integrityHash = $this->downloadFile($githubZipUrl, $moduleCachePath, $token);
             $this->integrityHash = $integrityHash;
             if (!$integrityHash) {
                 $this->error("Failed to download module {$moduleName} from GitHub.");
@@ -469,6 +482,7 @@ final class PackageManagerService implements PackageManagerInterface
     {
         $registryDetails = $this->getRegistryDetailsForModule($moduleName);
         $modulesJsonUrl = $this->getModulesJsonUrl($registryDetails);
+        $token = $registryDetails['personal_token'] ?? null;
 
         $cacheKey = md5($modulesJsonUrl);
         $cacheFile = $this->getCachePath() . $cacheKey . '.cache';
@@ -479,9 +493,18 @@ final class PackageManagerService implements PackageManagerInterface
             $modulesData = json_decode(file_get_contents($cacheFile), true);
         }
 
+        $context = null;
+        if ($token) {
+            $context = stream_context_create([
+                'http' => [
+                    'header' => "Authorization: token $token\r\n"
+                ]
+            ]);
+        }
+
         if (!is_array($modulesData) || !isset($modulesData[$moduleName])) {
             $this->info("Fetching module list from " . (isset($registryDetails['name']) ? $registryDetails['name'] : $modulesJsonUrl) . "...");
-            $modulesJsonContent = @file_get_contents($modulesJsonUrl);
+            $modulesJsonContent = @file_get_contents($modulesJsonUrl, false, $context);
 
             if ($modulesJsonContent === false) {
                 $this->error("Failed to fetch module list from registry: {$modulesJsonUrl}");
@@ -544,9 +567,19 @@ final class PackageManagerService implements PackageManagerInterface
 
     private function getRegistryRawBaseUrl(array $registryDetails): string
     {
-        $registryBaseUrl = rtrim($registryDetails['url'], '/');
-        $branch = isset($registryDetails['branch']) ? $registryDetails['branch'] : 'main';
-        return "https://raw.githubusercontent.com/" . preg_replace('#^https?://(?:www\.)?github\.com/([^/]+)/([^/]+).*$#i', '$1/$2', $registryBaseUrl) . "/" . $branch;
+        $registryUrl = $registryDetails['url'];
+        $branch = $registryDetails['branch'] ?? 'main';
+
+        if (preg_match('/^git@github\.com:(?<user>[^\/]+)\/(?<repo>[^\.]+).git$/', $registryUrl, $matches)) {
+            return "https://raw.githubusercontent.com/{$matches['user']}/{$matches['repo']}/{$branch}";
+        }
+
+        // Handle HTTPS format
+        if (preg_match('#^https?://github\.com/(?<user>[^/]+)/(?<repo>[^/]+)#i', $registryUrl, $matches)) {
+            return "https://raw.githubusercontent.com/{$matches['user']}/{$matches['repo']}/{$branch}";
+        }
+
+        return $registryUrl;
     }
 
     private function generateGithubZipUrl(string $registryRawBaseUrl, string $branch, string $modulePathInRepo): string
@@ -562,9 +595,18 @@ final class PackageManagerService implements PackageManagerInterface
         return $githubZipUrl;
     }
 
-    private function downloadFile(string $url, string $destination): bool|string
+    private function downloadFile(string $url, string $destination, ?string $token = null): bool|string
     {
-        $fileContent = @file_get_contents($url);
+        $context = null;
+        if ($token) {
+            $context = stream_context_create([
+                'http' => [
+                    'header' => "Authorization: token $token\r\n"
+                ]
+            ]);
+        }
+
+        $fileContent = @file_get_contents($url, false, $context);
         if ($fileContent === false) {
             return false;
         }
