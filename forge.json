@@ -6,6 +6,7 @@
         "forge-package-manager": "0.1.0",
         "forge-logger": "0.1.0",
         "forge-error-handler": "0.1.0",
-        "forge-auth": "0.1.0"
+        "forge-auth": "0.1.0",
+        "forge-testing": "0.1.0"
     }
 }

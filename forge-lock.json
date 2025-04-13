@@ -29,6 +29,12 @@
             "registry": "forge-engine-modules",
             "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-auth/0.1.0/0.1.0.zip",
             "integrity": "27d86c506a6785e0e635f328c44f935708c5054b8008273d276cccdb4006f2d7"
+        },
+        "forge-testing": {
+            "version": "0.1.0",
+            "registry": "forge-engine-modules",
+            "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-testing/0.1.0/0.1.0.zip",
+            "integrity": "e26ffe4a1b167a7bbd7613e6fefd66d0c9a65574189bb3f77357eadb4fbc3b3d"
         }
     }
 }
