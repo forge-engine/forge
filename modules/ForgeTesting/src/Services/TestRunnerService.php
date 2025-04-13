@@ -13,27 +13,34 @@ use App\Modules\ForgeTesting\Attributes\Incomplete;
 use App\Modules\ForgeTesting\Attributes\Skip;
 use App\Modules\ForgeTesting\Attributes\Test;
 use Forge\CLI\Traits\OutputHelper;
-use Forge\Core\Config\Config;
 use Forge\Core\DI\Attributes\Service;
+use Forge\Core\DI\Container;
+use Forge\Core\Module\Attributes\Provides;
+use Forge\Core\Module\Attributes\Requires;
 use Forge\Traits\NamespaceHelper;
 use ReflectionClass;
 use ReflectionMethod;
 use Throwable;
 
 #[Service]
+#[Provides(TestRunnerService::class, version: '0.1.0')]
+#[Requires()]
 final class TestRunnerService
 {
     use OutputHelper;
     use NamespaceHelper;
 
-    private array $config;
-    private array $results;
+    private array $config = [];
+    private array $results = [];
     private array $filterGroups = [];
     private array $testClasses = [];
+    private ?string $groupFilter = null;
+    private Container $container;
 
-    public function __construct(private Config $configuration)
+
+    public function __construct()
     {
-        $this->config = $this->configuration->get('forge_testing');
+        $this->container = Container::getInstance();
         $this->results = [
             'total' => 0,
             'passed' => 0,
@@ -42,36 +49,38 @@ final class TestRunnerService
             'incomplete' => 0,
             'failures' => [],
             'skipped_tests' => [],
-            'incomplete_tests' => []
+            'incomplete_tests' => [],
+            'benchmarks' => [],
+            'durations' => [],
+            'passed_tests' => []
         ];
     }
 
-    public function runTests(?string $filter = null): array
+    public function setTestClasses(array $classes): self
     {
-        foreach ($this->discoverTests() as $testClass) {
-            $this->processTestClass($testClass, $filter);
+        $this->testClasses = $classes;
+        return $this;
+    }
+
+    public function setGroupFilter(?string $group): self
+    {
+        $this->groupFilter = $group;
+        return $this;
+    }
+
+    public function runTests(): array
+    {
+        $this->__construct();
+
+        foreach ($this->testClasses as $testClass) {
+            if (!class_exists($testClass)) {
+                continue;
+            }
+            $this->processTestClass($testClass);
         }
 
         $this->renderResults();
         return $this->results;
-    }
-
-    private function discoverTests(): array
-    {
-        $testClasses = [];
-        $testDirectory = $this->config['test_directory'];
-
-        foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($testDirectory)) as $file) {
-            if ($file->isFile() && $file->getExtension() === 'php') {
-                require_once $file->getPathname();
-                $className = $this->getClassNameFromFile($file->getPathname());
-                if (class_exists($className) && $this->isTestClass($className)) {
-                    $testClasses[] = $className;
-                }
-            }
-        }
-
-        return $testClasses;
     }
 
     private function isTestClass(string $className): bool
@@ -80,18 +89,32 @@ final class TestRunnerService
         return $reflection->isSubclassOf(TestCase::class);
     }
 
-    private function processTestClass(string $testClass, ?string $filter): void
+    private function processTestClass(string $testClass): void
     {
         $reflection = new ReflectionClass($testClass);
 
-        if ($this->shouldSkipClass($reflection, $filter)) {
+        if ($this->groupFilter && !$this->classMatchesGroup($reflection)) {
             return;
         }
+
 
         $this->runTestLifecycle($reflection, [
             'before' => $this->getMethodsWithAttribute($reflection, BeforeEach::class),
             'after' => $this->getMethodsWithAttribute($reflection, AfterEach::class)
         ]);
+    }
+
+    private function classMatchesGroup(ReflectionClass $class): bool
+    {
+        $attributes = $class->getAttributes(Group::class);
+
+        foreach ($attributes as $attr) {
+            $group = $attr->newInstance();
+            if ($group->name === $this->groupFilter) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private function runTestLifecycle(ReflectionClass $reflection, array $lifecycle): void
@@ -103,31 +126,68 @@ final class TestRunnerService
         }
     }
 
-
     private function executeTestMethod(ReflectionClass $reflection, ReflectionMethod $method, array $lifecycle): void
     {
         $testInstance = $reflection->newInstance();
         $this->results['total']++;
+        $fullMethodName = $reflection->getName() . '::' . $method->getName();
+
+        $testAttribute = $this->getMethodAttribute($method, Test::class);
+        $testDescription = $testAttribute ? $testAttribute->description : $method->getName();
+
+        $startTime = microtime(true);
+        $returnValue = null;
 
         try {
             if ($skip = $this->getMethodAttribute($method, Skip::class)) {
                 $this->handleSkippedTest($method, $skip);
+                $this->recordDuration($fullMethodName, $startTime);
                 return;
             }
-
             if ($incomplete = $this->getMethodAttribute($method, Incomplete::class)) {
                 $this->handleIncompleteTest($method, $incomplete);
+                $this->recordDuration($fullMethodName, $startTime);
                 return;
             }
 
             $this->runBeforeEach($testInstance, $lifecycle['before']);
-            $this->runTestWithDependencies($testInstance, $method);
+
+            if ($dataProvider = $this->getMethodAttribute($method, DataProvider::class)) {
+                $this->runDataProvider($testInstance, $method, $dataProvider);
+            } elseif ($depends = $this->getMethodAttribute($method, Depends::class)) {
+                $this->runDependency($testInstance, $depends->testMethod);
+                $returnValue = $method->invoke($testInstance);
+            } else {
+                $returnValue = $method->invoke($testInstance);
+            }
+
             $this->runAfterEach($testInstance, $lifecycle['after']);
 
+            $this->recordDuration($fullMethodName, $startTime);
+
+            if (is_array($returnValue) && isset($returnValue['avg'])) {
+                $this->results['benchmarks'][$fullMethodName] = $returnValue;
+                //iterations count for test method calculation
+                 // $this->results['benchmarks'][$fullMethodName]['iterations'] = $iterations_variable;
+            }
+
             $this->results['passed']++;
+            $this->results['passed_tests'][] = [
+                'Test' => $testDescription,
+                'Class' => $reflection->getName(),
+                'Method' => $method->getName(),
+                'Duration' => $this->results['durations'][$fullMethodName] ?? 0,
+            ];
         } catch (\Throwable $e) {
+            $this->recordDuration($fullMethodName, $startTime);
             $this->handleTestFailure($method, $e);
         }
+    }
+
+    private function recordDuration(string $methodName, float $startTime): void
+    {
+        $endTime = microtime(true);
+        $this->results['durations'][$methodName] = $endTime - $startTime;
     }
 
     private function handleTestFailure(ReflectionMethod $method, Throwable $e): void
@@ -212,21 +272,90 @@ final class TestRunnerService
 
     private function renderResults(): void
     {
-        $this->line("Test Results:");
-        $this->table(
-            ['Total', 'Passed', 'Failed', 'Skipped', 'Incomplete'],
-            [[
-                $this->results['total'],
-                $this->results['passed'],
-                $this->results['failed'],
-                $this->results['skipped'],
-                $this->results['incomplete']
-            ]]
-        );
-
+        $this->renderBenchmarkResults();
+        $this->renderTestDurations();
+        $this->renderSummaryTable();
+        $this->renderPassedTests();
         $this->renderFailureDetails();
         $this->renderSkippedTests();
         $this->renderIncompleteTests();
+    }
+
+    private function renderBenchmarkResults(): void
+    {
+        if (!empty($this->results['benchmarks'])) {
+            $this->line("\nBenchmark Results:");
+
+            foreach ($this->results['benchmarks'] as $methodName => $benchmarkData) {
+                $this->info("\n{$methodName}:");
+
+                $rowData = [];
+
+                if (isset($benchmarkData['iterations'])) {
+                    $rowData['Iterations'] = $benchmarkData['iterations'];
+                }
+
+                if (isset($benchmarkData['avg']) && is_numeric($benchmarkData['avg'])) {
+                    $rowData['Avg Time/Iter'] = number_format($benchmarkData['avg'] * 1000, 3) . ' ms';
+                }
+                if (isset($benchmarkData['min']) && is_numeric($benchmarkData['min'])) {
+                    $rowData['Min Time/Iter'] = number_format($benchmarkData['min'] * 1000, 3) . ' ms';
+                }
+                if (isset($benchmarkData['max']) && is_numeric($benchmarkData['max'])) {
+                    $rowData['Max Time/Iter'] = number_format($benchmarkData['max'] * 1000, 3) . ' ms';
+                }
+                if (isset($benchmarkData['total']) && is_numeric($benchmarkData['total'])) {
+                    $rowData['Total Time'] = number_format($benchmarkData['total'] * 1000, 3) . ' ms';
+                }
+
+                $headers = array_keys($rowData);
+
+                if (!empty($headers)) {
+                    $this->table($headers, [$rowData]);
+                } else {
+                    $this->warning("  No benchmark data could be formatted for display.");
+                    error_log("Original benchmark data for {$methodName}: " . print_r($benchmarkData, true));
+                }
+            }
+            $this->line('');
+        }
+    }
+
+    private function renderTestDurations(int $topN = 5): void
+    {
+        if (!empty($this->results['durations'])) {
+            $this->line("\nSlowest Tests:");
+
+            arsort($this->results['durations']);
+            $slowest = array_slice($this->results['durations'], 0, $topN, true);
+
+            $tableData = [];
+            foreach ($slowest as $methodName => $duration) {
+                $tableData[] = [
+                      'Test' => $methodName,
+                      'Duration' => number_format($duration * 1000, 2) . ' ms'
+                  ];
+            }
+
+            if (!empty($tableData)) {
+                $this->table(['Test', 'Duration'], $tableData);
+                $this->line('');
+            }
+        }
+    }
+
+    private function renderSummaryTable(): void
+    {
+        $this->line("Test Results:");
+        $headers = ['Total', 'Passed', 'Failed', 'Skipped', 'Incomplete'];
+        $rowData = [
+                'Total' => $this->results['total'],
+                'Passed' => $this->results['passed'],
+                'Failed' => $this->results['failed'],
+                'Skipped' => $this->results['skipped'],
+                'Incomplete' => $this->results['incomplete']
+           ];
+        $this->table($headers, [$rowData]);
     }
 
     private function renderFailureDetails(): void
@@ -234,10 +363,15 @@ final class TestRunnerService
         if (!empty($this->results['failures'])) {
             $this->error("\nFailures:");
             foreach ($this->results['failures'] as $failure) {
+                $methodName = $failure['class'] . '::' . $failure['method'];
+                $durationMs = isset($this->results['durations'][$methodName])
+                     ? ' (' . number_format($this->results['durations'][$methodName] * 1000, 0) . ' ms)'
+                     : '';
+
                 $this->line(sprintf(
-                    "%s::%s\n%s\n%s:%d\n",
-                    $failure['class'],
-                    $failure['method'],
+                    "%s%s\n%s\n%s:%d\n",
+                    $methodName,
+                    $durationMs,
                     $failure['message'],
                     $failure['exception']->getFile(),
                     $failure['exception']->getLine()
@@ -294,13 +428,36 @@ final class TestRunnerService
         if (!empty($this->results['skipped_tests'])) {
             $this->warning("\nSkipped Tests:");
             foreach ($this->results['skipped_tests'] as $skippedTest) {
+                $methodName = $skippedTest['class'] . '::' . ($skippedTest['method'] ?? '{class}');
+                $durationMs = isset($this->results['durations'][$methodName])
+                     ? ' (' . number_format($this->results['durations'][$methodName] * 1000, 0) . ' ms)'
+                     : '';
+
                 $this->line(sprintf(
-                    "%s::%s\nReason: %s\n",
-                    $skippedTest['class'],
-                    $skippedTest['method'] ?? '',
+                    "%s%s\nReason: %s\n",
+                    $methodName,
+                    $durationMs,
                     $skippedTest['reason']
                 ));
             }
+        }
+    }
+
+    private function renderPassedTests(): void
+    {
+        if (!empty($this->results['passed_tests'])) {
+            $this->line("\nPassed Tests:");
+            $tableData = [];
+            foreach ($this->results['passed_tests'] as $passedTest) {
+                $tableData[] = [
+                    'Test' => $passedTest['Test'],
+                    'Class' => $passedTest['Class'],
+                    'Method' => $passedTest['Method'],
+                    'Duration' => number_format($passedTest['Duration'] * 1000, 2) . ' ms',
+                ];
+            }
+            $this->table(['Test', 'Class', 'Method', 'Duration'], $tableData);
+            $this->line('');
         }
     }
 

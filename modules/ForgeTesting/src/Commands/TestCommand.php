@@ -2,25 +2,29 @@
 
 declare(strict_types=1);
 
-namespace Forge\CLI\Commands;
+namespace App\Modules\ForgeTesting\Commands;
 
+use App\Modules\ForgeTesting\Services\TestRunnerService;
 use Forge\CLI\Command;
 use Forge\CLI\Traits\OutputHelper;
 use Forge\Core\Module\Attributes\CLICommand;
-use App\Modules\ForgeTesting\TestRunner;
 use RecursiveIteratorIterator;
 use RecursiveDirectoryIterator;
 use DirectoryIterator;
 use Forge\Traits\NamespaceHelper;
 
 #[CLICommand(name: 'test', description: 'Run application tests')]
-class TestCommand extends Command
+final class TestCommand extends Command
 {
     use OutputHelper;
     use NamespaceHelper;
 
     private const CACHE_FILE = BASE_PATH . '/storage/framework/cache/test_cache.php';
-    private const CACHE_TTL = 3600; // 1 hour
+    private const CACHE_TTL = 3600;
+
+    public function __construct(private TestRunnerService $testRunnerService)
+    {
+    }
 
     public function execute(array $args): int
     {
@@ -38,10 +42,12 @@ class TestCommand extends Command
         }
 
         $cache = $this->getValidatedCache($testDirs);
-        $runner = new TestRunner($cache['classes'], $options['group']);
+        $this->testRunnerService
+            ->setTestClasses($cache['classes'])
+            ->setGroupFilter($options['group']);
 
         $this->info("Running tests...\n");
-        $results = $runner->runTests();
+        $results = $this->testRunnerService->runTests();
 
         $this->updateCache($cache['meta'], $testDirs);
         $this->renderExecutionTime($startTime);
@@ -73,7 +79,7 @@ class TestCommand extends Command
         return $options;
     }
 
-    private function getTestDirectories(string $type, string $module): array
+    private function getTestDirectories(string $type, string|array $module): array
     {
         return match ($type) {
             'app' => [BASE_PATH . '/app/tests/'],
@@ -83,7 +89,7 @@ class TestCommand extends Command
         };
     }
 
-    private function getModuleTestDirs(string $module): array
+    private function getModuleTestDirs(string|array $module): array
     {
         $dirs = [];
         $modules = is_array($module) ? $module : [$module];
