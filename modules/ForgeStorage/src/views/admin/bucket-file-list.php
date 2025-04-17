@@ -4,13 +4,14 @@ use App\Modules\ForgeStorage\Dto\StorageDto;
 use App\Modules\ForgeStorage\Dto\BucketDto;
 use Forge\Core\Helpers\File;
 use Forge\Core\Helpers\Url;
+use Forge\Core\View\View;
 
 /***
 @var BucketDto $bucket
 @var StorageDto[] $storageRecords
 */
 
-layout("main");
+View::layout(name: "main", loadFromModule: false);
 ?>
 <style>
 .file-header {

@@ -1,5 +1,7 @@
 <?php
-    layout(name:'nexus', loadFromModule: true);
+use Forge\Core\View\View;
+
+View::layout(name: "nexus", loadFromModule: true);
 ?>
 
 <!-- Top row cards -->

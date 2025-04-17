@@ -114,6 +114,17 @@ final class TestRunnerService
                 return true;
             }
         }
+
+        foreach ($class->getMethods() as $method) {
+            $attributes = $method->getAttributes(Group::class);
+            foreach ($attributes as $attr) {
+                $group = $attr->newInstance();
+                if ($group->name === $this->groupFilter) {
+                    return true;
+                }
+            }
+        }
+
         return false;
     }
 

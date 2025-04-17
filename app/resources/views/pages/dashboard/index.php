@@ -1,19 +1,21 @@
 <?php
-use App\Modules\ForgeAuth\Dto\UserDto;
+use App\Modules\ForgeAuth\Models\User;
+use Forge\Core\View\View;
 
 /**
  * @var string $title
  * @var string $message
- * @var UserDto $user
+ * @var User $user
  */
 
-layout(name: "main", loadFromModule: false);
+View::layout(name: "main", loadFromModule: false);
 ?>
 <section class="container">
     <h2>User area</h2>
 
-    <h3>Welcome <?=$user->username?> <form action="/auth/logout" method="POST"><button>Logout</button></form>
+    <h3>Welcome <form action="/auth/logout" method="POST"><button>Logout</button></form>
     </h3>
+    <p>Identifier: <?=$user->identifier?></p>
     <p>Email: <?=$user->email?></p>
-    <p>Account created on: <?=$user->created_at?->format('Y-m-d H:i')?></p>
+    <p>Account created on: <?=$user->created_at?></p>
 </section>

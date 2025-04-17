@@ -1,14 +1,14 @@
 <?php
-use App\Modules\ForgeAuth\Dto\UserDto;
+use App\Modules\ForgeAuth\Models\User;
 use Forge\Core\View\Component;
+use Forge\Core\View\View;
 
 /**
  * @var string $title
  * @var string $message
- * @var UserDto $user
+ * @var User $user
  */
-
-layout(name: "main", loadFromModule: false);
+View::layout(name: "main", loadFromModule: false);
 ?>
 <section class="container">
     <h2>Engine Status</h2>
@@ -28,7 +28,7 @@ layout(name: "main", loadFromModule: false);
     <section>
         <form action="" method="POST" class="form">
             <div class="grid grid--2 mb-sm">
-                <input class="form--input" type="text" name="username" placeholder="Username" required>
+                <input class="form--input" type="text" name="identifier" placeholder="Username" required>
                 <input class="form--input" type="password" name="password" placeholder="Password" required>
             </div>
             <input class="form--input mb-sm" type="email" name="email" placeholder="Email" required>
@@ -38,7 +38,7 @@ layout(name: "main", loadFromModule: false);
     <?php if ($user):?>
     <form action="/<?= $user->id ?>" method="POST" class="form">
         <input type="hidden" name="_method" value="PATCH">
-        <input class="form--input" type="text" name="username" placeholder="Username" value="<?= $user->username ?>" required>
+        <input class="form--input" type="text" name="identifier" placeholder="Username" value="<?= $user->identifier ?>" required>
         <input type="email" name="email" placeholder="Email" value="<?= $user->email ?>" required>
         <button class="button" type="submit">Update User</button>
     </form>

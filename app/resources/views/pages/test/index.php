@@ -1,19 +1,23 @@
 <?php
 use Forge\Core\View\Component;
+use Forge\Core\View\View;
 
 /**
  * @var string $title
+ * @var string $userId
  */
 
-layout("main");
+View::layout(name: "main", loadFromModule: false);
+
+$alertProps = ["type" => "success","children" => "Success message"];
 ?>
 <div class="container">
     <h1>Welcome <?=$title?></h1>
-    <?php if (session()->has('user_id')): ?>
-    <h3>Welcome user <?=e(session()->get('user_id'))?></h3>
+    <?php if ($userId): ?>
+    <h3>Welcome user <?=$userId?></h3>
     <?php endif; ?>
 
-    <?= Component::render("alert", ["type" => "success","children" => "Success message"])?>
+    <?= Component::render("forge-ui:alert", $alertProps, loadFromModule: true)?>
     <article class="card">
         <h2 class="card--title">Card Title</h2>
         <div class="card--body">

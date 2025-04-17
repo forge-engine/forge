@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
-use App\Modules\ForgeAuth\Repositories\UserRepository;
+use App\Modules\ForgeAuth\Models\User;
 use App\Modules\ForgeAuth\Services\ForgeAuthService;
+use App\Modules\ForgeAuth\Validation\ForgeAuthValidate;
 use Forge\Core\Debug\Metrics;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Helpers\Flash;
@@ -26,17 +27,15 @@ final class HomeController
     use SecurityHelper;
 
     public function __construct(
-        private UserRepository   $userRepository,
         private ForgeAuthService $forgeAuthService
-    )
-    {
+    ) {
     }
 
     #[Route("/")]
     public function index(): Response
     {
         Metrics::start('db_load_one_record_test');
-        $user = $this->userRepository->findById(1);
+        $user = User::find(1);
         Metrics::stop('db_load_one_record_test');
 
         $data = [
@@ -51,9 +50,8 @@ final class HomeController
     public function register(Request $request): Response
     {
         try {
-            $this->validateRegistration($request);
+            ForgeAuthValidate::register($request->postData);
             $credentials = $this->sanitize($request->postData);
-
             $this->forgeAuthService->register($credentials);
 
             Flash::set("success", "User registered successfully");
@@ -69,28 +67,11 @@ final class HomeController
     {
         $id = (int)$params["id"];
         $data = [
-            "username" => $request->postData["username"],
+            "identifier" => $request->postData["identifier"],
             "email" => $request->postData["email"],
         ];
-        $this->userRepository->update($id, $data);
+        //$this->userRepository->update($id, $data);
 
         return new Response("<h1> Successfully updated!</h1>");
-    }
-
-    private function validateRegistration(Request $request): void
-    {
-        $rules = [
-            "username" => ["required", "min:3"],
-            "email" => ["required", "email", "unique:users,email"],
-            "password" => ["required", "min:8"]
-        ];
-
-        $customMessages = [
-            "required" => "The :field field is required!",
-            "min" => "The :field field must be at least :value characters.",
-            "unique" => "The :field is already taken."
-        ];
-
-        $request->validate($rules, $customMessages);
     }
 }

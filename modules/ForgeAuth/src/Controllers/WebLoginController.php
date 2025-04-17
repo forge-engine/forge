@@ -6,6 +6,7 @@ namespace App\Modules\ForgeAuth\Controllers;
 
 use App\Modules\ForgeAuth\Exceptions\LoginException;
 use App\Modules\ForgeAuth\Services\ForgeAuthService;
+use App\Modules\ForgeAuth\Validation\ForgeAuthValidate;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Helpers\Redirect;
 use Forge\Core\Http\Attributes\Middleware;
@@ -36,7 +37,7 @@ final class WebLoginController
     public function login(Request $request): Response
     {
         try {
-            $this->validateLogin($request);
+            ForgeAuthValidate::login($request->postData);
             $loginCredentials = $this->sanitize($request->postData);
 
             $this->forgeAuthService->login($loginCredentials);
@@ -52,15 +53,5 @@ final class WebLoginController
     {
         $this->forgeAuthService->logout();
         return Redirect::to("/");
-    }
-
-    private function validateLogin(Request $request): void
-    {
-        $rules = [
-            'email' => ["required", "email"],
-            "password" => ["required"]
-        ];
-
-        $request->validate($rules);
     }
 }

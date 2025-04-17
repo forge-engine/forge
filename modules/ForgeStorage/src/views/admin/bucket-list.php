@@ -1,10 +1,11 @@
 <?php
 use App\Modules\ForgeStorage\Dto\BucketDto;
 use Forge\Core\Helpers\File;
+use Forge\Core\View\View;
 
 /*** @var BucketDto[] $buckets */
 
-layout("main");
+View::layout(name: "main", loadFromModule: false);
 ?>
 <style>
 .bucket-table {

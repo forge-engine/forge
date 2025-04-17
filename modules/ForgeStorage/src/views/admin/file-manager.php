@@ -1,5 +1,7 @@
 <?php
-layout("main");
+use Forge\Core\View\View;
+
+View::layout(name: "main", loadFromModule: false);
 ?>
 <style>
 /* Add any missing CSS here to match the image */

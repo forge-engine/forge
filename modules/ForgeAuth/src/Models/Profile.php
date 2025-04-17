@@ -4,18 +4,17 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeAuth\Models;
 
-use App\Modules\ForgeAuth\Dto\UserMetadataDto;
 use Forge\Core\Database\Table;
 use Forge\Core\Database\Column;
 use Forge\Core\Database\Model;
-use Forge\Traits\RepositoryTrait;
 use Forge\Traits\HasMetaData;
 use Forge\Traits\Hastimestamps;
 use Forge\Traits\Metadata;
+use Forge\Traits\RepositoryTrait;
 use Forge\Traits\SoftDeletes;
 
-#[Table("users")]
-final class User extends Model
+#[Table("profiles")]
+final class Profile extends Model
 {
     use Hastimestamps;
     use SoftDeletes;
@@ -23,7 +22,7 @@ final class User extends Model
     use Metadata;
     use RepositoryTrait;
 
-    protected array $hidden = ["password"];
+    protected array $hidden = [];
     protected bool $softDelete = true;
 
     protected array $casts = [
@@ -33,25 +32,33 @@ final class User extends Model
     #[Column("integer", primary: true)]
     public int $id;
 
-    #[Column("varchar(255)")]
-    public string $status;
+    #[Column("integer")]
+    public int $user_id;
 
     #[Column("varchar(255)")]
-    public string $identifier;
+    public string $first_name;
 
     #[Column("varchar(255)")]
-    public string $email;
+    public ?string $last_name;
 
     #[Column("varchar(255)")]
-    public string $password;
+    public ?string $avatar;
 
-    public function metadata(): UserMetadataDto
-    {
-        return new UserMetadataDto(...$this->metadata);
-    }
+    #[Column("varchar(255)")]
+    public ?string $email;
 
-    public function profile(): ?Profile
-    {
-        return Profile::findBy('user_id', $this->id);
-    }
+    #[Column("varchar(255)")]
+    public ?string $phone;
+
+    #[Column("varchar(255)")]
+    public ?string $pending_email;
+
+    #[Column("varchar(255)")]
+    public ?string $pending_phone;
+
+    #[Column("varchar(255)")]
+    public ?string $email_confirmed;
+
+    #[Column("varchar(255)")]
+    public ?string $phone_confirmed;
 }

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\ForgeAuth\Controllers;
 
 use App\Modules\ForgeAuth\Enums\Permission;
-use App\Modules\ForgeAuth\Repositories\UserRepository;
+use App\Modules\ForgeAuth\Models\User;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Http\Attributes\ApiRoute;
 use Forge\Core\Http\Attributes\Middleware;
@@ -24,7 +24,7 @@ final class ApiUserController
     use AuthorizeRequests;
     use PaginationHelper;
 
-    public function __construct(private UserRepository $userRepository)
+    public function __construct()
     {
     }
 
@@ -35,13 +35,14 @@ final class ApiUserController
 
         $paginationParams = $this->getPaginationParams($request);
 
-        $result = $this->userRepository->paginate(
+        $result = User::paginate(
             $paginationParams['page'],
             $paginationParams['limit'],
             $paginationParams['column'],
             $paginationParams['direction'],
             $paginationParams['search']
         );
+
         return $this->apiResponse($result['data'])
             ->withMeta($result['meta']);
     }
@@ -51,7 +52,7 @@ final class ApiUserController
     {
         $userId = (int)$id;
         try {
-            $user = $this->userRepository->findById($userId);
+            $user = User::findById($userId);
             return $this->apiResponse($user);
         } catch (UserNotFoundException $e) {
             return $this->apiError('User not found', 404);
@@ -61,7 +62,7 @@ final class ApiUserController
     #[ApiRoute('/users/export', 'GET', ['api'])]
     public function export(Request $request): Response
     {
-        $data = []; //$this->userRepository->getExportData();
+        $data = [];
         return $this->csvResponse($data, 'users_export.csv');
     }
 }

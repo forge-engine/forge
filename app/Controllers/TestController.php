@@ -30,7 +30,8 @@ final class TestController
         $cookie = $this->cookies->make('remember_me', 'token123', 60 * 24 * 30);
 
         $data = [
-            "title" => "Welcome to Forge"
+            "title" => "Welcome to Forge",
+            "userId" => $this->session->get('user_id') ?? null
         ];
 
         return $this->view(view: "pages/test/index", data: $data)->withCookie($cookie);

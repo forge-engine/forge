@@ -8,10 +8,9 @@ use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Module\Attributes\Provides;
 use Forge\Core\Module\Attributes\Requires;
 use App\Modules\ForgeAuth\Contracts\ForgeAuthInterface;
-use App\Modules\ForgeAuth\Dto\UserDto;
 use App\Modules\ForgeAuth\Exceptions\LoginException;
 use App\Modules\ForgeAuth\Exceptions\UserRegistrationException;
-use App\Modules\ForgeAuth\Repositories\UserRepository;
+use App\Modules\ForgeAuth\Models\User;
 use Exception;
 use Forge\Core\Config\Config;
 use Forge\Core\Helpers\Flash;
@@ -21,11 +20,9 @@ use Forge\Core\Session\SessionInterface;
 #[Provides(interface: ForgeAuthInterface::class, version: '0.1.2')]
 #[Requires(SessionInterface::class)]
 #[Requires(Config::class)]
-#[Requires(UserRepository::class)]
 final class ForgeAuthService implements ForgeAuthInterface
 {
     public function __construct(
-        private UserRepository $userRepository,
         private Config $config,
         private SessionInterface $session
     ) {
@@ -34,24 +31,24 @@ final class ForgeAuthService implements ForgeAuthInterface
     public function register(array $credentials): bool
     {
         try {
-            $payload = [
-                "username" => $credentials["username"],
-                 "password" => password_hash($credentials["password"], PASSWORD_BCRYPT),
-                 "email" => $credentials["email"],
-            ];
-
-            $this->userRepository->create($payload);
+            $user = new User();
+            $user->identifier = $credentials["identifier"];
+            $user->password = password_hash($credentials["password"], PASSWORD_BCRYPT);
+            $user->email = $credentials["email"];
+            $user->status = 'active';
+            $user->metadata = [];
+            $user->save();
             return true;
         } catch (Exception $e) {
             throw new UserRegistrationException();
         }
     }
 
-    public function login(array $credentials): UserDto
+    public function login(array $credentials): User
     {
         $this->validateLoginAttempt();
 
-        $user = $this->userRepository->findByEmail($credentials['email']);
+        $user = User::findBy("identifier", $credentials['identifier']);
 
         if (!$user || !password_verify($credentials['password'], $user->password)) {
             $this->handleFailedLogin();
@@ -61,6 +58,7 @@ final class ForgeAuthService implements ForgeAuthInterface
 
         $this->session->regenerate();
         $this->session->set('user_id', $user->id);
+        $this->session->set('user_identifier', $user->identifier);
         $this->session->set('user_email', $user->email);
         $this->resetLoginAttempts();
 
@@ -76,10 +74,10 @@ final class ForgeAuthService implements ForgeAuthInterface
         $this->session->clear();
     }
 
-    public function user(): ?UserDto
+    public function user(): ?User
     {
         $userId = $this->session->get('user_id');
-        return $userId ? $this->userRepository->findById($userId) : null;
+        return $userId ? User::findById($userId) : null;
     }
 
     private function validateLoginAttempt(): void

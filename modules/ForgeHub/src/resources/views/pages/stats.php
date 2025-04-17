@@ -1,8 +1,9 @@
 <?php
 
 use Forge\Core\Helpers\Format;
+use Forge\Core\View\View;
 
-layout("main", loadFromModule: false);
+View::layout(name: "main", loadFromModule: false);
 ?>
 <div class="container mt-sm">
     <h1 class="mb-sm">Framework Metrics</h1>

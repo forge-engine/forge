@@ -1,5 +1,7 @@
 <?php
-layout('main');
+use Forge\Core\View\View;
+
+View::layout(name: "nexus", loadFromModule: true);
 ?>
 
 <div class="container">

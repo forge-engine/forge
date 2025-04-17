@@ -1,5 +1,7 @@
 <?php
-    layout("main");
+use Forge\Core\View\View;
+
+View::layout(name: "main", loadFromModule: false);
 ?>
 <div class="container mt-sm">
     <h1 class="mb-sm">Application Logs</h1>

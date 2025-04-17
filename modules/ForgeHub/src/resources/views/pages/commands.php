@@ -1,5 +1,7 @@
 <?php
-layout("main");
+use Forge\Core\View\View;
+
+View::layout(name: "main", loadFromModule: false);
 
 $commandHistory = $_SESSION['command_history'] ?? [];
 ?>
