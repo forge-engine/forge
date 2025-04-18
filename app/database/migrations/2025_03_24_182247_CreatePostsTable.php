@@ -15,14 +15,14 @@ use Forge\Core\Database\Migrations\Migration;
 class CreatePostsTable extends Migration
 {
     #[Column(name: 'id', type: 'INT', primaryKey: true, autoIncrement: true)]
-    private int $id;
+    public readonly int $id;
 
     #[Column(name: 'title', type: 'STRING')]
-    private string $title;
+    public readonly string $title;
 
     #[Column(name: 'content', type: 'TEXT')]
-    private string $content;
+    public readonly string $content;
 
     #[Column(name: 'metadata', type: 'JSON')]
-    private array $metadata;
+    public readonly array $metadata;
 }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Events\TestPagevisitedEvent;
+use App\Modules\ForgeEvents\Services\EventDispatcher;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Http\CookieJar;
 use Forge\Core\Http\Response;
@@ -19,8 +21,11 @@ final class TestController
     use ControllerHelper;
     use ResponseHelper;
 
-    public function __construct(private SessionInterface $session, private CookieJar $cookies)
-    {
+    public function __construct(
+        private SessionInterface $session,
+        private CookieJar $cookies,
+        private EventDispatcher $dispatcher
+    ) {
     }
 
     #[Route("/test")]
@@ -28,6 +33,13 @@ final class TestController
     {
         $this->session->set("user_id", 123456);
         $cookie = $this->cookies->make('remember_me', 'token123', 60 * 24 * 30);
+
+        $this->dispatcher->dispatch(
+            new TestPagevisitedEvent(
+                userId: $this->session->get('user_id'),
+                visitedAt: date('Y-m-d H:i:s')
+            )
+        );
 
         $data = [
             "title" => "Welcome to Forge",

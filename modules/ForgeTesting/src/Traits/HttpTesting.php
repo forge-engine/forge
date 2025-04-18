@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeTesting\Traits;
 
-use App\Modules\ForgeTesting\Attributes\BeforeEach;
-use Forge\Core\DI\Container;
 use Forge\Core\Http\Request;
 use Forge\Core\Http\Response;
 use Forge\Core\Routing\Router;

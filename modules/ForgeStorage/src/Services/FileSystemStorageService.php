@@ -8,12 +8,15 @@ use Forge\Core\Config\Config;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Module\Attributes\Provides;
 use Forge\Core\Module\Attributes\Requires;
+use Forge\Traits\FileHelper;
 
 #[Service]
 #[Provides]
 #[Requires]
 final class FileSystemStorageService
 {
+    use FileHelper;
+
     private string $root;
     private string $publicPath;
 
@@ -82,12 +85,5 @@ final class FileSystemStorageService
         return file_exists($configFile)
             ? json_decode(file_get_contents($configFile), true)
             : ['public' => false, 'expire' => null];
-    }
-
-    private function ensureDirectoryExists(string $path): void
-    {
-        if (!file_exists($path)) {
-            mkdir($path, 0755, true);
-        }
     }
 }

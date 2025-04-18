@@ -9,9 +9,12 @@ use App\Modules\ForgeStorage\Repositories\TemporaryUrlRepository;
 use Forge\Core\Config\Config;
 use Forge\Core\Config\Environment;
 use Forge\Core\Helpers\UUID;
+use Forge\Traits\FileHelper;
 
 class LocalDriver implements StorageDriverInterface
 {
+    use FileHelper;
+
     private string $root;
     private string $publicPath;
     private Environment $env;
@@ -101,12 +104,5 @@ class LocalDriver implements StorageDriverInterface
         return file_exists($configFile)
             ? json_decode(file_get_contents($configFile), true)
             : ['public' => false, 'expire' => null];
-    }
-
-    private function ensureDirectoryExists(string $path): void
-    {
-        if (!file_exists($path)) {
-            mkdir($path, 0755, true);
-        }
     }
 }

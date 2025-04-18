@@ -40,7 +40,6 @@ final class TestRunnerService
 
     public function __construct()
     {
-        $this->container = Container::getInstance();
         $this->results = [
             'total' => 0,
             'passed' => 0,
