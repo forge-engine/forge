@@ -17,11 +17,7 @@ $alertProps = ["type" => "success", "children" => "Success message"];
     <h3>Welcome user <?= $userId ?></h3>
     <?php endif; ?>
 
-    <?= Component::render(
-        "forge-ui:alert",
-        $alertProps,
-        loadFromModule: true
-    ) ?>
+    <?= Component::render("forge-ui:alert", $alertProps, loadFromModule: true) ?>
     <article class="card">
         <h2 class="card--title">Card Title</h2>
         <div class="card--body">

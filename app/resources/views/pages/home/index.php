@@ -22,13 +22,8 @@ View::layout(name: "main", loadFromModule: false);
     <?php print_r($user); ?>
     </pre>
 
-
-
     <section>
-        <?= Component::render(
-    "forge-ui:alert",
-    loadFromModule: true
-) ?>
+        <?= Component::render("forge-ui:alert", loadFromModule: true) ?>
         <form action="" method="POST" class="form">
             <div class="grid grid--2 mb-sm">
                 <input class="form--input" type="text" name="identifier" placeholder="Username" required>
