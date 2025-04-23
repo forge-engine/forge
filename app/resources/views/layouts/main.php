@@ -17,12 +17,12 @@ use Forge\Core\Helpers\ModuleAssetHelper;
     <meta name="viewport" content="user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, width=device-width" />
     <link rel="stylesheet" href="/assets/app/css/style.css" />
     <link rel="stylesheet" href="/assets/app/css/custom.css" />
-    <?= ModuleAssetHelper::renderStyles('forge-ui')?>
+    <?= ModuleAssetHelper::renderStyles("forge-ui") ?>
     <title><?= $title ?? "Default Title" ?></title>
 </head>
 
 <body>
-    <?= Component::render(name: "nav-bar", loadFromModule: false, props: [])?>
+    <?= Component::render(name: "nav-bar", loadFromModule: false, props: []) ?>
 
     <div class="main">
         <?= $content ?>
@@ -31,7 +31,7 @@ use Forge\Core\Helpers\ModuleAssetHelper;
     <?= Component::render(name: "footer", loadFromModule: false, props: []) ?>
 
     <script defer src="/assets/app/js/htmx.min.js" defer></script>
-    <?= ModuleAssetHelper::renderScripts('forge-ui')?>
+    <?= ModuleAssetHelper::renderScripts("forge-ui") ?>
 </body>
 
 </html>

@@ -6,12 +6,7 @@ namespace App\Modules\ForgeUi\Resources\Components\Alert;
 
 class AlertPropsDto
 {
-    public string $type = '';
-    public string $children = '';
-
-    public function __construct(string $type = '', string $children = '')
+    public function __construct(public string $type = '', public string $children = '')
     {
-        $this->type = $type;
-        $this->children = $children;
     }
 }

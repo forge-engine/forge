@@ -1,0 +1,15 @@
+[
+  {
+    "label": "Run Forge Dev Server",
+    "command": "php",
+    "args": ["forge.php", "serve"],
+    "env": {},
+    "use_new_terminal": false,
+    "allow_concurrent_runs": false,
+    "reveal": "always",
+    "reveal_target": "dock",
+    "hide": "never",
+    "shell": "system",
+    "tags": []
+  }
+]

@@ -1,8 +1,8 @@
 <?php
-use App\Modules\ForgeUiComponents\Resources\Components\Alert\AlertPropsDto;
+use App\Modules\ForgeUi\Resources\Components\Alert\AlertPropsDto;
 
-/** @var AlertPropsDto $alert */
+/** @var AlertPropsDto $data */
 ?>
-<div class="alert alert--<?= $alert['type'] ?? "info" ?> mb-sm">
-    <?= $alert['children'] ?>
+<div class="alert alert--<?= $data->type ?? "info" ?> mb-sm">
+    <?= $data->children ?>
 </div>

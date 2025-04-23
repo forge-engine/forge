@@ -12,6 +12,6 @@ class Sidebar extends BaseComponent
 {
     public function render(): mixed
     {
-        return $this->renderview(viewPath:'Sidebar/SidebarView', loadFromModule: true);
+        return $this->renderview(viewPath:'Sidebar/views/sidebar', loadFromModule: true);
     }
 }

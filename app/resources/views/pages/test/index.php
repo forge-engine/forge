@@ -9,15 +9,19 @@ use Forge\Core\View\View;
 
 View::layout(name: "main", loadFromModule: false);
 
-$alertProps = ["type" => "success","children" => "Success message"];
+$alertProps = ["type" => "success", "children" => "Success message"];
 ?>
 <div class="container">
-    <h1>Welcome <?=$title?></h1>
+    <h1>Welcome <?= $title ?></h1>
     <?php if ($userId): ?>
-    <h3>Welcome user <?=$userId?></h3>
+    <h3>Welcome user <?= $userId ?></h3>
     <?php endif; ?>
 
-    <?= Component::render("forge-ui:alert", $alertProps, loadFromModule: true)?>
+    <?= Component::render(
+        "forge-ui:alert",
+        $alertProps,
+        loadFromModule: true
+    ) ?>
     <article class="card">
         <h2 class="card--title">Card Title</h2>
         <div class="card--body">

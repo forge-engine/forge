@@ -23,9 +23,12 @@ View::layout(name: "main", loadFromModule: false);
     </pre>
 
 
-    <?= Component::render(name: "forge-ui:flash-message", loadFromModule: true)?>
 
     <section>
+        <?= Component::render(
+    "forge-ui:alert",
+    loadFromModule: true
+) ?>
         <form action="" method="POST" class="form">
             <div class="grid grid--2 mb-sm">
                 <input class="form--input" type="text" name="identifier" placeholder="Username" required>
@@ -34,14 +37,14 @@ View::layout(name: "main", loadFromModule: false);
             <input class="form--input mb-sm" type="email" name="email" placeholder="Email" required>
             <button class="button" type="submit">Create User</button>
         </form>
+        <?php if ($user): ?>
+        <form action="/<?= $user->id ?>" method="POST" class="form">
+            <input type="hidden" name="_method" value="PATCH">
+            <input class="form--input" type="text" name="identifier" placeholder="Username" value="<?= $user->identifier ?>" required>
+            <input type="email" name="email" placeholder="Email" value="<?= $user->email ?>" required>
+            <button class="button" type="submit">Update User</button>
+        </form>
+        <?php endif; ?>
     </section>
-    <?php if ($user):?>
-    <form action="/<?= $user->id ?>" method="POST" class="form">
-        <input type="hidden" name="_method" value="PATCH">
-        <input class="form--input" type="text" name="identifier" placeholder="Username" value="<?= $user->identifier ?>" required>
-        <input type="email" name="email" placeholder="Email" value="<?= $user->email ?>" required>
-        <button class="button" type="submit">Update User</button>
-    </form>
-    <?php endif; ?>
 
-    </div>
+</section>

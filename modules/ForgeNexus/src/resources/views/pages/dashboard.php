@@ -15,7 +15,6 @@ View::layout(name: "nexus", loadFromModule: true);
         <i class="fa-solid fa-users"></i>
     </div>
 </section>
-
 <section class="card metric-card">
     <div class="card-content">
         <h2 class="card-title">Revenue</h2>

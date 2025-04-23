@@ -18,9 +18,6 @@ class Alert extends BaseComponent
 
     public function render(): mixed
     {
-        $data = [
-            "alert" => $this->props,
-        ];
-        return $this->renderview(viewPath: "Alert/AlertView", data: $data, loadFromModule: true);
+        return $this->renderview(viewPath: "Alert/AlertView", data: $this->props, loadFromModule: true);
     }
 }
