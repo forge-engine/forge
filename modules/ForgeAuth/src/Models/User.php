@@ -45,11 +45,17 @@ final class User extends Model
     #[Column("varchar(255)")]
     public string $password;
 
+    /**
+     * Get the user Metada as a friendly DTO object
+     */
     public function metadata(): UserMetadataDto
     {
         return new UserMetadataDto(...$this->metadata);
     }
 
+    /**
+     * Get the user profile relation
+     */
     public function profile(): ?Profile
     {
         return Profile::findBy('user_id', $this->id);

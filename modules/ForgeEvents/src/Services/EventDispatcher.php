@@ -22,7 +22,7 @@ use ReflectionClass;
 use RuntimeException;
 use Throwable;
 
-#[Service(singleton:true)]
+#[Service(singleton: true)]
 final class EventDispatcher
 {
     use OutputHelper;
@@ -32,9 +32,8 @@ final class EventDispatcher
     private Container $container;
     private QueryBuilder $queryBuilder;
 
-    public function __construct(
-
-    ) {
+    public function __construct()
+    {
         $this->queryBuilder = Container::getInstance()->get(QueryBuilder::class);
         $this->container = Container::getInstance();
         $this->queue = $this->driverSetup();
@@ -58,6 +57,9 @@ final class EventDispatcher
         $this->listeners[$eventClass][] = $handler;
     }
 
+    /**
+     * @throws EventException
+     */
     #[EventListener(Event::class)]
     public function dispatch(object $event): void
     {
@@ -150,12 +152,12 @@ final class EventDispatcher
         $retryProcessAfter = microtime(true) + $retryDelaySeconds;
 
         $this->queue->push(serialize([
-            'event'        => $payload['event'],
-            'class'       => $payload['class'],
-            'metadata'    => $payload['metadata'],
+            'event' => $payload['event'],
+            'class' => $payload['class'],
+            'metadata' => $payload['metadata'],
             'processAfter' => $retryProcessAfter,
-            'attempts'    => $payload['attempts']
-        ]), QueuePriority::LOW->value, (int) ($retryDelaySeconds * 1000));
+            'attempts' => $payload['attempts']
+        ]), QueuePriority::LOW->value, (int)($retryDelaySeconds * 1000));
 
         $this->warning("Retrying event {$payload['class']} (attempt {$payload['attempts']})");
     }

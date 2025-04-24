@@ -1,4 +1,5 @@
 <?php
+
 use App\Modules\ForgeAuth\Models\User;
 use Forge\Core\View\Component;
 use Forge\Core\View\View;
@@ -8,6 +9,7 @@ use Forge\Core\View\View;
  * @var string $message
  * @var User $user
  */
+
 View::layout(name: "main", loadFromModule: false);
 ?>
 <section class="container">
@@ -33,12 +35,13 @@ View::layout(name: "main", loadFromModule: false);
             <button class="button" type="submit">Create User</button>
         </form>
         <?php if ($user): ?>
-        <form action="/<?= $user->id ?>" method="POST" class="form">
-            <input type="hidden" name="_method" value="PATCH">
-            <input class="form--input" type="text" name="identifier" placeholder="Username" value="<?= $user->identifier ?>" required>
-            <input type="email" name="email" placeholder="Email" value="<?= $user->email ?>" required>
-            <button class="button" type="submit">Update User</button>
-        </form>
+            <form action="/<?= $user->id ?>" method="POST" class="form">
+                <input type="hidden" name="_method" value="PATCH">
+                <input class="form--input" type="text" name="identifier" placeholder="Username"
+                       value="<?= $user->identifier ?>" required>
+                <input type="email" name="email" placeholder="Email" value="<?= $user->email ?>" required>
+                <button class="button" type="submit">Update User</button>
+            </form>
         <?php endif; ?>
     </section>
 

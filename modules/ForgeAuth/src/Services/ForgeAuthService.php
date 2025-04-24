@@ -18,16 +18,20 @@ use Forge\Core\Session\SessionInterface;
 
 #[Service]
 #[Provides(interface: ForgeAuthInterface::class, version: '0.1.2')]
-#[Requires(SessionInterface::class)]
-#[Requires(Config::class)]
+#[Requires(SessionInterface::class, version: '>=0.1.0')]
+#[Requires(Config::class, version: '>=0.1.0')]
 final class ForgeAuthService implements ForgeAuthInterface
 {
     public function __construct(
-        private Config $config,
-        private SessionInterface $session
-    ) {
+        private readonly Config           $config,
+        private readonly SessionInterface $session
+    )
+    {
     }
 
+    /**
+     * @throws UserRegistrationException
+     */
     public function register(array $credentials): bool
     {
         try {
@@ -44,6 +48,9 @@ final class ForgeAuthService implements ForgeAuthInterface
         }
     }
 
+    /**
+     * @throws LoginException
+     */
     public function login(array $credentials): User
     {
         $this->validateLoginAttempt();
@@ -80,13 +87,16 @@ final class ForgeAuthService implements ForgeAuthInterface
         return $userId ? User::findById($userId) : null;
     }
 
+    /**
+     * @throws LoginException
+     */
     private function validateLoginAttempt(): void
     {
-        $attempts = (int) $this->session->get('login_attempts', 0);
-        $lastAttempt = (int) $this->session->get('last_login_attempt', 0);
+        $attempts = (int)$this->session->get('login_attempts', 0);
+        $lastAttempt = (int)$this->session->get('last_login_attempt', 0);
 
-        $maxAttempts = (int) $this->config->get('security.password.max_login_attempts', 5);
-        $lockoutTime = (int) $this->config->get('security.password.lockout_time', 300);
+        $maxAttempts = (int)$this->config->get('security.password.max_login_attempts', 5);
+        $lockoutTime = (int)$this->config->get('security.password.lockout_time', 300);
 
         if ($attempts >= $maxAttempts && time() - $lastAttempt < $lockoutTime) {
             Flash::set("error", "Too many login attempts. Please try again later");
@@ -96,7 +106,7 @@ final class ForgeAuthService implements ForgeAuthInterface
 
     private function handleFailedLogin(): void
     {
-        $attempts = (int) $this->session->get('login_attempts', 0) + 1;
+        $attempts = (int)$this->session->get('login_attempts', 0) + 1;
         $this->session->set('login_attempts', $attempts);
         $this->session->set('last_login_attempt', time());
     }
