@@ -18,7 +18,7 @@ $tempMenu = [
     ],
     [
         'isActive' => false,
-        'target' => '#',
+        'target' => 'nexus/schemas',
         'label' => 'Schemas',
         'icon' => 'fa-chart-line'
     ],
