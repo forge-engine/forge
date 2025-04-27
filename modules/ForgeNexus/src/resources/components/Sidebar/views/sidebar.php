@@ -18,7 +18,7 @@ $tempMenu = [
     ],
     [
         'isActive' => false,
-        'target' => '#',
+        'target' => 'nexus/schemas',
         'label' => 'Schemas',
         'icon' => 'fa-chart-line'
     ],
@@ -33,24 +33,24 @@ $tempMenu = [
 ?>
 <!-- Sidebar Navigation -->
 <aside class="sidebar">
-    <?=View::component(name: 'nexus:sidebar:header', loadFromModule: true, props: ['name' => 'Nexus CMS'])?>
+    <?= View::component(name: 'nexus:sidebar:header', loadFromModule: true, props: ['name' => 'Nexus CMS']) ?>
     <nav class="sidebar-nav">
         <div class="nav-section">
             <h2 class="nav-section-title">Platform</h2>
             <ul class="nav-list">
                 <?php foreach ($tempMenu as $item): ?>
-                <?=View::component(
-    name: 'nexus:sidebar:item',
-    loadFromModule: true,
-    props: new ItemPropsDto(
-        isActive: (bool)$item['isActive'],
-        target: $item['target'],
-        label: $item['label'],
-        icon: $item['icon']
-    )
-)
-                ?>
-                <?php endforeach;?>
+                    <?= View::component(
+                        name: 'nexus:sidebar:item',
+                        loadFromModule: true,
+                        props: new ItemPropsDto(
+                            isActive: (bool)$item['isActive'],
+                            target: $item['target'],
+                            label: $item['label'],
+                            icon: $item['icon']
+                        )
+                    )
+                    ?>
+                <?php endforeach; ?>
             </ul>
         </div>
     </nav>
