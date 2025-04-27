@@ -1,9 +1,9 @@
 <?php
+
 use Forge\Core\View\View;
 
 View::layout(name: "nexus", loadFromModule: true);
 ?>
-
 
 
 <!-- Chart section -->
@@ -17,8 +17,21 @@ View::layout(name: "nexus", loadFromModule: true);
         </div>
     </header>
     <div class="card-body">
-        <div class="chart-placeholder">
-            <div class="placeholder-text">Chart Visualization</div>
-        </div>
+        <form class="u-flex u-flex-col u-gap-sm" method="POST" action="/signup">
+            <div>
+                <label for="email">Email</label>
+                <input id="email" name="email" type="email" required placeholder="you@example.com">
+                <span class="error-msg">Please enter a valid email.</span>
+            </div>
+
+            <div>
+                <label for="pw">Password</label>
+                <input id="pw" name="password" type="password" minlength="8" required>
+                <span class="error-msg">Min 8 characters.</span>
+            </div>
+
+            <button type="submit">Create account</button>
+        </form>
     </div>
+
 </section>
