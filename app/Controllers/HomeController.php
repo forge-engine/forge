@@ -28,8 +28,7 @@ final class HomeController
 
     public function __construct(
         readonly ForgeAuthService $forgeAuthService
-    )
-    {
+    ) {
     }
 
     #[Route("/")]

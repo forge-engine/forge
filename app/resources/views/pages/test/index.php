@@ -15,7 +15,7 @@ $alertProps = ["type" => "success", "children" => "Success message"];
 <div class="container">
     <h1>Welcome <?= $title ?></h1>
     <?php if ($userId): ?>
-        <h3>Welcome user <?= $userId ?></h3>
+    <h3>Welcome user <?= $userId ?></h3>
     <?php endif; ?>
 
     <?= Component::render("forge-ui:alert", $alertProps, loadFromModule: true) ?>

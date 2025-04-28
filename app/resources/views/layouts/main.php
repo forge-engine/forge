@@ -1,5 +1,4 @@
 <?php
-use Forge\Core\View\Component;
 use Forge\Core\Helpers\ModuleAssetHelper;
 
 /**
@@ -22,14 +21,11 @@ use Forge\Core\Helpers\ModuleAssetHelper;
 </head>
 
 <body>
-    <?= Component::render(name: "nav-bar", loadFromModule: false, props: []) ?>
-
+    
     <div class="main">
         <?= $content ?>
     </div>
-
-    <?= Component::render(name: "footer", loadFromModule: false, props: []) ?>
-
+    
     <script defer src="/assets/app/js/htmx.min.js" defer></script>
     <?= ModuleAssetHelper::renderScripts("forge-ui") ?>
 </body>
