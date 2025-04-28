@@ -16,7 +16,7 @@ use Forge\Core\Module\Attributes\Provides;
 use Forge\Core\Module\Attributes\Requires;
 
 #[Module(name: 'ForgeUi', description: 'A UI component module by forge.', order: 99, core: false, isCli: false)]
-#[Provides(interface: ForgeUIModule::class, version: '0.1.0')]
+#[Provides(interface: ForgeUIModule::class, version: '0.1.1')]
 #[Requires()]
 #[Service(id: null, singleton: true)]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]

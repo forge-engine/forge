@@ -10,6 +10,7 @@ class CreateStorageTable extends Migration
     {
         $this->queryBuilder->setTable('storage')
             ->createTable(
+                'storage',
                 [
                     'id' => 'VARCHAR(36) PRIMARY KEY',
                     'bucket_id' => 'VARCHAR(36) NOT NULL',
@@ -21,9 +22,10 @@ class CreateStorageTable extends Migration
                     'created_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
                     'updated_at' => 'TIMESTAMP NULL'
                 ],
-                [
-                    'CONSTRAINT fk_storage_bucket_id FOREIGN KEY (bucket_id) REFERENCES buckets(id) ON DELETE CASCADE'
-                ]
+                // TODO: migrate to new migration version
+                // [
+                //     'CONSTRAINT fk_storage_bucket_id FOREIGN KEY (bucket_id) REFERENCES buckets(id) ON DELETE CASCADE'
+                // ]
             );
         $this->execute($this->queryBuilder->getSql());
         $this->execute("CREATE UNIQUE INDEX idx_storage_path ON storage(path);");

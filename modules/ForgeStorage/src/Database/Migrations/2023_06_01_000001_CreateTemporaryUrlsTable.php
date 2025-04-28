@@ -9,7 +9,7 @@ class CreateTemporaryUrlsTable extends Migration
     public function up(): void
     {
         $this->queryBuilder->setTable('temporary_urls')
-            ->createTable([
+            ->createTable('temporary_urls', [
                 'id' => 'VARCHAR(36) PRIMARY KEY',
                 'clean_path' => 'VARCHAR(255) NOT NULL',
                 'bucket' => 'VARCHAR(255) NOT NULL',

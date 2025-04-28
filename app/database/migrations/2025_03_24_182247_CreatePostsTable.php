@@ -8,21 +8,22 @@ use Forge\Core\Database\Attributes\Index;
 use Forge\Core\Database\Attributes\Relations\BelongsTo;
 use Forge\Core\Database\Attributes\Table;
 use Forge\Core\Database\Migrations\Migration;
+use \Forge\Core\Database\Enums\ColumnType;
 
 #[Table(name: 'posts')]
 #[BelongsTo(related: User::class)]
 #[Index(columns: ['title'], name: 'idx_posts_title')]
 class CreatePostsTable extends Migration
 {
-    #[Column(name: 'id', type: 'INT', primaryKey: true, autoIncrement: true)]
+    #[Column(name: 'id', type: ColumnType::INTEGER, primaryKey: true, autoIncrement: true)]
     public readonly int $id;
 
-    #[Column(name: 'title', type: 'STRING')]
+    #[Column(name: 'title', type: ColumnType::STRING)]
     public readonly string $title;
 
-    #[Column(name: 'content', type: 'TEXT')]
+    #[Column(name: 'content', type: ColumnType::TEXT)]
     public readonly string $content;
 
-    #[Column(name: 'metadata', type: 'JSON')]
+    #[Column(name: 'metadata', type: ColumnType::JSON)]
     public readonly array $metadata;
 }
