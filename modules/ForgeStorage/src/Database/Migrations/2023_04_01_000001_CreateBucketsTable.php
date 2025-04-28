@@ -9,7 +9,7 @@ class CreateBucketsTable extends Migration
     public function up(): void
     {
         $this->queryBuilder->setTable('buckets')
-            ->createTable([
+            ->createTable('buckets', [
                 'id' => 'VARCHAR(36) PRIMARY KEY',
                 'name' => 'VARCHAR(255) NOT NULL',
                 'created_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
