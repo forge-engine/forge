@@ -5,7 +5,7 @@ const FRAMEWORK_REPO_URL = 'https://github.com/forge-engine/framework-registry';
 const FRAMEWORK_FORGE_JSON_PATH_IN_REPO = 'forge.json';
 const FRAMEWORK_REPO_BRANCH = 'main';
 const FRAMEWORK_MODULE_REGISTRY = BASE_PATH . '/engine/Core/Module/module_registry.php';
-
+const LOCAL_FORGE_JSON_PATH = BASE_PATH . '/forge.json';
 
 $specifiedVersion = null;
 for ($i = 1; $i < count($argv); $i++) {
@@ -21,7 +21,60 @@ for ($i = 1; $i < count($argv); $i++) {
             displayHelp();
             exit(1);
         }
+    } elseif ($argv[$i] === 'latest' || is_numeric(str_replace('.', '', $argv[$i]))) {
+        $specifiedVersion = $argv[$i];
+        break;
     }
+}
+
+// Read the local forge.json file or create a new one if it doesn't exist
+if (!file_exists(LOCAL_FORGE_JSON_PATH)) {
+    echo "forge.json file not found. Creating a new one...\n";
+    $localForgeData = [
+        "name" => "Forge Framework",
+        "engine" => [
+            "name" => "forge-engine",
+            "version" => "latest"
+        ],
+        "modules" => []
+    ];
+    $versionToInstall = 'latest';
+} else {
+    $localForgeJson = file_get_contents(LOCAL_FORGE_JSON_PATH);
+    $localForgeData = json_decode($localForgeJson, true);
+
+    if (!$localForgeData || !is_array($localForgeData)) {
+        die("Error decoding local forge.json.\n");
+    }
+
+    // Check for the engine entry
+    $engineEntry = $localForgeData['engine'] ?? null;
+    if ($engineEntry) {
+        $versionToInstall = $engineEntry['version'] ?? null;
+        if (!$versionToInstall) {
+            die("Error: 'version' not defined in 'engine' entry of forge.json.\n");
+        }
+        echo "Installing framework version from forge.json: {$versionToInstall}\n";
+    } else {
+        // If no engine entry is found, add it after the name entry
+        $localForgeData['engine'] = [
+            'name' => 'forge-engine',
+            'version' => 'latest'
+        ];
+        $versionToInstall = 'latest';
+        echo "No 'engine' entry found in forge.json. Adding default entry and installing latest version.\n";
+
+        // Save the updated forge.json file
+        if (!file_put_contents(LOCAL_FORGE_JSON_PATH, json_encode($localForgeData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES))) {
+            die("Error saving updated forge.json file.\n");
+        }
+    }
+}
+
+// Override the version to install if specified via command line
+if ($specifiedVersion) {
+    $versionToInstall = $specifiedVersion;
+    echo "Installing specified framework version: {$versionToInstall}\n";
 }
 
 $frameworkForgeJsonUrl = generateRawGithubUrl(FRAMEWORK_REPO_URL, FRAMEWORK_REPO_BRANCH, FRAMEWORK_FORGE_JSON_PATH_IN_REPO);
@@ -36,20 +89,18 @@ if (!$frameworkManifest || !is_array($frameworkManifest)) {
     die("Error decoding framework manifest JSON from GitHub.\n");
 }
 
-if ($specifiedVersion) {
-    $versionToInstall = $specifiedVersion;
-    echo "Installing specified framework version: {$versionToInstall}\n";
-    if (!isset($frameworkManifest['versions'][$versionToInstall])) {
-        die("Error: Specified version '{$versionToInstall}' not found in framework manifest.\n");
-    }
-} else {
+if ($versionToInstall === 'latest') {
     $versionToInstall = $frameworkManifest['versions']['latest'] ?? null;
     echo "Installing latest framework version: {$versionToInstall}\n";
     if (!$versionToInstall) {
         die("Error: 'latest' version not defined in framework manifest.\n");
     }
+} else {
+    echo "Installing specified framework version: {$versionToInstall}\n";
+    if (!isset($frameworkManifest['versions'][$versionToInstall])) {
+        die("Error: Specified version '{$versionToInstall}' not found in framework manifest.\n");
+    }
 }
-
 
 $versionDetails = $frameworkManifest['versions'][$versionToInstall];
 if (!$versionDetails) {
@@ -95,10 +146,19 @@ if (!extractZip($zipFilePath, $extractionPath)) {
 unlink($zipFilePath);
 unlink(FRAMEWORK_MODULE_REGISTRY);
 
+// Update the forge.json file with the installed version
+if ($specifiedVersion === 'latest') {
+    $localForgeData['engine']['version'] = 'latest';
+} else {
+    $localForgeData['engine']['version'] = $versionToInstall;
+}
+if (!file_put_contents(LOCAL_FORGE_JSON_PATH, json_encode($localForgeData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES))) {
+    die("Error saving updated forge.json file.\n");
+}
+
 echo "\nForge Framework version {$versionToInstall} installed successfully inside the 'engine' folder!\n";
 echo "You can now use 'php forge.php' to manage your project and modules.\n";
 echo "Run 'php forge.php list' to see available commands.\n";
-
 
 /**
  * Generates the raw GitHub URL for a file in a repository.
@@ -209,6 +269,7 @@ function displayHelp(): void
     echo "Options:\n";
     echo "  --version=<version>   Specify the framework version to install (e.g., --version=0.1.0).\n";
     echo "  --version <version>   Specify the framework version to install (e.g., --version 0.1.0).\n";
+    echo "  latest                Install the latest framework version.\n";
     echo "  help                  Displays this help message.\n";
     echo "\nInstalls the latest framework version if no options are provided.\n";
 }

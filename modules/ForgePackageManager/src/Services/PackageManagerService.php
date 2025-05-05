@@ -376,8 +376,12 @@ final class PackageManagerService implements PackageManagerInterface
         if (!file_exists($forgeJsonPath)) {
             $defaultConfig = [
                 'name' => 'Forge Framework',
+                'engine' => [
+                    'name' => 'forge-engine',
+                    'version' => 'latest'
+                ],
                 'modules' => [
-                    'forge-engine/framework' => 'latest',
+
                 ],
             ];
             file_put_contents($forgeJsonPath, json_encode($defaultConfig, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
