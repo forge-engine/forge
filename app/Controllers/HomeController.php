@@ -27,7 +27,7 @@ final class HomeController
     use SecurityHelper;
 
     public function __construct(
-        readonly ForgeAuthService $forgeAuthService
+        public readonly ForgeAuthService $forgeAuthService
     ) {
     }
 
