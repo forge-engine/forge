@@ -2,7 +2,7 @@
 
 namespace Forge\Modules\ForgeDebugbar\Collectors;
 
-use Forge\Core\Helpers\Debug;
+use Forge\Core\Helpers\Debuger;
 
 class TimelineCollector implements CollectorInterface
 {
@@ -29,7 +29,7 @@ class TimelineCollector implements CollectorInterface
             'label' => $label,
             'time' => microtime(true),
             'data' => $data,
-            'origin' => Debug::backtraceOrigin()
+            'origin' => Debuger::backtraceOrigin()
         ];
     }
 }

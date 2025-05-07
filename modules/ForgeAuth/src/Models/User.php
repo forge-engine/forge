@@ -15,7 +15,7 @@ use Forge\Traits\Metadata;
 use Forge\Traits\SoftDeletes;
 
 #[Table("users")]
-final class User extends Model
+class User extends Model
 {
     use Hastimestamps;
     use SoftDeletes;

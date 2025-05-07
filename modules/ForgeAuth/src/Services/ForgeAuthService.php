@@ -17,16 +17,15 @@ use Forge\Core\Helpers\Flash;
 use Forge\Core\Session\SessionInterface;
 
 #[Service]
-#[Provides(interface: ForgeAuthInterface::class, version: '0.1.2')]
+#[Provides(interface: ForgeAuthInterface::class, version: '0.1.3')]
 #[Requires(SessionInterface::class, version: '>=0.1.0')]
 #[Requires(Config::class, version: '>=0.1.0')]
-final class ForgeAuthService implements ForgeAuthInterface
+class ForgeAuthService implements ForgeAuthInterface
 {
     public function __construct(
         private readonly Config           $config,
         private readonly SessionInterface $session
-    )
-    {
+    ) {
     }
 
     /**
@@ -40,7 +39,7 @@ final class ForgeAuthService implements ForgeAuthInterface
             $user->password = password_hash($credentials["password"], PASSWORD_BCRYPT);
             $user->email = $credentials["email"];
             $user->status = 'active';
-            $user->metadata = [];
+            $user->metadata = json_encode($credentials["metadata"] ?? []);
             $user->save();
             return true;
         } catch (Exception $e) {

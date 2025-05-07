@@ -9,6 +9,7 @@ use App\Modules\ForgeAuth\Services\ForgeAuthService;
 use App\Modules\ForgeAuth\Validation\ForgeAuthValidate;
 use Forge\Core\Debug\Metrics;
 use Forge\Core\DI\Attributes\Service;
+use Forge\Core\Helpers\Debuger;
 use Forge\Core\Helpers\Flash;
 use Forge\Core\Helpers\Redirect;
 use Forge\Core\Http\Attributes\Middleware;

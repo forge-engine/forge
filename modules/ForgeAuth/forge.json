@@ -1,7 +1,7 @@
 {
 	"$schema": "./../../engine/Core/Schema/module-schema.json",
 	"name": "ForgeAuth",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "An Auth module by forge.",
 	"type": "generic",
 	"order": 100,

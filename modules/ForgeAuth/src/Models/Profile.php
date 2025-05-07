@@ -14,7 +14,7 @@ use Forge\Traits\RepositoryTrait;
 use Forge\Traits\SoftDeletes;
 
 #[Table("profiles")]
-final class Profile extends Model
+class Profile extends Model
 {
     use Hastimestamps;
     use SoftDeletes;
