@@ -18,6 +18,12 @@ use Forge\Core\Helpers\ModuleResources;
     <link rel="stylesheet" href="/assets/app/css/custom.css" />
     <?= ModuleResources::loadStyles("forge-ui") ?>
     <title><?= $title ?? "Default Title" ?></title>
+
+    <?= raw(csrf_meta()) ?>
+    <script>
+    window.csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    </script>
+
 </head>
 
 <body>
@@ -26,6 +32,7 @@ use Forge\Core\Helpers\ModuleResources;
         <?= $content ?>
     </div>
 
+    <?= forgewire(); ?>
     <script defer src="/assets/app/js/htmx.min.js" defer></script>
     <?= ModuleResources::loadScripts("forge-ui") ?>
 </body>

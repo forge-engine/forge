@@ -21,7 +21,7 @@ use Forge\Traits\ControllerHelper;
 use Forge\Traits\SecurityHelper;
 
 #[Service]
-#[Middleware('web')]
+#[Middleware("web")]
 final class HomeController
 {
     use ControllerHelper;
@@ -29,19 +29,18 @@ final class HomeController
 
     public function __construct(
         public readonly ForgeAuthService $forgeAuthService
-    ) {
-    }
+    ) {}
 
     #[Route("/")]
     public function index(): Response
     {
-        Metrics::start('db_load_one_record_test');
+        Metrics::start("db_load_one_record_test");
         $user = User::find(1);
-        Metrics::stop('db_load_one_record_test');
+        Metrics::stop("db_load_one_record_test");
 
         $data = [
             "title" => "Welcome to Forge Framework",
-            "user" => $user
+            "user" => $user,
         ];
 
         return $this->view(view: "pages/home/index", data: $data);
@@ -66,7 +65,7 @@ final class HomeController
     #[Middleware("App\Middlewares\AuthMiddleware")]
     public function updateUser(Request $request, array $params): Response
     {
-        $id = (int)$params["id"];
+        $id = (int) $params["id"];
         $data = [
             "identifier" => $request->postData["identifier"],
             "email" => $request->postData["email"],

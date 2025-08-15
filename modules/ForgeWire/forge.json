@@ -1,0 +1,17 @@
+{
+	"$schema": "./../../engine/Core/Schema/module-schema.json",
+	"name": "ForgeWire",
+	"version": "1.0.0",
+	"description": "A lightway livewire like module for forge",
+	"type": "generic",
+	"order": 100,
+	"cli": {
+		"commands": []
+	},
+	"tags": [],
+	"config": {
+		"defaults": {}
+	},
+	"author": "Forge",
+	"license: "MIT"
+}

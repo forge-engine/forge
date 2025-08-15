@@ -1,6 +1,7 @@
 <?php
 
 return [
+    'app_key' => env('APP_KEY', 'your-secure-app-key'),
     'api_keys' => ['your-secure-api-key'],
     'ip_whitelist' => env('IP_WHITE_LIST', []),
     'rate_limit' => [
