@@ -12,6 +12,7 @@
         "forge-auth": "0.1.0",
         "forge-testing": "0.1.0",
         "forge-engine/framework": "latest",
-        "forge-welcome": "0.1.0"
+        "forge-welcome": "0.1.0",
+        "forge-wire": "0.1.0"
     }
 }

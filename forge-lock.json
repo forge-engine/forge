@@ -41,6 +41,12 @@
             "registry": "forge-engine-modules",
             "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-welcome/0.1.0/0.1.0.zip",
             "integrity": "8086c3d3620f6a7cd39da4d02366374895cf1817e4e4b36648cfde720f195f94"
+        },
+        "forge-wire": {
+            "version": "0.1.0",
+            "registry": "forge-engine-modules",
+            "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-wire/0.1.0/0.1.0.zip",
+            "integrity": "14a4db56702efb5215fc6e29dad90ae49b00784ce6dd5586796d1adcff30b6d2"
         }
     }
 }
