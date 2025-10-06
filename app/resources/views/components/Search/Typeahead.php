@@ -6,9 +6,9 @@
 ?>
 <div class="typeahead">
     <div class="flex gap items-center">
-        <input type="text" placeholder="Search products…" autocomplete="off" wire:model.debounce value="<?= e($query) ?>" />
+        <input type="text" placeholder="Search products…" autocomplete="off" wire:model.debounce value="<?= $query ?>" />
         <?php if ($notice): ?>
-        <small class="badge"><?= e($notice) ?></small>
+        <small class="badge"><?= $notice ?></small>
         <?php endif; ?>
         <span class="spinner" <?= $open ? '' : 'hidden' ?> wire:loading>…</span>
     </div>
@@ -18,7 +18,7 @@
         <?php foreach ($results as $r): ?>
         <li>
             <button wire:click="choose(<?= (int)$r['id'] ?>)">
-                <?= e($r['name']) ?> — $<?= number_format((float)$r['price'], 2) ?>
+                <?= $r['name'] ?> — $<?= number_format((float)$r['price'], 2) ?>
             </button>
         </li>
         <?php endforeach; ?>

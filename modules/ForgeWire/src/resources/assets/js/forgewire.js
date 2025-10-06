@@ -32,6 +32,14 @@
 	}, { root: null, threshold: 0 });
 	return io;
   }
+  
+  function setSuppressUntil(root, durationMs) {
+	  root.__fw_suppress_until = Date.now() + durationMs;
+  }
+  
+  function shouldSuppress(root) {
+	  return (root.__fw_suppress_until && Date.now() < root.__fw_suppress_until);
+  }
 
   function findPollTarget(root) {
 	const names = root.getAttributeNames();
@@ -312,7 +320,7 @@
    if (!root) return;
    e.preventDefault();
  
-   suppressInputsUntil = Date.now() + 120;
+   setSuppressUntil(root, 120);
  
    const parsed = parseAction(attr(el, 'wire:click'));
    trigger(root, parsed.method, parsed.args);
@@ -324,43 +332,59 @@
    const root = closestRoot(form);
    if (!root) return;
    e.preventDefault();
+   
+   const lazyInputs = form.querySelectorAll('[wire\\:model\\.lazy]');
+   lazyInputs.forEach(input => {
+	   if (document.activeElement === input) {
+			const event = new Event('change', { bubbles: true });
+			input.dispatchEvent(event);
+	   }
+   });
  
-   suppressInputsUntil = Date.now() + 150;
- 
+   setSuppressUntil(root, 150);
+   
    const parsed = parseAction(attr(form, 'wire:submit'));
-   const dirtyNow = collectDirty(root);  
-   trigger(root, parsed.method, parsed.args, dirtyNow);
+   const dirtyNow = collectDirty(root); 
+   
+   setTimeout(() => {
+	   trigger(root, parsed.method, parsed.args, dirtyNow);
+   }, 0); 
  });
 
   document.addEventListener('input', (e) => {
-	if (composing) return;
-	if (Date.now() < suppressInputsUntil) return;
-	const el = e.target;
-	const bind = getModelBinding(el);
-	if (!bind) return;
-	const root = closestRoot(el);
-	if (!root) return;
+	  if (composing) return;
   
-	if (bind.type === 'debounce') {
-	  const wait = bind.debounce || DEFAULT_DEBOUNCE;
-	  const key = bind.key;
-	  const id = setTimeout(() => {
-		if (Date.now() < suppressInputsUntil) return;
-		if (tabbing) { setTimeout(() => trigger(root, 'input' , [key]), 0); }
-		else { trigger(root, 'input'); }
-	  }, wait);
-	  const prev = Number(el.getAttribute('data-fw-timer-id'));
-	  if (prev) clearTimeout(prev);
-	  el.setAttribute('data-fw-timer-id', String(id));
-	  return;
-	}
-	if (bind.type === 'immediate') {
-	  if (tabbing || Date.now() < suppressInputsUntil) {
-		setTimeout(() => trigger(root, 'input' , [bind.key]), 0);
-	  } else {
-		trigger(root, 'input', [bind.key]);
+	  const el = e.target;
+	  const root = closestRoot(el);
+	  
+	  if (!root) return;
+	  
+	  if (shouldSuppress(root)) return; 
+	  
+	  const bind = getModelBinding(el);
+	  if (!bind) return;
+    
+	  if (bind.type === 'debounce') {
+	    const wait = bind.debounce || DEFAULT_DEBOUNCE;
+	    const key = bind.key;
+	    const id = setTimeout(() => {
+		  if (shouldSuppress(root)) return; 
+		  if (tabbing) { setTimeout(() => trigger(root, 'input' , [key]), 0); }
+		  else { trigger(root, 'input'); }
+	    }, wait);
+	    const prev = Number(el.getAttribute('data-fw-timer-id'));
+	    if (prev) clearTimeout(prev);
+	    el.setAttribute('data-fw-timer-id', String(id));
+	    return;
 	  }
-	}
+	  
+	  if (bind.type === 'immediate') {
+	    if (tabbing || shouldSuppress(root)) {
+		  setTimeout(() => trigger(root, 'input' , [bind.key]), 0);
+	    } else {
+		  trigger(root, 'input', [bind.key]);
+	    }
+	  }
   });
 
 document.addEventListener('change', (e) => {

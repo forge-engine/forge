@@ -30,7 +30,6 @@ final class SignupWizard extends WireComponent
     public function mount(array $props = []): void
     {
         $this->step = (int)($props['step'] ?? 1);
-        // initialize DTO for SSR
         $this->form = $this->form ?? new SignupDTO();
     }
 
@@ -65,7 +64,6 @@ final class SignupWizard extends WireComponent
     {
         $this->errors = [];
         $want = max(1, min(3, $step));
-        // simple guard: only allow forward if current is valid
         if ($want > $this->step) {
             $errs = $this->validateStep($this->step);
             if ($errs) {
@@ -88,7 +86,6 @@ final class SignupWizard extends WireComponent
         $id = $this->signup->register($this->form);
         $this->notice = "Welcome, {$this->form->fullName}! (#{$id})";
 
-        // reset sensitive fields
         $this->form->password = '';
         $this->form->confirmPassword = '';
         $this->step = 1;

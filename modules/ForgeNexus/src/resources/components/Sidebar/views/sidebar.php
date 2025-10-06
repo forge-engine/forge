@@ -39,16 +39,16 @@ $tempMenu = [
             <h2 class="nav-section-title">Platform</h2>
             <ul class="nav-list">
                 <?php foreach ($tempMenu as $item): ?>
-                    <?= View::component(
-                        name: 'nexus:sidebar:item',
-                        loadFromModule: true,
-                        props: new ItemPropsDto(
-                            isActive: (bool)$item['isActive'],
-                            target: $item['target'],
-                            label: $item['label'],
-                            icon: $item['icon']
-                        )
-                    )
+                <?= View::component(
+    name: 'nexus:sidebar:item',
+    loadFromModule: true,
+    props: new ItemPropsDto(
+                                isActive: (bool)$item['isActive'],
+                                target: $item['target'],
+                                label: $item['label'],
+                                icon: $item['icon']
+                            )
+)
                     ?>
                 <?php endforeach; ?>
             </ul>

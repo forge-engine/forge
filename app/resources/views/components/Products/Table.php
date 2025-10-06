@@ -55,14 +55,14 @@
                         <div class="grid">
                             <label>
                                 Name
-                                <input type="text" wire:model.lazy="draftName" value="<?= e($draftName) ?>" />
+                                <input type="text" wire:model.debounce="draftName" value="<?= e($draftName) ?>" />
                                 <?php if (!empty($errors['name'])): ?>
                                 <small class="error"><?= e($errors['name']) ?></small>
                                 <?php endif; ?>
                             </label>
                             <label>
                                 Price
-                                <input type="number" step="0.01" wire:model.lazy="draftPrice" value="<?= e($draftPrice) ?>" />
+                                <input type="number" step="0.01" wire:model.debounce="draftPrice" value="<?= e($draftPrice) ?>" />
                                 <?php if (!empty($errors['price'])): ?>
                                 <small class="error"><?= e($errors['price']) ?></small>
                                 <?php endif; ?>

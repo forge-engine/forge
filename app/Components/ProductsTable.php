@@ -19,6 +19,7 @@ final class ProductsTable extends WireComponent
     #[State] public string $dir     = 'asc';
     #[State] public int    $page    = 1;
     #[State] public int    $perPage = 5;
+    #[State] public string $testCheck = 'initial_value';
 
     // edit form state
     #[State] public ?int    $editingId   = null;
@@ -28,7 +29,7 @@ final class ProductsTable extends WireComponent
     #[State] public ?string $notice      = null;
 
     #[Service(ProductService::class)]
-    public ProductService $products;
+    protected ProductService $products;
 
     public function mount(array $props = []): void
     {
@@ -104,6 +105,7 @@ final class ProductsTable extends WireComponent
 
         $this->notice = 'Saved ✔';
         $this->editingId = null;
+        $this->testCheck = bin2hex(random_bytes(4));
     }
 
     #[Action]

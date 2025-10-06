@@ -9,7 +9,7 @@ return [
         \Forge\Core\Http\Middlewares\CompressionMiddleware::class,
     ],
     'web' => [
-        \Forge\Core\Http\Middlewares\RelaxSecurityHeadersMiddleware::class,
+        //\Forge\Core\Http\Middlewares\RelaxSecurityHeadersMiddleware::class,
         \Forge\Core\Http\Middlewares\SessionMiddleware::class,
         \Forge\Core\Http\Middlewares\CsrfMiddleware::class,
         \Forge\Core\Http\Middlewares\CookieMiddleware::class,

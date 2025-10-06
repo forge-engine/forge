@@ -36,17 +36,11 @@
             "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-testing/0.1.0/0.1.0.zip",
             "integrity": "e26ffe4a1b167a7bbd7613e6fefd66d0c9a65574189bb3f77357eadb4fbc3b3d"
         },
-        "forge-welcome": {
-            "version": "0.1.0",
-            "registry": "forge-engine-modules",
-            "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-welcome/0.1.0/0.1.0.zip",
-            "integrity": "8086c3d3620f6a7cd39da4d02366374895cf1817e4e4b36648cfde720f195f94"
-        },
         "forge-wire": {
-            "version": "0.1.0",
+            "version": "1.0.1",
             "registry": "forge-engine-modules",
-            "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-wire/0.1.0/0.1.0.zip",
-            "integrity": "9f3be6012d40c509d7421db276ef53b03f8602fe7b4d91bc709481720a438182"
+            "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-wire/1.0.1/1.0.1.zip",
+            "integrity": "a998afd6b345fba8fee5a16c33286a01bf2bbfb9a7cdb51e6ded46c5d76ec7c7"
         }
     }
 }

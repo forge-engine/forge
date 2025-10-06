@@ -16,6 +16,10 @@ class Item extends BaseComponent
     }
     public function render(): mixed
     {
-        return $this->renderview(viewPath:'Sidebar/views/sidebar-item', loadFromModule: true, data: $this->props);
+        return $this->renderview(
+            viewPath:'Sidebar/views/sidebar-item',
+            loadFromModule: true,
+            data: $this->props
+        );
     }
 }

@@ -28,6 +28,8 @@ use Forge\Core\View\Component;
             </div>
         </main>
     </div>
+
+    <?= forgewire() ?>
     <script defer src="<?= ModuleResources::pathTo(module: 'forge-nexus', resource: 'js/nexus.js') ?>"></script>
 </body>
 
