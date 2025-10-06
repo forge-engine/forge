@@ -19,7 +19,9 @@ final class DashboardController
     use ControllerHelper;
     use SecurityHelper;
 
-    public function __construct(private ForgeAuthService $authService) {}
+    public function __construct(private readonly ForgeAuthService $authService)
+    {
+    }
 
     #[Route("/dashboard")]
     #[Middleware("App\Modules\ForgeAuth\Middlewares\AuthMiddleware")]
