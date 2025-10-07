@@ -2,17 +2,20 @@
 
 namespace App\Modules\ForgeWire\Core;
 
+use App\Modules\ForgeWire\Attributes\Validate;
 use Forge\Core\DI\Container;
 use Forge\Core\Session\SessionInterface;
+use Forge\Core\Validation\Validator;
 use ReflectionAttribute;
 use ReflectionClass;
 
 final class Hydrator
 {
-    private const A_STATE   = 'App\\Modules\\ForgeWire\\Attributes\\State';
-    private const A_MODEL   = 'App\\Modules\\ForgeWire\\Attributes\\Model';
-    private const A_DTO     = 'App\\Modules\\ForgeWire\\Attributes\\DTO';
+    private const A_STATE = 'App\\Modules\\ForgeWire\\Attributes\\State';
+    private const A_MODEL = 'App\\Modules\\ForgeWire\\Attributes\\Model';
+    private const A_DTO = 'App\\Modules\\ForgeWire\\Attributes\\DTO';
     private const A_SERVICE = 'App\\Modules\\ForgeWire\\Attributes\\Service';
+    private const A_VALIDATE = 'App\\Modules\\ForgeWire\\Attributes\\Validate';
 
     public function __construct(private Container $container)
     {
@@ -27,16 +30,39 @@ final class Hydrator
             $pos = strpos($k, '.');
             if ($pos !== false) {
                 $prefix = substr($k, 0, $pos);
-                $field  = substr($k, $pos + 1);
+                $field = substr($k, $pos + 1);
                 $dirtyGroups[$prefix][$field] = $v;
             }
         }
 
+        $validationRules = [];
+        $validationData = [];
+
         foreach ($ref->getProperties() as $prop) {
             $name = $prop->getName();
 
+            $validateAttr = $prop->getAttributes(self::A_VALIDATE, \ReflectionAttribute::IS_INSTANCEOF);
+
+            if (!empty($validateAttr)) {
+                /** @var Validate $validateInstance */
+                $validateInstance = $validateAttr[0]->newInstance();
+                if (array_key_exists($name, $dirty)) {
+                    $validationRules[$name] = explode('|', $validateInstance->rules);
+                    $validationData[$name] = $dirty[$name];
+                }
+            }
+
+            if (!empty($validationRules)) {
+                $validator = new Validator($validationData, $validationRules);
+                $validator->validate();
+            }
+
             foreach ($prop->getAttributes() as $attr) {
                 $type = $attr->getName();
+
+                if ($type === self::A_VALIDATE) {
+                    continue;
+                }
 
                 if ($type === self::A_STATE) {
                     $state = $session->get($sessionKey, []);
@@ -62,13 +88,13 @@ final class Hydrator
                 }
 
                 if ($type === self::A_DTO) {
-                    $args  = $this->args($attr);
+                    $args = $this->args($attr);
                     $class = $args['class'] ?? $prop->getType()?->getName();
                     if (!$class) {
                         continue;
                     }
 
-                    $bag  = $session->get($sessionKey . ':dtos', []);
+                    $bag = $session->get($sessionKey . ':dtos', []);
                     $data = [];
                     if (isset($bag[$name])) {
                         [$cls, $stored] = $bag[$name];
@@ -104,7 +130,7 @@ final class Hydrator
                 }
 
                 if ($type === self::A_SERVICE) {
-                    $args  = $this->args($attr);
+                    $args = $this->args($attr);
                     $class = $args['class'] ?? $prop->getType()?->getName();
                     if ($class) {
                         $prop->setAccessible(true);
@@ -118,9 +144,9 @@ final class Hydrator
 
     public function dehydrate(object $instance, SessionInterface $session, string $sessionKey): array
     {
-        $state  = [];
+        $state = [];
         $models = [];
-        $dtos   = [];
+        $dtos = [];
 
         $ref = new ReflectionClass($instance);
         foreach ($ref->getProperties() as $prop) {
@@ -139,15 +165,15 @@ final class Hydrator
                 }
 
                 if ($type === self::A_MODEL && $value) {
-                    $args    = $this->args($attr);
-                    $class   = $args['class']   ?? null;
+                    $args = $this->args($attr);
+                    $class = $args['class'] ?? null;
                     $idField = $args['idField'] ?? 'id';
                     $models[$prop->getName()] = [$class, $idField, $value->{$idField} ?? null];
                     continue;
                 }
 
                 if ($type === self::A_DTO && $value) {
-                    $args  = $this->args($attr);
+                    $args = $this->args($attr);
                     $class = $args['class'] ?? null;
                     $dtos[$prop->getName()] = [$class, $value->toArray()];
                     continue;
@@ -170,7 +196,7 @@ final class Hydrator
         }
         $out = [];
         if (isset($a[0])) {
-            $out['class']   = $a[0];
+            $out['class'] = $a[0];
         }
         if (isset($a[1])) {
             $out['idField'] = $a[1];
