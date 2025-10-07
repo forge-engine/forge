@@ -24,12 +24,13 @@ View::layout(name: "main", loadFromModule: false);
     </pre>
         <?php //wire(\App\Components\Counter::class, ['start' => 10], 'counter-1')?>
         <?php //wire(\App\Components\ProductsTable::class, ['perPage' => 10], 'products-1')?>
-        <?php //wire_name(name: 'kanban', componentId: 'kanban-1')?>
+        <?= wire_name(name: 'counter', componentId: 'counter-1') ?>
+        <?php wire_name(name: 'kanban', componentId: 'kanban-1') ?>
 
         <section>
             <?= Component::render("forge-ui:alert", loadFromModule: true) ?>
             <form action="" method="POST" class="form">
-                <?=csrf_input();?>
+                <?= csrf_input() ?>
                 <div class="grid grid--2 mb-sm">
                     <input class="form--input" type="text" name="identifier" placeholder="Username" required>
                     <input class="form--input" type="password" name="password" placeholder="Password" required>
