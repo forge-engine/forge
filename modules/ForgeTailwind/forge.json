@@ -1,0 +1,17 @@
+{
+	"$schema": "./../../engine/Core/Schema/module-schema.json",
+	"name": "ForgeTailwind",
+	"version": "0.0.1",
+	"description": "A tailwind cli module by forge",
+	"type": "generic",
+	"order": 100,
+	"cli": {
+		"commands": []
+	},
+	"tags": [],
+	"config": {
+		"defaults": {}
+	},
+	"author": "Forge Team",
+	"license: "MIT"
+}

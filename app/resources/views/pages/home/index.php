@@ -13,9 +13,9 @@ use Forge\Core\View\View;
 View::layout(name: "main", loadFromModule: false);
 ?>
 <section class="container">
-    <h2>Engine Status</h2>
+    <h2 class="text-2xl">Engine Status aver que tal</h2>
     <ul>
-        <li>PHP Version <?= PHP_VERSION ?></li>
+        <li class="text-6xl">PHP Version <?= PHP_VERSION ?></li>
         <li>Database Driver: <?= $_ENV["DB_DRIVER"] ?></li>
 
         <h3>User information</h3>

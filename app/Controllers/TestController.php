@@ -34,12 +34,12 @@ final class TestController
         $this->session->set("user_id", 123456);
         $cookie = $this->cookies->make('remember_me', 'token123', 60 * 24 * 30);
 
-        $this->dispatcher->dispatch(
-            new TestPagevisitedEvent(
-                userId: $this->session->get('user_id'),
-                visitedAt: date('Y-m-d H:i:s')
-            )
-        );
+        // $this->dispatcher->dispatch(
+        //     new TestPagevisitedEvent(
+        //         userId: $this->session->get('user_id'),
+        //         visitedAt: date('Y-m-d H:i:s')
+        //     )
+        // );
 
         $data = [
             "title" => "Welcome to Forge",

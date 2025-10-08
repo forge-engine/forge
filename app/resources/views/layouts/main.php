@@ -1,10 +1,11 @@
 <?php
+
 use Forge\Core\Helpers\ModuleResources;
 
 /**
-    @var string $title
-    @var string $content
-*/
+ * @var string $title
+ * @var string $content
+ */
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -14,7 +15,8 @@ use Forge\Core\Helpers\ModuleResources;
     <meta name="description" content="" />
     <meta name="author" content="" />
     <meta name="viewport" content="user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, width=device-width" />
-    <link rel="stylesheet" href="/assets/app/css/style.css" />
+    <link rel="stylesheet" href="/assets/css/forgetailwind.css" />
+
     <link rel="stylesheet" href="/assets/app/css/custom.css" />
     <?= ModuleResources::loadStyles("forge-ui") ?>
     <title><?= $title ?? "Default Title" ?></title>
@@ -26,13 +28,13 @@ use Forge\Core\Helpers\ModuleResources;
 
 </head>
 
-<body>
-
-    <div class="main">
+<body class="h-full scroll-smooth">
+    <div>
         <?= $content ?>
     </div>
 
     <?= forgewire(); ?>
+    <?= forgetailwind(); ?>
     <script defer src="/assets/app/js/htmx.min.js" defer></script>
     <?= ModuleResources::loadScripts("forge-ui") ?>
 </body>

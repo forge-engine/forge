@@ -1,21 +1,17 @@
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # Ensure the RewriteBase is set to the public/ folder
     RewriteBase /public/
 
-    # Rewrite rule for clean URLs
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^files/(.+)$ index.php?file=$1 [L,QSA]
 
-    # Redirect all other requests to index.php
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^ index.php [L]
 </IfModule>
 
-# Deny access to .env or other sensitive files
 <FilesMatch "^\.env">
     Require all denied
 </FilesMatch>
@@ -24,5 +20,4 @@
     Require all denied
 </FilesMatch>
 
-# Deny directory listing
 Options -Indexes
