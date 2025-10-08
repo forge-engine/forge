@@ -15,8 +15,7 @@ use Forge\Core\Helpers\ModuleResources;
     <meta name="description" content="" />
     <meta name="author" content="" />
     <meta name="viewport" content="user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, width=device-width" />
-    <link rel="stylesheet" href="/assets/css/forgetailwind.css" />
-
+    <link rel="stylesheet" href="/assets/css/app.css" />
     <link rel="stylesheet" href="/assets/app/css/custom.css" />
     <?= ModuleResources::loadStyles("forge-ui") ?>
     <title><?= $title ?? "Default Title" ?></title>
