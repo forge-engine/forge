@@ -10,7 +10,7 @@
 # Ignore modules
 !cache/.gitkeep
 
-/tailwindcss
+tailwindcss
 
 # Ignore temporary files and logs
 /storage/*.key
