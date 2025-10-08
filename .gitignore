@@ -29,7 +29,7 @@
 /storage/*.sqlite
 /storage/database/*
 /storage/framework/logs/*
-
+/storage/tailwindcss/*
 #
 /engine/Core/Module/module_registry.php
 /storage/framework/cache/class-map.php
