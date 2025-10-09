@@ -1,14 +1,29 @@
+# APP
 APP_NAME="Forge Engine"
 APP_ENV=development
 APP_DEBUG=true
-APP_KEY=
+APP_HMR=true
+APP_KEY=your-key
 VIEW_CACHE=
+
+# CACHE
+CACHE_DRIVER=sqlite
 
 # Security
 IP_WHITE_LIST=[127.0.0.1, ::1]
-CORS_ALLOWED_ORIGINS=["http://localhost:8000", "https://forge.test"]
-CORS_ALLOWED_METHODS=['GET, POST, PUT, DELETE, OPTIONS']
+CORS_ALLOWED_ORIGINS=["http://localhost:8000", "https://forge-v3.test"]
+CORS_ALLOWED_METHODS=['GET, POST, PUT, PATCH, DELETE, OPTIONS']
 CORS_ALLOWED_HEADERS=['Content-Type', 'Authorization']
+
+SESSION_SECURE=true
+COOKIE_SECURE=true
+CSRF_STRICT_SCHEME=true
+TRUST_PROXIES=true
+
+#Queue
+#drivers=database|in-memory|file
+QUEUE_DRIVER=database
+QUEUE_LIST=[emails,cache_refresh,page_visits]
 
 #Database
 DB_DRIVER=sqlite
@@ -57,7 +72,7 @@ LOG_PATH=/storage/logs/forge.log
 # Forge UI
 FORGE_UI_ENABLED=true
 FORGE_UI_USE_RANDOM_KEY=true
-FORGE_UI_API_KEY=
+FORGE_UI_API_KEY=your-secure-api-key
 FORGE_UI_URL=/secure-url-endpoint
 FORGE_UI_URL_PREFIX=/secure-admin
 FORGE_UI_USER=my-username
@@ -83,4 +98,4 @@ FILE_STORAGE_PATH=public/storage/files
 FILE_STORAGE_DRIVER=local # Options: local
 
 #Package Manager Github Access Token
-GITHUB_TOKEN=your-access-token
+GITHUB_TOKEN=your-personal-ga-token
