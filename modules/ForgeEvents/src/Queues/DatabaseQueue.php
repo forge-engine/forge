@@ -24,7 +24,7 @@ class DatabaseQueue implements QueueInterface
         return $this;
     }
 
-    public function push(string $payload, int $priority = 100, int $delay = 0, int $retries = 1): void
+    public function push(string $payload, int $priority = 100, int $delay = 0, int $retries = 1, string $queue = 'default'): void
     {
         $processAt = null;
 
@@ -35,7 +35,7 @@ class DatabaseQueue implements QueueInterface
         }
 
         $this->queryBuilder->setTable('queue_jobs')->insert([
-            'queue' => $this->queueName,
+            'queue' => $queue,
             'payload' => $payload,
             'priority' => $priority,
             'max_retries' => $retries,
@@ -46,38 +46,67 @@ class DatabaseQueue implements QueueInterface
         ]);
     }
 
-    public function pop(): ?array
+    public function pop(string $queue = 'default'): ?array
     {
         $now = date('Y-m-d H:i:s');
 
-        if ($this->isSqlite()) {
-            // $this->queryBuilder->getConnection()->getPdo()->exec('BEGIN IMMEDIATE TRANSACTION');
-        } else {
-        }
         $this->queryBuilder->beginTransaction();
+
         try {
-            $job = $this->queryBuilder->setTable('queue_jobs')
-                ->where('queue', '=', $this->queueName)
-                ->whereRaw('(process_at IS NULL OR process_at <= :now)', ['now' => $now])
-                ->whereNull('reserved_at')
-                ->orderBy('priority', 'ASC')
-                ->orderBy('created_at', 'ASC')
-                ->limit(1);
+            $driver = $this->queryBuilder->getConnection()->getPdo()->getAttribute(PDO::ATTR_DRIVER_NAME);
 
-            if (!$this->isSqlite()) {
-                $job->lockForUpdate();
+            if ($driver === 'sqlite') {
+                $sql = "UPDATE queue_jobs
+                          SET reserved_at = :reserved
+                        WHERE id = (
+                                SELECT id
+                                  FROM queue_jobs
+                                 WHERE queue       = :queue
+                                   AND (process_at IS NULL OR process_at <= :now)
+                                   AND reserved_at IS NULL
+                              ORDER BY priority ASC, created_at ASC
+                                 LIMIT 1
+                              )
+                    RETURNING id, payload";
+
+                $stmt = $this->queryBuilder->getConnection()->getPdo()->prepare($sql);
+                $stmt->execute([
+                    ':reserved' => $now,
+                    ':queue'    => $queue,
+                    ':now'      => $now,
+                ]);
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                $stmt->closeCursor();
+            } else {
+                $id = $this->queryBuilder
+                    ->setTable('queue_jobs')
+                    ->where('queue', '=', $queue)
+                    ->whereRaw('(process_at IS NULL OR process_at <= :now)', ['now' => $now])
+                    ->whereNull('reserved_at')
+                    ->orderBy('priority', 'ASC')
+                    ->orderBy('created_at', 'ASC')
+                    ->limit(1)
+                    ->lockForUpdate()
+                    ->first()['id'] ?? null;
+
+                if ($id) {
+                    $this->queryBuilder
+                        ->setTable('queue_jobs')
+                        ->where('id', '=', $id)
+                        ->update(['reserved_at' => $now]);
+                    $row = $this->queryBuilder
+                        ->setTable('queue_jobs')
+                        ->where('id', '=', $id)
+                        ->first(['id', 'payload']);
+                } else {
+                    $row = null;
+                }
             }
 
-            $job = $job->first();
+            $this->queryBuilder->commit();
 
-            if ($job) {
-                $this->markJobAsReserved($job['id']);
-                $this->queryBuilder->commit();
-                return ['id' => $job['id'], 'payload' => $job['payload']];
-            }
-
-            $this->queryBuilder->rollback();
-            return null;
+            return $row ? ['id' => $row['id'], 'payload' => $row['payload']] : null;
         } catch (\Throwable $e) {
             $this->queryBuilder->rollback();
             throw $e;
@@ -106,6 +135,33 @@ class DatabaseQueue implements QueueInterface
             'process_at' => $processAt,
             'attempts' => $attempts,
         ]);
+    }
+
+    public function getNextJobDelay(string $queue = 'default'): ?float
+    {
+        $job = $this->queryBuilder->reset()
+            ->setTable('queue_jobs')
+            ->where('queue', '=', $queue)
+            ->where('failed_at', 'IS', 'NULL')
+            ->whereNull('reserved_at')
+            ->orderBy('process_at', 'ASC')
+            ->first();
+
+        if (!$job) {
+            return null;
+        }
+
+        $processAt = $job['process_at'] ?? null;
+
+        if (!$processAt) {
+            return 0;
+        }
+
+        $now = time();
+        $processTimestamp = strtotime($processAt);
+
+        $delay = $processTimestamp - $now;
+        return $delay > 0 ? (float)$delay : 0;
     }
 
 

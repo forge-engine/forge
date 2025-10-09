@@ -17,7 +17,7 @@ use Forge\Core\Config\Environment;
 use Forge\Core\Database\QueryBuilder;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\DI\Container;
-use Forge\Core\Helpers\TimeConverter;
+use Forge\Traits\TimeTrait;
 use ReflectionClass;
 use RuntimeException;
 use Throwable;
@@ -26,6 +26,7 @@ use Throwable;
 final class EventDispatcher
 {
     use OutputHelper;
+    use TimeTrait;
 
     private array $listeners = [];
     private Queueinterface $queue;
@@ -72,26 +73,32 @@ final class EventDispatcher
 
         $eventMetadata = $eventAttribute->newInstance();
 
-        $delayMilliseconds = TimeConverter::minutesToMilliseconds($eventMetadata->processAfterMinutes) ?? 0;
+        $delayMilliseconds = $this->toMilliseconds($eventMetadata->delay) ?? 0;
 
         $this->queue->push(serialize([
             'event' => $event,
             'class' => $eventReflection->getName(),
             'metadata' => $eventMetadata,
             'attempts' => 0
-        ]), $eventMetadata->priority->value, $delayMilliseconds, $eventMetadata->maxRetries);
+        ]), $eventMetadata->priority->value, $delayMilliseconds, $eventMetadata->maxRetries, $eventMetadata->queue);
     }
 
-    public function processNextEvent(): void
+    public function getNextJobDelay(string $queue = 'default'): ?float
     {
-        $job = $this->queue->pop();
+        return $this->queue->getNextJobDelay($queue);
+    }
+
+    public function processNextEvent(string $queue = 'default'): string
+    {
+        $job = $this->queue->pop($queue);
         if (!$job) {
-            return;
+            return '';
         }
 
         $payload = unserialize($job['payload']);
 
         $this->handleEvent($payload, $job['id'] ?? null);
+        return (string) $job['id'];
     }
 
     private function handleEvent(array $payload, ?int $jobId): void
@@ -156,7 +163,8 @@ final class EventDispatcher
             'class' => $payload['class'],
             'metadata' => $payload['metadata'],
             'processAfter' => $retryProcessAfter,
-            'attempts' => $payload['attempts']
+            'attempts' => $payload['attempts'],
+            $payload['metadata']->queue
         ]), QueuePriority::LOW->value, (int)($retryDelaySeconds * 1000));
 
         $this->warning("Retrying event {$payload['class']} (attempt {$payload['attempts']})");
@@ -171,6 +179,11 @@ final class EventDispatcher
                     'failed_at' => date('Y-m-d H:i:s'),
                 ]);
         }
+    }
+
+    private function release(int $jobId, ?int $delay = 0): void
+    {
+        $this->queue->release($jobId, $delay);
     }
 
     private function deleteJob(?int $jobId): void

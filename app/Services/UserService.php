@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Services;
@@ -13,8 +14,14 @@ class UserService
 {
     use CacheLifecycleHooks;
 
-    #[Cache(key: 'user->{id}', ttl: 600)]
-    public function findUser(int $id): ?User
+    #[Cache(
+        key: 'user->{id}',
+        ttl: 120,
+        stale: 60,
+        onSave:[self::class, 'onCacheSave'],
+        onHit:[self::class, 'onCacheHit'],
+    )]
+    public function findUser(int $id)
     {
         return User::find($id);
     }
@@ -23,5 +30,4 @@ class UserService
     {
         echo "Custom cache save logic for user {$data->id}\n";
     }
-
 }

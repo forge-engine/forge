@@ -10,44 +10,57 @@ use SplPriorityQueue;
 
 final class InMemoryQueue implements Queueinterface
 {
-    private SplPriorityQueue $queue;
+    private SplPriorityQueue $queues;
     private int $insertionCount = 0;
 
     public function __construct()
     {
-        $this->queue = new SplPriorityQueue();
-        $this->queue->setExtractFlags(SplPriorityQueue::EXTR_DATA);
+        $this->queues = new SplPriorityQueue();
+        $this->queues->setExtractFlags(SplPriorityQueue::EXTR_DATA);
     }
 
-    public function push(string $payload, int $priority = QueuePriority::NORMAL->value): void
-    {
-        $this->queue->insert($payload, [
-            $priority,
-            -$this->insertionCount++
-        ]);
+    public function push(
+        string $payload,
+        int $priority = 0,
+        int $delayMs = 0,
+        int $maxRetries = 3,
+        string $queue = 'default'
+    ): void {
+        if (!isset($this->queues[$queue])) {
+            $this->queues[$queue] = new \SplPriorityQueue();
+        }
+        $this->queues[$queue]->insert([
+           'payload' => $payload,
+           'attempts' => 0,
+           'queue'  => $queue,
+       ], [$priority, -$this->insertionCount++]);
     }
 
-    public function pop(): ?array
+    public function pop(string $queue = 'default'): ?array
     {
-        if ($this->queue->isEmpty()) {
+        if (empty($this->queues[$queue]) || $this->queues[$queue]->isEmpty()) {
             return null;
         }
-
-        return $this->queue->extract();
+        return $this->queues[$queue]->extract();
     }
 
     public function count(): int
     {
-        return $this->queue->count();
+        return $this->queues->count();
     }
 
     public function clear(): void
     {
-        $this->queue = new SplPriorityQueue();
+        $this->queues = new SplPriorityQueue();
         $this->insertionCount = 0;
     }
 
     public function release(int $jobId, int $delay = 0): void
     {
+    }
+
+    public function getNextJobDelay(string $queue = 'default'): ?float
+    {
+        return 0;
     }
 }

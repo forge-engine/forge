@@ -20,31 +20,34 @@ final class FileQueue implements QueueInterface
         $this->ensureDirectoryExists($this->queuePath);
     }
 
-    public function push(string $payload, int $priority = QueuePriority::NORMAL->value, int $delay = 0): void
-    {
-        $priorityValue = $priority;
-        $processAfter = 0;
-        if ($delay > 0) {
-            $processAfter = microtime(true) + ($delay / 1000);
-        }
-
-        $jobData = [
+    public function push(
+        string $payload,
+        int $priority = 0,
+        int $delayMs = 0,
+        int $maxRetries = 3,
+        string $queue = 'default'
+    ): void {
+        $time   = microtime(true) + ($delayMs / 1000);
+        $file   = sprintf(
+            '%s/%d_%s_%s_%s.job',
+            $this->queuePath,
+            $priority,
+            $queue,
+            str_replace('.', '_', (string)$time),
+            uniqid()
+        );
+        $content = serialize([
             'payload' => $payload,
-            'processAfter' => $processAfter,
-            'attempts' => 0
-        ];
-
-        // Serialize the combined job data
-        $jobContent = serialize($jobData);
-
-        // Filename format remains the same, but file content changes
-        $filename = sprintf('%d_%s_%s.job', $priorityValue, uniqid('job'), time());
-        file_put_contents("{$this->queuePath}/{$filename}", $jobContent);
+            'attempts' => 0,
+            'queue'   => $queue,
+        ]);
+        file_put_contents($file, $content, LOCK_EX);
     }
 
-    public function pop(): ?array
+    public function pop(string $queue = 'default'): ?array
     {
-        $files = glob("{$this->queuePath}/*.job");
+        $pattern = "{$this->queuePath}/*_{$queue}_*.job";
+        $files   = glob($pattern);
 
         if (empty($files)) {
             return null;
@@ -135,5 +138,10 @@ final class FileQueue implements QueueInterface
 
     public function release(int $jobId, int $delay = 0): void
     {
+    }
+
+    public function getNextJobDelay(string $queue = 'default'): ?float
+    {
+        return 0;
     }
 }
