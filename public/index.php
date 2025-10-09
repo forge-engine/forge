@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+ini_set('memory_limit', '1G');
+
 define("BASE_PATH", dirname(__DIR__));
 
 require_once BASE_PATH . "/engine/Core/Support/helpers.php";

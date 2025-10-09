@@ -7,6 +7,8 @@ namespace App\Controllers;
 use App\Modules\ForgeAuth\Models\User;
 use App\Modules\ForgeAuth\Services\ForgeAuthService;
 use App\Modules\ForgeAuth\Validation\ForgeAuthValidate;
+use App\Services\UserService;
+use Forge\Core\Cache\Attributes\Cache;
 use Forge\Core\Debug\Metrics;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Helpers\Debuger;
@@ -28,14 +30,17 @@ final class HomeController
     use SecurityHelper;
 
     public function __construct(
-        public readonly ForgeAuthService $forgeAuthService
-    ) {}
+        public readonly ForgeAuthService $forgeAuthService,
+        public readonly UserService      $userService
+    )
+    {
+    }
 
     #[Route("/")]
     public function index(): Response
     {
         Metrics::start("db_load_one_record_test");
-        $user = User::find(1);
+        $user = $this->userService->findUser(1);
         Metrics::stop("db_load_one_record_test");
 
         $data = [
@@ -65,7 +70,7 @@ final class HomeController
     #[Middleware("App\Middlewares\AuthMiddleware")]
     public function updateUser(Request $request, array $params): Response
     {
-        $id = (int) $params["id"];
+        $id = (int)$params["id"];
         $data = [
             "identifier" => $request->postData["identifier"],
             "email" => $request->postData["email"],

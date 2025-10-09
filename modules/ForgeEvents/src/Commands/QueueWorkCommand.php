@@ -13,15 +13,16 @@ class QueueWorkCommand extends Command
 {
     private static bool $shutdown = false;
 
-    public function __construct(private EventDispatcher $eventDispatcher)
+    public function __construct(private readonly EventDispatcher $eventDispatcher)
     {
     }
+
     public function execute(array $args): int
     {
         $workers = 1;
         foreach ($args as $arg) {
             if (str_starts_with($arg, '--workers=')) {
-                $workers = (int) substr($arg, strlen('--workers='));
+                $workers = (int)substr($arg, strlen('--workers='));
                 break;
             }
         }

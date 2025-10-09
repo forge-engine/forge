@@ -16,7 +16,7 @@ use Forge\Core\Helpers\ModuleResources;
     <meta name="author" content="" />
     <meta name="viewport" content="user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, width=device-width" />
     <link rel="stylesheet" href="/assets/css/app.css" />
-    <link rel="stylesheet" href="/assets/app/css/custom.css" />
+    <link rel="stylesheet" href="/assets/css/style.css" />
     <?= ModuleResources::loadStyles("forge-ui") ?>
     <title><?= $title ?? "Default Title" ?></title>
 
@@ -24,7 +24,6 @@ use Forge\Core\Helpers\ModuleResources;
     <script>
     window.csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
     </script>
-
 </head>
 
 <body class="h-full scroll-smooth">
@@ -33,7 +32,6 @@ use Forge\Core\Helpers\ModuleResources;
     </div>
 
     <?= forgewire(); ?>
-    <?= forgetailwind(); ?>
     <script defer src="/assets/app/js/htmx.min.js" defer></script>
     <?= ModuleResources::loadScripts("forge-ui") ?>
 </body>
