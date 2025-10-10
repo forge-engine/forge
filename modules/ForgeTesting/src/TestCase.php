@@ -8,30 +8,37 @@ use App\Modules\ForgeTesting\Attributes\AfterEach;
 use App\Modules\ForgeTesting\Attributes\BeforeEach;
 use App\Modules\ForgeTesting\Traits\Assertions;
 use App\Modules\ForgeTesting\Traits\DatabaseTesting;
+use App\Modules\ForgeTesting\Traits\HttpTesting;
 use App\Modules\ForgeTesting\Traits\PerformanceTesting;
+use Forge\Core\Bootstrap\Bootstrap;
 
 abstract class TestCase
 {
     use Assertions;
     use DatabaseTesting;
     use PerformanceTesting;
+    use HttpTesting;
+
+    protected static ?\Forge\Core\Http\Kernel $kernel = null;
 
     #[BeforeEach]
     public function setup(): void
     {
+        if (self::$kernel === null) {
+            $bootstrap = Bootstrap::getInstance();
+            self::$kernel = $bootstrap->getKernel();
+        }
     }
 
     #[AfterEach]
-    public function tearDown(): void
-    {
-    }
+    public function tearDown(): void {}
 
-    protected function markTestIncomplete(string $message = ''): void
+    protected function markTestIncomplete(string $message = ""): void
     {
         throw new \RuntimeException("TEST_INCOMPLETE: $message");
     }
 
-    protected function markTestSkipped(string $message = ''): void
+    protected function markTestSkipped(string $message = ""): void
     {
         throw new \RuntimeException("TEST_SKIPPED: $message");
     }

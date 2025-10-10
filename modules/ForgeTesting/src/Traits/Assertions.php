@@ -8,41 +8,56 @@ use Forge\Core\Http\Response;
 
 trait Assertions
 {
-    protected function assertTrue($actual, string $message = ''): void
+    protected function assertTrue($actual, string $message = ""): void
     {
         if ($actual !== true) {
-            throw new \RuntimeException($message ?: "Expected true, got " . var_export($actual, true));
+            throw new \RuntimeException(
+                $message ?: "Expected true, got " . var_export($actual, true),
+            );
         }
     }
 
-    protected function assertEquals($expected, $actual, string $message = ''): void
-    {
+    protected function assertEquals(
+        $expected,
+        $actual,
+        string $message = "",
+    ): void {
         if ($expected != $actual) {
-            throw new \RuntimeException($message ?: sprintf(
-                "Failed asserting that %s is equal to %s.\n--- Expected\n+++ Actual\n@@ @@\n-%s\n+%s\n",
-                var_export($actual, true),
-                var_export($expected, true),
-                var_export($expected, true),
-                var_export($actual, true)
-            ));
+            throw new \RuntimeException(
+                $message ?:
+                sprintf(
+                    "Failed asserting that %s is equal to %s.\n--- Expected\n+++ Actual\n@@ @@\n-%s\n+%s\n",
+                    var_export($actual, true),
+                    var_export($expected, true),
+                    var_export($expected, true),
+                    var_export($actual, true),
+                ),
+            );
         }
     }
 
-    protected function shouldFail(callable $callback, ?string $expectedException = null, string $message = ''): void
-    {
+    protected function shouldFail(
+        callable $callback,
+        ?string $expectedException = null,
+        string $message = "",
+    ): void {
         try {
             $callback();
-            $this->fail($message ?: 'Expected code to throw an exception, but none was thrown.');
+            $this->fail(
+                $message ?:
+                "Expected code to throw an exception, but none was thrown.",
+            );
         } catch (\Throwable $e) {
             if ($expectedException && !($e instanceof $expectedException)) {
                 throw new \RuntimeException(
-                    $message ?: sprintf(
+                    $message ?:
+                    sprintf(
                         'Expected exception of type "%s", got "%s"',
                         $expectedException,
-                        get_class($e)
+                        get_class($e),
                     ),
                     0,
-                    $e
+                    $e,
                 );
             }
         }
@@ -52,238 +67,354 @@ trait Assertions
         throw new \RuntimeException($message);
     }
 
-
-    protected function assertNotEquals($expected, $actual, string $message = ''): void
-    {
+    protected function assertNotEquals(
+        $expected,
+        $actual,
+        string $message = "",
+    ): void {
         if ($expected == $actual) {
-            throw new \RuntimeException($message ?: sprintf(
-                "Failed asserting that %s is not equal to %s.",
-                var_export($actual, true),
-                var_export($expected, true)
-            ));
+            throw new \RuntimeException(
+                $message ?:
+                sprintf(
+                    "Failed asserting that %s is not equal to %s.",
+                    var_export($actual, true),
+                    var_export($expected, true),
+                ),
+            );
         }
     }
 
-    protected function assertSame($expected, $actual, string $message = ''): void
-    {
+    protected function assertSame(
+        $expected,
+        $actual,
+        string $message = "",
+    ): void {
         if ($expected !== $actual) {
-            throw new \RuntimeException($message ?: sprintf(
-                "Failed asserting that two variables are identical.\n--- Expected\n+++ Actual\n@@ @@\n-%s (%s)\n+%s (%s)\n",
-                var_export($expected, true),
-                gettype($expected),
-                var_export($actual, true),
-                gettype($actual)
-            ));
+            throw new \RuntimeException(
+                $message ?:
+                sprintf(
+                    "Failed asserting that two variables are identical.\n--- Expected\n+++ Actual\n@@ @@\n-%s (%s)\n+%s (%s)\n",
+                    var_export($expected, true),
+                    gettype($expected),
+                    var_export($actual, true),
+                    gettype($actual),
+                ),
+            );
         }
     }
 
-    protected function assertNotSame($expected, $actual, string $message = ''): void
-    {
+    protected function assertNotSame(
+        $expected,
+        $actual,
+        string $message = "",
+    ): void {
         if ($expected === $actual) {
-            throw new \RuntimeException($message ?: sprintf(
-                "Failed asserting that %s is not identical to %s.",
-                var_export($actual, true),
-                var_export($expected, true)
-            ));
+            throw new \RuntimeException(
+                $message ?:
+                sprintf(
+                    "Failed asserting that %s is not identical to %s.",
+                    var_export($actual, true),
+                    var_export($expected, true),
+                ),
+            );
         }
     }
 
-    protected function assertInstanceOf(string $expected, $actual, string $message = ''): void
-    {
+    protected function assertInstanceOf(
+        string $expected,
+        $actual,
+        string $message = "",
+    ): void {
         if (!($actual instanceof $expected)) {
-            throw new \RuntimeException($message ?: sprintf(
-                "Expected instance of %s, got %s",
-                $expected,
-                is_object($actual) ? get_class($actual) : gettype($actual)
-            ));
+            throw new \RuntimeException(
+                $message ?:
+                sprintf(
+                    "Expected instance of %s, got %s",
+                    $expected,
+                    is_object($actual) ? get_class($actual) : gettype($actual),
+                ),
+            );
         }
     }
 
-    protected function assertNotInstanceOf(string $expected, object $actual, string $message = ''): void
-    {
+    protected function assertNotInstanceOf(
+        string $expected,
+        object $actual,
+        string $message = "",
+    ): void {
         if ($actual instanceof $expected) {
-            throw new \RuntimeException($message ?: sprintf(
-                "Failed asserting that %s is not an instance of class '%s'.",
-                get_class($actual),
-                $expected
-            ));
+            throw new \RuntimeException(
+                $message ?:
+                sprintf(
+                    "Failed asserting that %s is not an instance of class '%s'.",
+                    get_class($actual),
+                    $expected,
+                ),
+            );
         }
     }
 
-    protected function assertCount(int $expected, iterable $actual, string $message = ''): void
-    {
+    protected function assertCount(
+        int $expected,
+        iterable $actual,
+        string $message = "",
+    ): void {
         $count = is_array($actual) ? count($actual) : iterator_count($actual);
         if ($count !== $expected) {
-            throw new \RuntimeException($message ?: "Expected $expected items, got $count");
+            throw new \RuntimeException(
+                $message ?: "Expected $expected items, got $count",
+            );
         }
     }
 
-    protected function assertArrayNotHasKey($key, array $array, string $message = ''): void
-    {
+    protected function assertArrayNotHasKey(
+        $key,
+        array $array,
+        string $message = "",
+    ): void {
         if (array_key_exists($key, $array)) {
-            throw new \RuntimeException($message ?: sprintf(
-                "Failed asserting that an array does not have the key '%s'.",
-                $key
-            ));
+            throw new \RuntimeException(
+                $message ?:
+                sprintf(
+                    "Failed asserting that an array does not have the key '%s'.",
+                    $key,
+                ),
+            );
         }
     }
 
-    protected function assertArrayHasKey($key, array $array, string $message = ''): void
-    {
+    protected function assertArrayHasKey(
+        $key,
+        array $array,
+        string $message = "",
+    ): void {
         if (!array_key_exists($key, $array)) {
-            throw new \RuntimeException($message ?: sprintf(
-                "Failed asserting that an array has the key '%s'.",
-                $key
-            ));
+            throw new \RuntimeException(
+                $message ?:
+                sprintf(
+                    "Failed asserting that an array has the key '%s'.",
+                    $key,
+                ),
+            );
         }
     }
 
-    protected function assertFalse($actual, string $message = ''): void
+    protected function assertFalse($actual, string $message = ""): void
     {
-        $this->assertTrue($actual === false, $message ?: "Expected false, got " . var_export($actual, true));
+        $this->assertTrue(
+            $actual === false,
+            $message ?: "Expected false, got " . var_export($actual, true),
+        );
     }
 
-    protected function assertGreaterThan($expected, $actual, string $message = ''): void
-    {
+    protected function assertGreaterThan(
+        $expected,
+        $actual,
+        string $message = "",
+    ): void {
         $this->assertTrue(
             $actual > $expected,
-            $message ?: sprintf(
+            $message ?:
+            sprintf(
                 "Failed asserting that %s is greater than %s.",
                 var_export($actual, true),
-                var_export($expected, true)
-            )
+                var_export($expected, true),
+            ),
         );
     }
 
-    protected function assertGreaterThanOrEqual($expected, $actual, string $message = ''): void
-    {
+    protected function assertGreaterThanOrEqual(
+        $expected,
+        $actual,
+        string $message = "",
+    ): void {
         $this->assertTrue(
             $actual >= $expected,
-            $message ?: sprintf(
+            $message ?:
+            sprintf(
                 "Failed asserting that %s is greater than or equal to %s.",
                 var_export($actual, true),
-                var_export($expected, true)
-            )
+                var_export($expected, true),
+            ),
         );
     }
 
-    protected function assertLessThan($expected, $actual, string $message = ''): void
-    {
+    protected function assertLessThan(
+        $expected,
+        $actual,
+        string $message = "",
+    ): void {
         $this->assertTrue(
             $actual < $expected,
-            $message ?: sprintf(
+            $message ?:
+            sprintf(
                 "Failed asserting that %s is less than %s.",
                 var_export($actual, true),
-                var_export($expected, true)
-            )
+                var_export($expected, true),
+            ),
         );
     }
 
-    protected function assertLessThanOrEqual($expected, $actual, string $message = ''): void
-    {
+    protected function assertLessThanOrEqual(
+        $expected,
+        $actual,
+        string $message = "",
+    ): void {
         $this->assertTrue(
             $actual <= $expected,
-            $message ?: sprintf(
+            $message ?:
+            sprintf(
                 "Failed asserting that %s is less than or equal to %s.",
                 var_export($actual, true),
-                var_export($expected, true)
-            )
+                var_export($expected, true),
+            ),
         );
     }
 
-    protected function assertNull($value, string $message = ''): void
+    protected function assertNull($value, string $message = ""): void
     {
         if (!is_null($value)) {
-            throw new \RuntimeException($message ?: "Expected null, got " . var_export($value, true));
+            throw new \RuntimeException(
+                $message ?: "Expected null, got " . var_export($value, true),
+            );
         }
     }
 
-    protected function assertNotNull($actual, string $message = ''): void
+    protected function assertNotNull($actual, string $message = ""): void
     {
         if (is_null($actual)) {
-            throw new \RuntimeException($message ?: "Failed asserting that a value is not null.");
+            throw new \RuntimeException(
+                $message ?: "Failed asserting that a value is not null.",
+            );
         }
     }
 
-    protected function assertNotEmpty($actual, string $message = ''): void
+    protected function assertNotEmpty($actual, string $message = ""): void
     {
         if (empty($actual)) {
-            throw new \RuntimeException($message ?: "Failed asserting that a value is not empty.");
+            throw new \RuntimeException(
+                $message ?: "Failed asserting that a value is not empty.",
+            );
         }
     }
 
-    protected function assertEmpty($actual, string $message = ''): void
+    protected function assertEmpty($actual, string $message = ""): void
     {
         if (!empty($actual)) {
-            throw new \RuntimeException($message ?: sprintf(
-                "Failed asserting that %s is empty.",
-                var_export($actual, true)
-            ));
+            throw new \RuntimeException(
+                $message ?:
+                sprintf(
+                    "Failed asserting that %s is empty.",
+                    var_export($actual, true),
+                ),
+            );
         }
     }
 
-    protected function assertStringContainsString(string $needle, string $haystack, string $message = ''): void
-    {
+    protected function assertStringContainsString(
+        string $needle,
+        string $haystack,
+        string $message = "",
+    ): void {
         if (!str_contains($haystack, $needle)) {
-            throw new \RuntimeException($message ?: sprintf(
-                "Failed asserting that '%s' contains '%s'.",
-                $haystack,
-                $needle
-            ));
+            throw new \RuntimeException(
+                $message ?:
+                sprintf(
+                    "Failed asserting that '%s' contains '%s'.",
+                    $haystack,
+                    $needle,
+                ),
+            );
         }
     }
 
-    protected function assertStringNotContainsString(string $needle, string $haystack, string $message = ''): void
-    {
+    protected function assertStringNotContainsString(
+        string $needle,
+        string $haystack,
+        string $message = "",
+    ): void {
         if (str_contains($haystack, $needle)) {
-            throw new \RuntimeException($message ?: sprintf(
-                "Failed asserting that '%s' does not contain '%s'.",
-                $haystack,
-                $needle
-            ));
+            throw new \RuntimeException(
+                $message ?:
+                sprintf(
+                    "Failed asserting that '%s' does not contain '%s'.",
+                    $haystack,
+                    $needle,
+                ),
+            );
         }
     }
 
-    protected function assertMatchesRegularExpression(string $pattern, string $string, string $message = ''): void
-    {
+    protected function assertMatchesRegularExpression(
+        string $pattern,
+        string $string,
+        string $message = "",
+    ): void {
         if (!preg_match($pattern, $string)) {
-            throw new \RuntimeException($message ?: sprintf(
-                "Failed asserting that '%s' matches pattern '%s'.",
-                $string,
-                $pattern
-            ));
+            throw new \RuntimeException(
+                $message ?:
+                sprintf(
+                    "Failed asserting that '%s' matches pattern '%s'.",
+                    $string,
+                    $pattern,
+                ),
+            );
         }
     }
 
-    protected function assertDoesNotMatchRegularExpression(string $pattern, string $string, string $message = ''): void
-    {
+    protected function assertDoesNotMatchRegularExpression(
+        string $pattern,
+        string $string,
+        string $message = "",
+    ): void {
         if (preg_match($pattern, $string)) {
-            throw new \RuntimeException($message ?: sprintf(
-                "Failed asserting that '%s' does not match pattern '%s'.",
-                $string,
-                $pattern
-            ));
+            throw new \RuntimeException(
+                $message ?:
+                sprintf(
+                    "Failed asserting that '%s' does not match pattern '%s'.",
+                    $string,
+                    $pattern,
+                ),
+            );
         }
     }
 
-    protected function assertJsonStringEqualsJsonString(string $expectedJson, string $actualJson, string $message = ''): void
-    {
+    protected function assertJsonStringEqualsJsonString(
+        string $expectedJson,
+        string $actualJson,
+        string $message = "",
+    ): void {
         try {
-            $expectedData = json_decode($expectedJson, true, 512, JSON_THROW_ON_ERROR);
-            $actualData = json_decode($actualJson, true, 512, JSON_THROW_ON_ERROR);
+            $expectedData = json_decode(
+                $expectedJson,
+                true,
+                512,
+                JSON_THROW_ON_ERROR,
+            );
+            $actualData = json_decode(
+                $actualJson,
+                true,
+                512,
+                JSON_THROW_ON_ERROR,
+            );
         } catch (\JsonException $e) {
-            throw new \RuntimeException("Invalid JSON provided: " . $e->getMessage());
+            throw new \RuntimeException(
+                "Invalid JSON provided: " . $e->getMessage(),
+            );
         }
 
         $this->assertEquals(
             $expectedData,
             $actualData,
-            $message ?: 'JSON structures do not match'
+            $message ?: "JSON structures do not match",
         );
     }
 
-    protected function assertContains($needle, iterable $haystack, string $message = ''): void
-    {
+    protected function assertContains(
+        $needle,
+        iterable $haystack,
+        string $message = "",
+    ): void {
         $found = false;
         foreach ($haystack as $item) {
             if ($item === $needle) {
@@ -292,15 +423,21 @@ trait Assertions
             }
         }
         if (!$found) {
-            throw new \RuntimeException($message ?: sprintf(
-                "Failed asserting that an iterable contains %s.",
-                var_export($needle, true)
-            ));
+            throw new \RuntimeException(
+                $message ?:
+                sprintf(
+                    "Failed asserting that an iterable contains %s.",
+                    var_export($needle, true),
+                ),
+            );
         }
     }
 
-    protected function assertNotContains($needle, iterable $haystack, string $message = ''): void
-    {
+    protected function assertNotContains(
+        $needle,
+        iterable $haystack,
+        string $message = "",
+    ): void {
         $found = false;
         foreach ($haystack as $item) {
             if ($item === $needle) {
@@ -309,101 +446,147 @@ trait Assertions
             }
         }
         if ($found) {
-            throw new \RuntimeException($message ?: sprintf(
-                "Failed asserting that an iterable does not contain %s.",
-                var_export($needle, true)
-            ));
+            throw new \RuntimeException(
+                $message ?:
+                sprintf(
+                    "Failed asserting that an iterable does not contain %s.",
+                    var_export($needle, true),
+                ),
+            );
         }
     }
 
-    protected function assertHttpStatus(int $expected, Response $response, string $message = ''): void
+    protected function assertHttpStatus(int $expected, Response $response): void
     {
-        $this->assertEquals(
-            $expected,
-            $response->getStatusCode(),
-            $message ?: sprintf(
-                "Expected HTTP status code %d but received %d.",
-                $expected,
-                $response->getStatusCode()
-            )
-        );
+        $actual = $response->getStatusCode();
+        if ($actual !== $expected) {
+            throw new \RuntimeException(
+                "Expected HTTP status $expected but got $actual",
+            );
+        }
     }
 
-    private function applyDatabaseCriteria(QueryBuilder $query, array $criteria): QueryBuilder
-    {
+    private function applyDatabaseCriteria(
+        QueryBuilder $query,
+        array $criteria,
+    ): QueryBuilder {
         foreach ($criteria as $column => $value) {
             if (is_null($value)) {
                 $query->whereNull($column);
             } else {
-                $query->where($column, '=', $value);
+                $query->where($column, "=", $value);
             }
         }
         return $query;
     }
 
-    protected function assertDatabaseHas(string $table, array $criteria, string $message = ''): void
-    {
+    protected function assertDatabaseHas(
+        string $table,
+        array $criteria,
+        string $message = "",
+    ): void {
         /*** @var QueryBuilder $db */
         $db = Container::getInstance()->get(QueryBuilder::class);
         $query = $db->setTable($table);
         $query = $this->applyDatabaseCriteria($query, $criteria);
         $count = $query->count();
 
-        $this->assertGreaterThanOrEqual(1, $count, $message ?: sprintf(
-            "Failed asserting that the table '%s' contains at least one record matching the criteria %s. Found %d.",
-            $table,
-            json_encode($criteria),
-            $count
-        ));
+        $this->assertGreaterThanOrEqual(
+            1,
+            $count,
+            $message ?:
+            sprintf(
+                "Failed asserting that the table '%s' contains at least one record matching the criteria %s. Found %d.",
+                $table,
+                json_encode($criteria),
+                $count,
+            ),
+        );
     }
 
-    protected function assertDatabaseMissing(string $table, array $criteria, string $message = ''): void
-    {
+    protected function assertDatabaseMissing(
+        string $table,
+        array $criteria,
+        string $message = "",
+    ): void {
         /*** @var QueryBuilder $db */
         $db = Container::getInstance()->get(QueryBuilder::class);
         $query = $db->setTable($table);
         $query = $this->applyDatabaseCriteria($query, $criteria);
         $count = $query->count();
 
-        $this->assertEquals(0, $count, $message ?: sprintf(
-            "Failed asserting that the table '%s' does not contain records matching the criteria %s. Found %d.",
-            $table,
-            json_encode($criteria),
-            $count
-        ));
+        $this->assertEquals(
+            0,
+            $count,
+            $message ?:
+            sprintf(
+                "Failed asserting that the table '%s' does not contain records matching the criteria %s. Found %d.",
+                $table,
+                json_encode($criteria),
+                $count,
+            ),
+        );
     }
 
-    protected function assertDatabaseCount(string $table, int $expectedCount, array $criteria, string $message = ''): void
-    {
+    protected function assertDatabaseCount(
+        string $table,
+        int $expectedCount,
+        array $criteria,
+        string $message = "",
+    ): void {
         /*** @var QueryBuilder $db */
         $db = Container::getInstance()->get(QueryBuilder::class);
         $query = $db->setTable($table);
         $query = $this->applyDatabaseCriteria($query, $criteria);
         $actualCount = $query->count();
 
-        $this->assertEquals($expectedCount, $actualCount, $message ?: sprintf(
-            "Failed asserting that the table '%s' contains exactly %d records matching the criteria %s. Found %d.",
-            $table,
+        $this->assertEquals(
             $expectedCount,
-            json_encode($criteria),
-            $actualCount
-        ));
+            $actualCount,
+            $message ?:
+            sprintf(
+                "Failed asserting that the table '%s' contains exactly %d records matching the criteria %s. Found %d.",
+                $table,
+                $expectedCount,
+                json_encode($criteria),
+                $actualCount,
+            ),
+        );
     }
 
-    protected function assertFileExists(string $filename, string $message = ''): void
-    {
+    protected function assertFileExists(
+        string $filename,
+        string $message = "",
+    ): void {
         if (!file_exists($filename)) {
-            throw new \RuntimeException($message ?: sprintf("Failed asserting that file '%s' exists.", $filename));
+            throw new \RuntimeException(
+                $message ?:
+                sprintf("Failed asserting that file '%s' exists.", $filename),
+            );
         }
         if (!is_file($filename)) {
-            throw new \RuntimeException($message ?: sprintf("Failed asserting that '%s' is a file (it exists but is not a file).", $filename));
+            throw new \RuntimeException(
+                $message ?:
+                sprintf(
+                    "Failed asserting that '%s' is a file (it exists but is not a file).",
+                    $filename,
+                ),
+            );
         }
     }
 
-    protected function assertFileDoesNotExist(string $filename, string $message = ''): void
-    {
+    protected function assertFileDoesNotExist(
+        string $filename,
+        string $message = "",
+    ): void {
         if (file_exists($filename) && is_file($filename)) {
-            throw new \RuntimeException($message ?: sprintf("Failed asserting that file '%s' does not exist.", $filename));
+            throw new \RuntimeException(
+                $message ?:
+                sprintf(
+                    "Failed asserting that file '%s' does not exist.",
+                    $filename,
+                ),
+            );
         }
     }
 }

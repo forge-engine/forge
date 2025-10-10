@@ -16,6 +16,7 @@ View::layout(name: "main", loadFromModule: false);
 
     <h3>Welcome
         <form action="/auth/logout" method="POST">
+            <?= csrf_input() ?>
             <button>Logout</button>
         </form>
     </h3>

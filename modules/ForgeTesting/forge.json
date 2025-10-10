@@ -1,19 +1,17 @@
 {
-    "$schema": "./../../engine/Core/Schema/module-schema.json",
-    "name": "forge-testing",
-    "version": "0.1.0",
-    "description": "A Test Suite Module By Forge",
-    "type": "test-suite",
-    "order": 0,
-    "cli": {
-        "commands": [
-            "test"
-        ]
-    },
-    "tags": [],
-    "config": {
-        "defaults": {}
-    },
-    "author": "Forge Team",
-    "license": "MIT"
+  "$schema": "./../../engine/Core/Schema/module-schema.json",
+  "name": "forge-testing",
+  "version": "0.1.1",
+  "description": "A Test Suite Module By Forge",
+  "type": "test-suite",
+  "order": 0,
+  "cli": {
+    "commands": ["test"]
+  },
+  "tags": [],
+  "config": {
+    "defaults": {}
+  },
+  "author": "Forge Team",
+  "license": "MIT"
 }

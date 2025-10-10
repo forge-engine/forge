@@ -5,7 +5,11 @@
     <div class="modal-backdrop">
         <div class="modal">
             <button class="close" wire:click="close">×</button>
-            <?= wire_name("child-profile-editor", ['userId'=>$userId], 'profile-modal') ?>
+            <?= wire_name(
+                "child-profile-editor",
+                ["userId" => $userId],
+                "profile-modal",
+            ) ?>
         </div>
     </div>
     <?php endif; ?>

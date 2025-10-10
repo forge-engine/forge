@@ -1,206 +1,252 @@
 <?php
+declare(strict_types=1);
 
 namespace App\Modules\ForgeWire\Core;
 
-use App\Modules\ForgeWire\Attributes\Validate;
+use App\Modules\ForgeWire\Attributes\{State, Model, DTO, Service, Validate};
 use Forge\Core\DI\Container;
 use Forge\Core\Session\SessionInterface;
 use Forge\Core\Validation\Validator;
-use ReflectionAttribute;
-use ReflectionClass;
 
 final class Hydrator
 {
-    private const A_STATE = 'App\\Modules\\ForgeWire\\Attributes\\State';
-    private const A_MODEL = 'App\\Modules\\ForgeWire\\Attributes\\Model';
-    private const A_DTO = 'App\\Modules\\ForgeWire\\Attributes\\DTO';
-    private const A_SERVICE = 'App\\Modules\\ForgeWire\\Attributes\\Service';
-    private const A_VALIDATE = 'App\\Modules\\ForgeWire\\Attributes\\Validate';
+    private static array $recipe = [];
+    private static array $validateRules = [];
 
-    public function __construct(private Container $container)
-    {
-    }
+    public function __construct(private Container $container) {}
 
-    public function hydrate(object $instance, array $dirty, SessionInterface $session, string $sessionKey): void
-    {
-        $ref = new ReflectionClass($instance);
+    public function hydrate(
+        object $instance,
+        array $dirty,
+        SessionInterface $session,
+        string $sessionKey,
+        ?bool $isMemorySession = null,
+    ): void {
+        $class = $instance::class;
 
-        $dirtyGroups = [];
+        if (!isset(self::$recipe[$class])) {
+            self::$recipe[$class] = self::buildRecipe($class);
+        }
+        $recipe = self::$recipe[$class];
+
+        $dtoInput = [];
         foreach ($dirty as $k => $v) {
-            $pos = strpos($k, '.');
-            if ($pos !== false) {
-                $prefix = substr($k, 0, $pos);
-                $field = substr($k, $pos + 1);
-                $dirtyGroups[$prefix][$field] = $v;
+            if (str_contains($k, ".")) {
+                [$top, $field] = explode(".", $k, 2);
+                $dtoInput[$top][$field] = $v;
             }
         }
 
-        $validationRules = [];
-        $validationData = [];
-
-        foreach ($ref->getProperties() as $prop) {
-            $name = $prop->getName();
-
-            $validateAttr = $prop->getAttributes(self::A_VALIDATE, \ReflectionAttribute::IS_INSTANCEOF);
-
-            if (!empty($validateAttr)) {
-                /** @var Validate $validateInstance */
-                $validateInstance = $validateAttr[0]->newInstance();
-                if (array_key_exists($name, $dirty)) {
-                    $validationRules[$name] = explode('|', $validateInstance->rules);
-                    $validationData[$name] = $dirty[$name];
+        if (isset(self::$validateRules[$class])) {
+            $toValidate = [];
+            foreach (self::$validateRules[$class] as $prop => $rules) {
+                if (array_key_exists($prop, $dirty)) {
+                    $toValidate[$prop] = $dirty[$prop];
                 }
             }
-
-            if (!empty($validationRules)) {
-                $validator = new Validator($validationData, $validationRules);
+            if ($toValidate) {
+                $validator = new Validator(
+                    $toValidate,
+                    self::$validateRules[$class],
+                );
                 $validator->validate();
             }
+        }
+        $stateBag = $session->get($sessionKey, []);
+        $modelBag = $session->get($sessionKey . ":models", []);
+        $dtoBag = $session->get($sessionKey . ":dtos", []);
 
-            foreach ($prop->getAttributes() as $attr) {
-                $type = $attr->getName();
+        foreach ($recipe as $propName => $cfg) {
+            $value = null;
 
-                if ($type === self::A_VALIDATE) {
-                    continue;
-                }
+            if ($cfg["kind"] === "state") {
+                $value = $dirty[$propName] ?? ($stateBag[$propName] ?? null);
+                $stateBag[$propName] = $value;
+            } elseif ($cfg["kind"] === "model") {
+                if (isset($modelBag[$propName])) {
+                    [$modelClass, $idField, $id] = $modelBag[$propName];
 
-                if ($type === self::A_STATE) {
-                    $state = $session->get($sessionKey, []);
-                    if (array_key_exists($name, $dirty)) {
-                        $state[$name] = $dirty[$name];
-                    }
-                    if (array_key_exists($name, $state)) {
-                        $prop->setAccessible(true);
-                        $prop->setValue($instance, $state[$name]);
-                    }
-                    continue;
-                }
+                    /** @var \Forge\Core\Database\Model $model */
+                    $model = null;
 
-                if ($type === self::A_MODEL) {
-                    $bag = $session->get($sessionKey . ':models', []);
-                    if (isset($bag[$name])) {
-                        [$class, $idField, $id] = $bag[$name];
-                        $repo = $this->container->make($class . 'Repository');
-                        $prop->setAccessible(true);
-                        $prop->setValue($instance, $repo->findByField($idField, $id));
-                    }
-                    continue;
-                }
-
-                if ($type === self::A_DTO) {
-                    $args = $this->args($attr);
-                    $class = $args['class'] ?? $prop->getType()?->getName();
-                    if (!$class) {
-                        continue;
-                    }
-
-                    $bag = $session->get($sessionKey . ':dtos', []);
-                    $data = [];
-                    if (isset($bag[$name])) {
-                        [$cls, $stored] = $bag[$name];
-                        if ($cls === $class) {
-                            $data = $stored;
-                        }
-                    }
-
-                    if (isset($dirtyGroups[$name])) {
-                        foreach ($dirtyGroups[$name] as $field => $val) {
-                            $data[$field] = $val;
-                        }
-                    }
-
-                    if (!$data && $prop->isInitialized($instance)) {
-                        continue;
-                    }
-
-                    if (method_exists($class, 'fromArray')) {
-                        $obj = $class::fromArray($data);
+                    if ($idField === $modelClass::getPrimaryKey()) {
+                        $model = $modelClass::find($id);
                     } else {
-                        $obj = new $class();
-                        foreach ($data as $k => $v) {
-                            if (property_exists($obj, $k)) {
-                                $obj->$k = $v;
-                            }
-                        }
+                        $results = $modelClass::where($idField, $id);
+                        $model = $results[0] ?? null;
                     }
 
-                    $prop->setAccessible(true);
-                    $prop->setValue($instance, $obj);
-                    continue;
+                    $value = $model;
                 }
-
-                if ($type === self::A_SERVICE) {
-                    $args = $this->args($attr);
-                    $class = $args['class'] ?? $prop->getType()?->getName();
-                    if ($class) {
-                        $prop->setAccessible(true);
-                        $prop->setValue($instance, $this->container->make($class));
+            } elseif ($cfg["kind"] === "dto") {
+                $data = [];
+                if (isset($dtoBag[$propName])) {
+                    [$storedClass, $storedData] = $dtoBag[$propName];
+                    if ($storedClass === $cfg["class"]) {
+                        $data = $storedData;
                     }
-                    continue;
                 }
+                foreach ($dtoInput[$propName] ?? [] as $k => $v) {
+                    $data[$k] = $v;
+                }
+                if ($data || !$cfg["initialized"]) {
+                    $value = $cfg["fromArray"]
+                        ? $cfg["class"]::fromArray($data)
+                        : self::plainHydrateObject($cfg["class"], $data);
+                }
+            } elseif ($cfg["kind"] === "service") {
+                $value = $this->container->make($cfg["class"]);
+            }
+
+            if ($value !== null || array_key_exists($propName, $dirty)) {
+                $cfg["accessor"]($instance, $value);
             }
         }
+
+        $session->set($sessionKey, $stateBag);
     }
 
-    public function dehydrate(object $instance, SessionInterface $session, string $sessionKey): array
-    {
+    public function dehydrate(
+        object $instance,
+        SessionInterface $session,
+        string $sessionKey,
+    ): array {
+        $class = $instance::class;
+        if (!isset(self::$recipe[$class])) {
+            self::$recipe[$class] = self::buildRecipe($class);
+        }
+        $recipe = self::$recipe[$class];
+
         $state = [];
         $models = [];
         $dtos = [];
 
-        $ref = new ReflectionClass($instance);
-        foreach ($ref->getProperties() as $prop) {
-            $prop->setAccessible(true);
-            $value = $prop->getValue($instance);
+        foreach ($recipe as $propName => $cfg) {
+            $value = $cfg["reader"]($instance);
 
-            foreach ($prop->getAttributes() as $attr) {
-                $type = $attr->getName();
-
-                if ($type === self::A_STATE) {
-                    if (!is_scalar($value) && !is_array($value) && !is_null($value)) {
-                        throw new \RuntimeException("Only scalar/array allowed for #[State] {$prop->getName()}");
-                    }
-                    $state[$prop->getName()] = $value;
-                    continue;
+            if ($cfg["kind"] === "state") {
+                if (
+                    !is_scalar($value) &&
+                    !is_array($value) &&
+                    $value !== null
+                ) {
+                    throw new \RuntimeException(
+                        "Only scalar/array allowed for #[State] {$propName}",
+                    );
                 }
-
-                if ($type === self::A_MODEL && $value) {
-                    $args = $this->args($attr);
-                    $class = $args['class'] ?? null;
-                    $idField = $args['idField'] ?? 'id';
-                    $models[$prop->getName()] = [$class, $idField, $value->{$idField} ?? null];
-                    continue;
-                }
-
-                if ($type === self::A_DTO && $value) {
-                    $args = $this->args($attr);
-                    $class = $args['class'] ?? null;
-                    $dtos[$prop->getName()] = [$class, $value->toArray()];
-                    continue;
-                }
+                $state[$propName] = $value;
+            } elseif ($cfg["kind"] === "model" && $value) {
+                $models[$propName] = [
+                    $cfg["repoClass"],
+                    $cfg["idField"],
+                    $value->{$cfg["idField"]} ?? null,
+                ];
+            } elseif ($cfg["kind"] === "dto" && $value) {
+                $dtos[$propName] = [$cfg["class"], $value->toArray()];
             }
         }
 
         $session->set($sessionKey, $state);
-        $session->set($sessionKey . ':models', $models);
-        $session->set($sessionKey . ':dtos', $dtos);
+        $session->set($sessionKey . ":models", $models);
+        $session->set($sessionKey . ":dtos", $dtos);
 
         return $state;
     }
 
-    private function args(ReflectionAttribute $attr): array
+    private static function buildRecipe(string $class): array
     {
-        $a = $attr->getArguments();
-        if (!array_is_list($a)) {
-            return $a;
+        $refl = new \ReflectionClass($class);
+        $recipe = [];
+
+        foreach ($refl->getProperties() as $prop) {
+            $name = $prop->getName();
+            $hasInit = $prop->isInitialized(new $class());
+            $prop->setAccessible(true);
+
+            $reader = fn(object $o) => $prop->getValue($o);
+            $writer = fn(object $o, $v) => $prop->setValue($o, $v);
+
+            foreach ($prop->getAttributes() as $attr) {
+                $type = $attr->getName();
+
+                if ($type === Validate::class) {
+                    /** @var Validate $v */
+                    $v = $attr->newInstance();
+                    self::$validateRules[$class][$name] = explode(
+                        "|",
+                        $v->rules,
+                    );
+                    continue;
+                }
+
+                if ($type === State::class) {
+                    $recipe[$name] = [
+                        "kind" => "state",
+                        "reader" => $reader,
+                        "accessor" => $writer,
+                    ];
+                    continue 2;
+                }
+
+                if ($type === Model::class) {
+                    $args = $attr->getArguments();
+                    $repoClass =
+                        $args["class"] ?? null ?: $prop->getType()?->getName();
+                    $idField = $args["idField"] ?? "id";
+                    $recipe[$name] = [
+                        "kind" => "model",
+                        "repoClass" => $repoClass . "Repository",
+                        "idField" => $idField,
+                        "reader" => $reader,
+                        "accessor" => $writer,
+                    ];
+                    continue 2;
+                }
+
+                if ($type === DTO::class) {
+                    $args = $attr->getArguments();
+                    $dtoClass =
+                        $args["class"] ?? null ?: $prop->getType()?->getName();
+                    $fromArray = method_exists($dtoClass, "fromArray");
+                    $recipe[$name] = [
+                        "kind" => "dto",
+                        "class" => $dtoClass,
+                        "fromArray" => $fromArray,
+                        "initialized" => $hasInit,
+                        "reader" => $reader,
+                        "accessor" => $writer,
+                    ];
+                    continue 2;
+                }
+
+                if ($type === Service::class) {
+                    $args = $attr->getArguments();
+                    $svcClass =
+                        $args["class"] ?? null ?: $prop->getType()?->getName();
+                    $recipe[$name] = [
+                        "kind" => "service",
+                        "class" => $svcClass,
+                        "reader" => $reader,
+                        "accessor" => $writer,
+                    ];
+                    continue 2;
+                }
+            }
         }
-        $out = [];
-        if (isset($a[0])) {
-            $out['class'] = $a[0];
+
+        return $recipe;
+    }
+
+    private static function plainHydrateObject(
+        string $class,
+        array $data,
+    ): object {
+        $obj = new $class();
+        foreach ($data as $k => $v) {
+            if (property_exists($obj, $k)) {
+                $obj->$k = $v;
+            }
         }
-        if (isset($a[1])) {
-            $out['idField'] = $a[1];
-        }
-        return $out;
+        return $obj;
     }
 }

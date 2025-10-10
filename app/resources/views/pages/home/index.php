@@ -12,6 +12,7 @@ use Forge\Core\View\View;
 
 View::layout(name: "main", loadFromModule: false);
 ?>
+
 <section class="container">
     <h2 class="text-2xl">Engine Status aver que tal</h2>
     <ul>
@@ -22,11 +23,15 @@ View::layout(name: "main", loadFromModule: false);
         <pre>
     <?php print_r($user); ?>
     </pre>
-        <?php //wire(\App\Components\Counter::class, ['start' => 10], 'counter-1')?>
-        <?php //wire(\App\Components\ProductsTable::class, ['perPage' => 10], 'products-1')?>
-        <?= wire_name(name: 'products-table', componentId: 'products-1') ?>
-        <?= wire_name(name: 'counter', componentId: 'counter-1') ?>
-        <?= wire_name(name: 'kanban', componentId: 'kanban-1') ?>
+        <?php
+//wire(\App\Components\Counter::class, ['start' => 10], 'counter-1')
+?>
+        <?php
+//wire(\App\Components\ProductsTable::class, ['perPage' => 10], 'products-1')
+?>
+        <?= wire_name(name: "products-table", componentId: "products-1") ?>
+        <?= wire_name(name: "counter", componentId: "counter-1") ?>
+
 
         <section>
             <?= Component::render("forge-ui:alert", loadFromModule: true) ?>

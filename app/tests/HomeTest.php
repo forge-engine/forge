@@ -10,32 +10,58 @@ use App\Modules\ForgeTesting\Attributes\Test;
 use App\Modules\ForgeTesting\TestCase;
 use Forge\Core\Http\Response;
 
-#[Group('http')]
+#[Group("http")]
 final class HomeTest extends TestCase
 {
-    #[Test('Home / route is working')]
-    #[Skip('Waiting on TestHttpService implementation')]
+    //#[Skip("Waiting on TestHttpService implementation")]
+    #[Test("Home / route is working")]
     public function home_route_is_ok(): void
     {
         /*** @var Response $response */
-        //$response = $this->get('/');
-        //$this->assertHttpStatus(200, $response);
+        $response = $this->get("/");
+        $this->assertHttpStatus(200, $response);
     }
 
-    #[Test]
-    #[Skip('Waiting on TestHttpService implementation')]
+    #[Test("POST / with invalid data redirects back")]
     public function register_route_returns_redirect_on_validation_error(): void
     {
-        // Test implementation
+        $response = $this->post(
+            "/",
+            $this->withCsrf([
+                "email" => "invalid-email",
+                "password" => "123",
+            ]),
+        );
+
+        $this->assertHttpStatus(302, $response);
     }
 
-    #[Test]
-    #[Skip('Waiting on TestHttpService implementation')]
+    #[Test("POST /auth/login with invalid data redirects back")]
+    public function login_route_returns_redirect_on_validation_error(): void
+    {
+        $response = $this->post(
+            "/auth/login",
+            $this->withCsrf([
+                "identifier" => "jeremias",
+                "password" => "123456",
+            ]),
+        );
+
+        $this->assertHttpStatus(302, $response);
+    }
+
+    #[Test("PATCH /1 without auth returns 403")]
     public function update_user_route_returns_unauthorized_if_not_authenticated(): void
     {
-        /** @var Response $response */
-        //$response = $this->patch('/1', ['username' => 'newuser', 'email' => 'new@example.com']);
-        // Assuming your AuthMiddleware returns a 403 or redirects
-        //$this->assertHttpStatus(403, $response);
+        $response = $this->patch(
+            "/1",
+            [
+                "identifier" => "newuser",
+                "email" => "new@example.com",
+            ],
+            $this->csrfHeaders(),
+        );
+
+        $this->assertHttpStatus(401, $response);
     }
 }

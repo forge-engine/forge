@@ -31,10 +31,8 @@ final class HomeController
 
     public function __construct(
         public readonly ForgeAuthService $forgeAuthService,
-        public readonly UserService      $userService
-    )
-    {
-    }
+        public readonly UserService $userService,
+    ) {}
 
     #[Route("/")]
     public function index(): Response
@@ -67,16 +65,16 @@ final class HomeController
     }
 
     #[Route("/{id}", "PATCH")]
-    #[Middleware("App\Middlewares\AuthMiddleware")]
-    public function updateUser(Request $request, array $params): Response
+    #[Middleware("App\Modules\ForgeAuth\Middlewares\AuthMiddleware")]
+    public function updateUser(Request $request, string $id): Response
     {
-        $id = (int)$params["id"];
+        $id = (int) $id;
         $data = [
             "identifier" => $request->postData["identifier"],
             "email" => $request->postData["email"],
         ];
         //$this->userRepository->update($id, $data);
 
-        return new Response("<h1> Successfully updated!</h1>");
+        return new Response("<h1> Successfully updated!</h1>", 401);
     }
 }
