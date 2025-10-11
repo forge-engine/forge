@@ -30,8 +30,12 @@ use Forge\Core\Module\LifecycleHookName;
 #[Requires]
 final class ForgeTestingModule
 {
-    public function register(Container $container): void {}
+    public function register(Container $container): void
+    {
+    }
 
     #[LifecycleHook(hook: LifecycleHookName::AFTER_MODULE_REGISTER)]
-    public function onAfterModuleRegister(): void {}
+    public function onAfterModuleRegister(): void
+    {
+    }
 }

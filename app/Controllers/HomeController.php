@@ -4,11 +4,9 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
-use App\Modules\ForgeAuth\Models\User;
 use App\Modules\ForgeAuth\Services\ForgeAuthService;
 use App\Modules\ForgeAuth\Validation\ForgeAuthValidate;
 use App\Services\UserService;
-use Forge\Core\Cache\Attributes\Cache;
 use Forge\Core\Debug\Metrics;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Helpers\Debuger;
@@ -32,7 +30,8 @@ final class HomeController
     public function __construct(
         public readonly ForgeAuthService $forgeAuthService,
         public readonly UserService $userService,
-    ) {}
+    ) {
+    }
 
     #[Route("/")]
     public function index(): Response
@@ -45,6 +44,8 @@ final class HomeController
             "title" => "Welcome to Forge Framework",
             "user" => $user,
         ];
+
+        //Debuger::dumpAndExit($user);
 
         return $this->view(view: "pages/home/index", data: $data);
     }

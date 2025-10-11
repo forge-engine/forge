@@ -9,6 +9,7 @@ use App\Modules\ForgePackageManager\Services\PackageManagerService;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\DI\Container;
 use Forge\Core\Module\Attributes\Compatibility;
+use Forge\Core\Module\Attributes\ConfigDefaults;
 use Forge\Core\Module\Attributes\LifecycleHook;
 use Forge\Core\Module\Attributes\Module;
 use Forge\Core\Module\Attributes\Repository;
@@ -18,6 +19,12 @@ use Forge\Core\Module\LifecycleHookName;
 #[Service]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
+#[ConfigDefaults(defaults: [
+    'forge_package_manager' => [
+        'registry' => [],
+        'cache_ttl' => 3600
+    ]
+])]
 final class ForgePackageManager
 {
     public function register(Container $container): void
