@@ -1,39 +1,17 @@
 {
-    "$schema": "https://raw.githubusercontent.com/upperdo/forge-schemas/refs/heads/main/schemas/modules/schema.json",
-    "name": "forge-debugbar",
-    "version": "1.0.1",
-    "description": "Forge debug bar",
-    "type": "debugger",
-    "provides": [
-        "DebugBar@1.0"
-    ],
-    "order": 200,
-    "core": false,
-    "requires": [],
-    "lifecycleHooks": [
-        "beforeBoot",
-        "afterBoot",
-        "beforeModuleLoad",
-        "afterModuleLoad",
-        "beforeModuleRegister",
-        "afterModuleRegister",
-        "afterConfigLoaded"
-    ],
-    "class": "Forge\\Modules\\ForgeDebugbar\\DebugbarModule",
-    "tags": [
-        "debugger"
-    ],
-    "postInstall": {
-        "commands": [
-            "php forge.php publish --type=all"
-        ]
+    "$schema": "./../../engine/Core/Schema/module-schema.json",
+    "name": "ForgeDebugBar",
+    "version": "0.1.0=1",
+    "description": "A custom module for my application",
+    "type": "generic",
+    "order": 6,
+    "cli": {
+        "commands": []
     },
-    "compatibility": {
-        "framework": ">=0.0.1",
-        "php": "^8.3"
+    "tags": [],
+    "config": {
+        "defaults": {}
     },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/forge-engine/modules"
-    }
+    "author": "Your Name",
+    "license": ""
 }

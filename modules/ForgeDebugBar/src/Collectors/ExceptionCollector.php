@@ -1,8 +1,6 @@
 <?php
 
-namespace Forge\Modules\ForgeDebugbar\Collectors;
-
-use Forge\Core\Helpers\Path;
+namespace App\Modules\ForgeDebugbar\Collectors;
 
 class ExceptionCollector implements CollectorInterface
 {
@@ -29,7 +27,7 @@ class ExceptionCollector implements CollectorInterface
             'type' => get_class($exception),
             'message' => $exception->getMessage(),
             'code' => $exception->getCode(),
-            'file' => Path::filePath($exception->getFile()) . ':' . $exception->getLine(),
+            'file' => BASE_PATH . $exception->getFile() . ':' . $exception->getLine(),
             'trace' => $exception->getTraceAsString(),
         ];
     }

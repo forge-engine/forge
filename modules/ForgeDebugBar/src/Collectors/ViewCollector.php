@@ -1,9 +1,13 @@
 <?php
 
-namespace Forge\Modules\ForgeDebugbar\Collectors;
+namespace App\Modules\ForgeDebugbar\Collectors;
+
+use Forge\Traits\DataFormatter;
 
 class ViewCollector implements CollectorInterface
 {
+    use DataFormatter;
+
     private array $views = [];
 
     public static function collect(...$args): array
@@ -21,7 +25,7 @@ class ViewCollector implements CollectorInterface
         return $instance;
     }
 
-    public function addView(string $viewPath, array $data = []): void
+    public function addView(string $viewPath, array|object $data = []): void
     {
         $filePath = $viewPath;
         if ($filePath !== null) {
@@ -32,7 +36,7 @@ class ViewCollector implements CollectorInterface
 
         $this->views[] = [
             'path' => $filePath,
-            'data' => $data,
+            'data' => $this->formatDebugData($data),
         ];
     }
 }

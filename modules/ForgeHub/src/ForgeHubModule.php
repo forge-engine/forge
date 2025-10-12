@@ -11,15 +11,13 @@ use Forge\Core\Module\Attributes\Repository;
 use App\Modules\ForgeHub\Contracts\ForgeHubInterface;
 use App\Modules\ForgeHub\Services\ForgeHubService;
 use Forge\Core\DI\Attributes\Service;
-use Forge\Core\Module\Attributes\LifecycleHook;
-use Forge\Core\Module\LifecycleHookName;
 use Forge\CLI\Traits\OutputHelper;
 use Forge\Core\Module\Attributes\HubItem;
 use Forge\Core\Module\ForgeIcon;
 use Forge\Core\Security\PermissionsEnum;
 
 #[Module(name: 'ForgeHub', description: 'Administration Hub for Forge Framework', order: 1)]
-#[HubItem(label: 'CLI Command', route: '/hub/commands', icon: ForgeIcon::COG, order: 1, permissions: [PermissionsEnum::RUN_COMMAND, PermissionsEnum::VIEW_COMMAND])]
+#[HubItem(label: 'CLI Command', route: '/hub/commands', icon: ForgeIcon::COG, order: 3, permissions: [PermissionsEnum::RUN_COMMAND, PermissionsEnum::VIEW_COMMAND])]
 #[HubItem(label: 'Logs', route: '/hub/logs', icon: ForgeIcon::LOG)]
 #[Service]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
@@ -32,11 +30,6 @@ final class ForgeHubModule
     {
         $container->bind(ForgeHubInterface::class, ForgeHubService::class);
         $this->registerNexusItems($container);
-    }
-
-    #[LifecycleHook(hook: LifecycleHookName::AFTER_MODULE_REGISTER)]
-    public function onAfterModuleRegister(): void
-    {
     }
 
     private function registerNexusItems(Container $container): void
@@ -59,7 +52,7 @@ final class ForgeHubModule
                 continue;
             }
 
-            foreach ($reflection->getAttributes(NexusItem::class) as $attribute) {
+            foreach ($reflection->getAttributes(HubItem::class) as $attribute) {
                 /** @var NexusItem $instance */
                 $instance = $attribute->newInstance();
                 $newEntry = [
@@ -70,13 +63,11 @@ final class ForgeHubModule
                     'permissions' => array_map(fn ($perm) => $perm->value, $instance->permissions),
                 ];
 
-                // Check if this entry already exists
                 $existingEntryKey = array_search($newEntry['route'], array_column($existingEntries, 'route'));
 
                 if ($existingEntryKey !== false) {
                     $existingEntry = $existingEntries[$existingEntryKey];
 
-                    // Check if anything changed
                     if ($existingEntry !== $newEntry) {
                         $hasChanges = true;
                         $existingEntries[$existingEntryKey] = $newEntry;
@@ -84,17 +75,14 @@ final class ForgeHubModule
 
                     $menuEntries[] = $existingEntries[$existingEntryKey];
                 } else {
-                    // New entry found, mark changes
                     $hasChanges = true;
                     $menuEntries[] = $newEntry;
                 }
             }
         }
 
-        // Sort by order
         usort($menuEntries, fn ($a, $b) => $a['order'] <=> $b['order']);
 
-        // Only write if there were changes
         if ($hasChanges) {
             $output = "<?php\n\nreturn [\n";
             foreach ($menuEntries as $entry) {

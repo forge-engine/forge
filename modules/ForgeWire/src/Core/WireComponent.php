@@ -16,6 +16,7 @@ abstract class WireComponent
 
     protected function view(string $path, array|object $data = [], bool $loadFromModule = false): string
     {
+        collect_view_data($path, $data);
         $v = new View(Container::getInstance());
         return $v->renderComponent($path, $data);
     }

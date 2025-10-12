@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Modules\ForgeAuth\Services\ForgeAuthService;
 use App\Modules\ForgeAuth\Validation\ForgeAuthValidate;
 use App\Services\UserService;
+use Exception;
 use Forge\Core\Debug\Metrics;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Helpers\Debuger;
@@ -45,7 +46,11 @@ final class HomeController
             "user" => $user,
         ];
 
+
         //Debuger::dumpAndExit($user);
+        Debuger::message('hi from home');
+        Debuger::logException(new Exception('Testing'));
+        //throw new Exception('this is an example');
 
         return $this->view(view: "pages/home/index", data: $data);
     }

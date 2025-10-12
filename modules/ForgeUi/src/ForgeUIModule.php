@@ -27,10 +27,4 @@ final class ForgeUIModule
     public function register(Container $container): void
     {
     }
-
-    #[LifecycleHook(hook: LifecycleHookName::AFTER_MODULE_REGISTER)]
-    public function onAfterModuleRegister(): void
-    {
-        //error_log("ForgeUiComponents:  registered!");
-    }
 }

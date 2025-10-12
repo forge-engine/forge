@@ -5,7 +5,7 @@ return [
         'label' => 'CLI Command',
         'route' => '/hub/commands',
         'icon' => 'cog',
-        'order' => 1,
+        'order' => 3,
         'permissions' => [
             'run:command',
             'view:command',

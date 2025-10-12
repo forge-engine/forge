@@ -1,6 +1,6 @@
 <?php
 
-namespace Forge\Modules\ForgeDebugbar\Collectors;
+namespace App\Modules\ForgeDebugbar\Collectors;
 
 interface CollectorInterface
 {

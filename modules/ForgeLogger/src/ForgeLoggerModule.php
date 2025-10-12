@@ -11,8 +11,6 @@ use Forge\Core\Module\Attributes\Repository;
 use App\Modules\ForgeLogger\Contracts\ForgeLoggerInterface;
 use App\Modules\ForgeLogger\Services\ForgeLoggerService;
 use Forge\Core\DI\Attributes\Service;
-use Forge\Core\Module\Attributes\LifecycleHook;
-use Forge\Core\Module\LifecycleHookName;
 use Forge\CLI\Traits\OutputHelper;
 
 #[Module(name: 'ForgeLogger', description: 'A logger by Forge.', order: 90)]
@@ -26,11 +24,5 @@ final class ForgeLoggerModule
     public function register(Container $container): void
     {
         $container->bind(ForgeLoggerInterface::class, ForgeLoggerService::class);
-    }
-
-    #[LifecycleHook(hook: LifecycleHookName::AFTER_MODULE_REGISTER)]
-    public function onAfterModuleRegister(): void
-    {
-        //error_log("ForgeLogger:  registered!");
     }
 }

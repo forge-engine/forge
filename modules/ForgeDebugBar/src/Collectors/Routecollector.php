@@ -1,9 +1,8 @@
 <?php
 
-namespace Forge\Modules\ForgeDebugbar\Collectors;
+namespace App\Modules\ForgeDebugbar\Collectors;
 
-use Forge\Core\Contracts\Modules\RouterInterface;
-use Forge\Core\DependencyInjection\Container;
+use Forge\Core\Routing\Router;
 
 class RouteCollector implements CollectorInterface
 {
@@ -25,25 +24,25 @@ class RouteCollector implements CollectorInterface
 
     public function collectRoutes(): array
     {
-        $container = Container::getContainer();
-        if ($container->has(RouterInterface::class)) {
-            /** @var RouterInterface $router */
-            $router = $container->get(RouterInterface::class);
-            $currentRoute = $router->getCurrentRoute();
+        /** @var Router $router */
+        $router = Router::getInstance();
+        $currentRoute = $router->getCurrentRoute();
 
-
-            if ($currentRoute) {
-                return [
-                    'uri' => $currentRoute['uri'] ?? 'N/A',
-                    'method' => $currentRoute['method'] ?? 'N/A',
-                    'handler' => $this->formatHandler($currentRoute['handler'] ?? 'N/A'),
-                    'middleware' => $currentRoute['middleware'] ?? [],
-                ];
-            } else {
-                return ['message' => 'No current route matched.'];
+        if ($currentRoute) {
+            $handler = 'N/A';
+            if (isset($currentRoute['controller'], $currentRoute['method'])) {
+                $handlerArray = [$currentRoute['controller'], $currentRoute['method']];
+                $handler = $this->formatHandler($handlerArray);
             }
+
+            return [
+                'uri' => $currentRoute['uri'] ?? 'N/A',
+                'method' => $currentRoute['http_method'] ?? 'N/A',
+                'handler' => $handler,
+                'middleware' => $currentRoute['middleware'] ?? [],
+            ];
         } else {
-            return [['error' => 'RouterInterface not bound in Container']];
+            return ['message' => 'No current route matched.'];
         }
     }
 

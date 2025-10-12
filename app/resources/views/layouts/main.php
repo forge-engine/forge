@@ -31,7 +31,6 @@ use Forge\Core\Helpers\ModuleResources;
         <?= $content ?>
     </div>
 
-    <?= forgewire(); ?>
     <script defer src="/assets/app/js/htmx.min.js" defer></script>
     <?= ModuleResources::loadScripts("forge-ui") ?>
 </body>

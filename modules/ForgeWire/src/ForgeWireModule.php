@@ -12,13 +12,16 @@ use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Module\Attributes\LifecycleHook;
 use Forge\Core\Module\LifecycleHookName;
 use Forge\CLI\Traits\OutputHelper;
+use Forge\Core\Http\Request;
+use Forge\Core\Http\Response;
+use Forge\Traits\InjectsAssets;
 
 #[
     Module(
         name: "ForgeWire",
         description: "A lightway livewire like module for forge",
         order: 99,
-        version: "1.0.5",
+        version: "1.0.6",
     ),
 ]
 #[Service]
@@ -27,9 +30,22 @@ use Forge\CLI\Traits\OutputHelper;
 final class ForgeWireModule
 {
     use OutputHelper;
+    use InjectsAssets;
 
-    public function register(Container $container): void {}
+    public function register(Container $container): void
+    {
+    }
 
-    #[LifecycleHook(hook: LifecycleHookName::AFTER_MODULE_REGISTER)]
-    public function onAfterModuleRegister(): void {}
+    #[LifecycleHook(hook: LifecycleHookName::AFTER_REQUEST)]
+    public function onAfterRequest(Request $request, Response $response): void
+    {
+        $this->registerWireAssets();
+        $this->injectAssets($response);
+    }
+
+    private function registerWireAssets(): void
+    {
+        $assetHtml = '<script src="/assets/modules/forge-wire/js/forgewire.js" async></script>';
+        $this->registerAsset(assetHtml: $assetHtml, beforeTag: '</body>');
+    }
 }

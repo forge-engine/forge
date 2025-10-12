@@ -33,10 +33,4 @@ final class ForgePackageManager
             $container->bind(PackageManagerInterface::class, PackageManagerService::class);
         }
     }
-
-    #[LifecycleHook(hook: LifecycleHookName::AFTER_MODULE_REGISTER)]
-    public function onAfterModuleRegister(): void
-    {
-        //error_log("[ForgePackageManager]: After Module Register");
-    }
 }

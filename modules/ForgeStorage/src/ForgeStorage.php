@@ -10,10 +10,8 @@ use Forge\Core\DI\Container;
 use App\Modules\ForgeStorage\Contracts\StorageInterface;
 use App\Modules\ForgeStorage\Drivers\LocalDriver;
 use Forge\Core\Module\Attributes\Compatibility;
-use Forge\Core\Module\Attributes\LifecycleHook;
 use Forge\Core\Module\Attributes\Module;
 use Forge\Core\Module\Attributes\Repository;
-use Forge\Core\Module\LifecycleHookName;
 
 #[Module(name: 'ForgeStorage', description: 'A Forge Storage Solution by forge team.')]
 #[Service]
@@ -35,11 +33,5 @@ class ForgeStorage
                 default => throw new \RuntimeException("Unsupported storage driver: {$driver}")
             };
         });
-    }
-
-    #[LifecycleHook(hook: LifecycleHookName::AFTER_MODULE_REGISTER)]
-    public function onAfterModuleRegister(): void
-    {
-        //error_log("ForgeStorage: registered!");
     }
 }

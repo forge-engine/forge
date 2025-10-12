@@ -7,12 +7,10 @@ namespace App\Modules\ForgeTesting;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\DI\Container;
 use Forge\Core\Module\Attributes\Compatibility;
-use Forge\Core\Module\Attributes\LifecycleHook;
 use Forge\Core\Module\Attributes\Module;
 use Forge\Core\Module\Attributes\Provides;
 use Forge\Core\Module\Attributes\Repository;
 use Forge\Core\Module\Attributes\Requires;
-use Forge\Core\Module\LifecycleHookName;
 
 #[
     Module(
@@ -31,11 +29,6 @@ use Forge\Core\Module\LifecycleHookName;
 final class ForgeTestingModule
 {
     public function register(Container $container): void
-    {
-    }
-
-    #[LifecycleHook(hook: LifecycleHookName::AFTER_MODULE_REGISTER)]
-    public function onAfterModuleRegister(): void
     {
     }
 }

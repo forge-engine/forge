@@ -20,7 +20,6 @@ use Forge\Core\View\Component;
 <body>
     <div class="dashboard-container">
         <?= Component::render(name: 'nexus:sidebar', loadFromModule: true) ?>
-        <!-- Main Content Area -->
         <main class="main-content">
             <?= Component::render(name: 'nexus:header', loadFromModule: true) ?>
             <div class="dashboard-grid">
@@ -29,7 +28,6 @@ use Forge\Core\View\Component;
         </main>
     </div>
 
-    <?= forgewire() ?>
     <script defer src="<?= ModuleResources::pathTo(module: 'forge-nexus', resource: 'js/nexus.js') ?>"></script>
 </body>
 

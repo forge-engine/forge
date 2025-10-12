@@ -11,8 +11,6 @@ use Forge\Core\Module\Attributes\Repository;
 use App\Modules\ForgeAuth\Contracts\ForgeAuthInterface;
 use App\Modules\ForgeAuth\Services\ForgeAuthService;
 use Forge\Core\DI\Attributes\Service;
-use Forge\Core\Module\Attributes\LifecycleHook;
-use Forge\Core\Module\LifecycleHookName;
 use Forge\CLI\Traits\OutputHelper;
 
 #[Module(name: 'ForgeAuth', description: 'An Auth module by forge.', order: 99)]
@@ -25,11 +23,5 @@ final class ForgeAuthModule
     public function register(Container $container): void
     {
         $container->bind(ForgeAuthInterface::class, ForgeAuthService::class);
-    }
-
-    #[LifecycleHook(hook: LifecycleHookName::AFTER_MODULE_REGISTER)]
-    public function onAfterModuleRegister(): void
-    {
-        //error_log("ForgeAuth:  registered!");
     }
 }

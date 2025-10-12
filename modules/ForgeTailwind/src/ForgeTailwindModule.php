@@ -11,8 +11,6 @@ use Forge\Core\Module\Attributes\Module;
 use Forge\Core\Module\Attributes\Provides;
 use Forge\Core\Module\Attributes\Repository;
 use Forge\Core\DI\Attributes\Service;
-use Forge\Core\Module\Attributes\LifecycleHook;
-use Forge\Core\Module\LifecycleHookName;
 use Forge\CLI\Traits\OutputHelper;
 
 #[Module(name: 'ForgeTailwind', version: '0.1.0', description: 'A tailwind module by forge', order: 99, isCli: true)]
@@ -26,11 +24,5 @@ final class ForgeTailwindModule
 
     public function register(Container $container): void
     {
-    }
-
-    #[LifecycleHook(hook: LifecycleHookName::AFTER_MODULE_REGISTER)]
-    public function onAfterModuleRegister(): void
-    {
-        //error_log("ForgeTailwind:  registered!");
     }
 }

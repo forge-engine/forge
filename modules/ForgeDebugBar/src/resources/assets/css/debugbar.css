@@ -22,7 +22,7 @@
     z-index: 9999;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
     border: 2px solid var(--border);
-    display: flex;
+    display: flex !important;
     align-items: center;
     padding: 0 15px;
     height: 40px;
@@ -660,4 +660,195 @@
 
 .forge-debugbar-query-time {
     color: var(--primary);
+}
+
+.forge-debugbar-memory-list {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.forge-debugbar-memory-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px dotted var(--border);
+    font-size: 0.95em;
+    align-items: center; /* Vertically center label and value */
+}
+
+.forge-debugbar-memory-item:last-child {
+    border-bottom: none;
+}
+
+.forge-debugbar-memory-label {
+    font-weight: 500; /* Slightly bolder than 300 */
+    color: var(--primary);
+    flex-shrink: 0;
+    margin-right: 20px;
+}
+
+.forge-debugbar-memory-value {
+    font-weight: bold;
+    color: var(--text-light);
+    text-align: right;
+    flex-grow: 1;
+}
+
+.forge-debugbar-memory-peak {
+    color: #dc3545;
+}
+
+.usage-bar-item .forge-debugbar-memory-value {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.forge-debugbar-memory-bar {
+    flex-grow: 1;
+    height: 10px;
+    background-color: var(--bg-light);
+    border-radius: 5px;
+    overflow: hidden;
+    max-width: 250px;
+}
+
+.forge-debugbar-memory-bar-fill {
+    height: 100%;
+    transition: width 0.3s ease-in-out;
+    border-radius: 5px;
+}
+
+.forge-debugbar-memory-bar-fill.success {
+    background-color: #28a745;
+}
+
+.forge-debugbar-memory-bar-fill.warning {
+    background-color: #ffc107;
+}
+
+.forge-debugbar-memory-bar-fill.danger {
+    background-color: #dc3545;
+}
+
+.forge-debugbar-memory-percent-text {
+    font-weight: bold;
+    color: var(--primary);
+    flex-shrink: 0;
+    width: 50px;
+    text-align: right;
+}
+
+.debugbar-session-summary {
+    padding: 10px 15px;
+    margin-bottom: 15px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background-color: rgba(33, 41, 54, 0.05); /* Light primary background */
+    display: flex;
+    flex-direction: column;
+}
+
+.debugbar-session-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 0.9em;
+}
+
+.debugbar-session-label {
+    font-weight: 500;
+    color: var(--primary);
+    margin-right: 15px;
+}
+
+.debugbar-session-value {
+    font-weight: normal;
+    color: var(--text-light);
+    word-break: break-all;
+}
+
+.debugbar-session-id {
+    font-size: 0.8em;
+    font-family: monospace;
+}
+
+/* Main Data Section Title (The Toggle) */
+.debugbar-session-data-title {
+    font-size: 1.1em;
+    margin-top: 15px;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 2px solid var(--border);
+    color: var(--primary);
+    cursor: pointer; /* Suggests interactivity */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.toggle-indicator {
+    font-size: 0.7em;
+    font-weight: bold;
+    transform: rotate(0deg); /* Default state: collapsed */
+    transition: transform 0.2s ease;
+}
+
+.debugbar-session-data-title.active .toggle-indicator {
+    transform: rotate(90deg); /* Expanded state */
+}
+
+/* Collapsible Wrapper */
+.debugbar-session-data-wrapper.is-collapsed {
+    /* Assuming JS adds/removes this class for toggling */
+    display: none; 
+}
+
+/* Main List of Session Data (Top level keys inside 'data') */
+.debugbar-session-list {
+    list-style-type: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+.debugbar-session-item {
+    margin-bottom: 0.5em;
+    padding: 8px 0; /* Increase padding for better separation */
+    border-bottom: 1px dotted #ddd;
+    font-weight: 300;
+}
+
+.debugbar-session-item strong {
+    font-weight: 600; /* Key name bold */
+    color: var(--primary);
+    display: inline-block;
+    min-width: 150px; /* Helps align values if keys are short */
+}
+
+/* Nested Lists (from debugbar_display_array) */
+.debugbar-session-sublist {
+    list-style-type: none;
+    padding-left: 0;
+    margin: 5px 0 0 0;
+}
+
+.debugbar-session-subitem {
+    font-size: 0.9em;
+    color: var(--text-light);
+    margin: 0;
+    padding: 2px 0;
+    line-height: 1.5;
+}
+
+.debugbar-session-subitem strong {
+    font-weight: 400; /* Sub-keys less bold */
+    color: var(--primary);
+}
+
+.array-indicator {
+    /* Style for the "Array (X items)" text */
+    font-style: italic;
+    color: #777;
+    font-weight: normal;
 }

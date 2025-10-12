@@ -11,8 +11,6 @@ use Forge\Core\Module\Attributes\Repository;
 use App\Modules\ForgeNotification\Contracts\ForgeNotificationInterface;
 use App\Modules\ForgeNotification\Services\ForgeNotificationService;
 use Forge\Core\DI\Attributes\Service;
-use Forge\Core\Module\Attributes\LifecycleHook;
-use Forge\Core\Module\LifecycleHookName;
 use Forge\CLI\Traits\OutputHelper;
 
 #[Module(name: 'ForgeNotification', description: 'A notification channel by forge', order: 99)]
@@ -21,15 +19,9 @@ use Forge\CLI\Traits\OutputHelper;
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
 final class ForgeNotificationModule
 {
-	use OutputHelper;
-	public function register(Container $container): void
-	{
-		$container->bind(ForgeNotificationInterface::class, ForgeNotificationService::class);
-	}
-
-	#[LifecycleHook(hook: LifecycleHookName::AFTER_MODULE_REGISTER)]
-	public function onAfterModuleRegister(): void
-	{
-		//error_log("ForgeNotification:  registered!");
-	}
+    use OutputHelper;
+    public function register(Container $container): void
+    {
+        $container->bind(ForgeNotificationInterface::class, ForgeNotificationService::class);
+    }
 }
