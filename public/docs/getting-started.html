@@ -550,7 +550,7 @@ View::layout(name: "layouts/app", loadFromModule: false);
                         </p>
 
                         <div class="code-block p-6 text-white rounded-lg mb-6">
-                            <pre><code class="language-php">&lt;!-- app/resources/views/layouts/app.php --&gt;
+                            <pre><code class="language-php">
 &lt;!DOCTYPE html&gt;
 &lt;html lang="en"&gt;
 &lt;head&gt;
@@ -596,14 +596,30 @@ php forge.php migrate</code></pre>
 namespace App\Models;
 
 use Forge\Core\Database\Model;
-use Forge\Core\Database\Attributes\Table;
+use Forge\Core\Database\Table;
+use Forge\Core\Database\Column;
+use Forge\Core\Database\Model;
 
 #[Table('users')]
 class User extends Model
 {
-    protected array $fillable = ['name', 'email', 'password'];
-    
+use Hastimestamps;   
     protected array $hidden = ['password'];
+    
+    #[Column("integer", primary: true)]
+    public int $id;
+    
+    #[Column("varchar(255)")]
+    public string $status;
+    
+    #[Column("varchar(255)")]
+    public string $identifier;
+    
+    #[Column("varchar(255)")]
+    public string $email;
+    
+    #[Column("varchar(255)")]
+    public string $password;
 }</code></pre>
                         </div>
                     </section>
