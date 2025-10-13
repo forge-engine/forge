@@ -1,6 +1,6 @@
 <?php
 
-use Forge\Modules\ForgeStaticGen\LayoutBuilder;
+use App\Modules\ForgeStaticGen\LayoutBuilder;
 
 /**
  * @var array $meta
@@ -10,14 +10,17 @@ use Forge\Modules\ForgeStaticGen\LayoutBuilder;
 ?>
 <!DOCTYPE html>
 <html>
+
 <head>
     <title><?= $meta['title'] ?? 'Untitled' ?></title>
     <?= $renderer->renderComponent('head') ?>
 </head>
+
 <body>
-<div class="content">
-    <?= $content ?>
-</div>
-<?= $renderer->renderComponent('footer') ?>
+    <div class="content">
+        <?= $content ?>
+    </div>
+    <?= $renderer->renderComponent('footer') ?>
 </body>
+
 </html>

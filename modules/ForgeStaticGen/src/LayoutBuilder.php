@@ -1,8 +1,8 @@
 <?php
 
-namespace Forge\Modules\ForgeStaticGen;
+declare(strict_types=1);
 
-use Forge\Core\Helpers\Path;
+namespace App\Modules\ForgeStaticGen;
 
 class LayoutBuilder
 {
@@ -25,7 +25,7 @@ class LayoutBuilder
         ob_start();
         $componentPath = $this->getComponentPath($componentName);
         if (!file_exists($componentPath)) {
-            echo "Error: Component file not found: " . $componentPath . "\n"; // Error if component not found
+            echo "Error: Component file not found: " . $componentPath . "\n";
         }
         include $componentPath;
         $output = ob_get_clean();
@@ -34,11 +34,11 @@ class LayoutBuilder
 
     private function getComponentPath(string $name): string
     {
-        return Path::modulePath('ForgeStaticGen', "templates/components/{$name}.component.php");
+        return BASE_PATH . "/modules/ForgeStaticGen/src/templates/components/{$name}.component.php";
     }
 
     private function getLayoutPath(string $name): string
     {
-        return Path::modulePath('ForgeStaticGen', "templates/{$name}.layout.php");
+        return BASE_PATH . "/modules/ForgeStaticGen/src/templates/{$name}.layout.php";
     }
 }

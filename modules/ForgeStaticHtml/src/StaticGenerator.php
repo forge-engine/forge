@@ -1,21 +1,23 @@
 <?php
 
-namespace Forge\Modules\ForgeStaticHtml;
+namespace App\Modules\ForgeStaticHtml;
 
-use Forge\Core\Helpers\App;
-use Forge\Http\Request;
-use Forge\Modules\ForgeDatabase\Contracts\DatabaseInterface;
-use Forge\Modules\ForgeRouter\BasicRouter;
+use Forge\Core\Database\Connection;
+use Forge\Core\DI\Container;
+use Forge\Core\Http\Request;
+use Forge\Core\Http\Response;
+use Forge\Core\Routing\Router;
 
 class StaticGenerator
 {
-    private BasicRouter $router;
+    private Router $router;
     private string $outputDir;
     private array $config;
 
     public function __construct(array $config)
     {
-        $this->router = App::router();
+        Router::init(Container::getInstance());
+        $this->router = Router::getInstance();
         $this->config = $config;
         $this->outputDir = BASE_PATH . '/' . $config['output_dir'];
     }
@@ -57,7 +59,6 @@ class StaticGenerator
                     $this->generateRouteOutput($route);
                 }
             } else {
-
             }
         }
         echo "Route generation completed.\n";
@@ -65,14 +66,13 @@ class StaticGenerator
 
     private function generateDynamicRoutes(array $route, string $routeName, array $dynamicRouteConfig): void
     {
-
         if ($dynamicRouteConfig['data_source'] !== 'database') {
             echo "Warning: Dynamic route '{$routeName}' misconfigured or database data source not specified.\n";
             return;
         }
 
         try {
-            $database = App::getContainer()->get(DatabaseInterface::class);
+            $database = Container::getInstance()->get(Connection::class);
         } catch (\Throwable $e) {
             echo "Warning: Database module not available. Skipping dynamic route '{$routeName}' generation.\n";
             echo "  Ensure the database module is installed and configured if you want to generate dynamic routes from the database.\n";
@@ -143,27 +143,25 @@ class StaticGenerator
 
     private function generateRouteOutput(array $route): void
     {
-        $request = $this->createMockRequest($route['uri']);
-        $response = $this->router->handleRequest($request);
+        $request  = $this->createMockRequest($route['uri']);
+        $returned = Router::getInstance()->dispatch($request);
 
-        if ((int)$response->getStatusCode() === 200) {
+        $response = $returned instanceof Response
+            ? $returned
+            : new Response((string)$returned, 200);
+
+        if ($response->getStatusCode() === 200) {
             $html = $response->getContent();
-
             $filePath = $this->getOutputPath($route['uri']);
             $outputDir = dirname($filePath);
 
-            if (!is_dir($outputDir)) {
-                if (!mkdir($outputDir, 0755, true)) {
-                    echo "  Error: Failed to create output directory: " . $outputDir . "\n";
-                    return;
-                }
+            if (!is_dir($outputDir) && !mkdir($outputDir, 0755, true)) {
+                echo "  Error: Failed to create output directory: {$outputDir}\n";
+                return;
             }
-
             file_put_contents($filePath, $html);
-
-
         } else {
-            echo "  Warning: Non-200 status code (" . $response->getStatusCode() . ") for route: " . $route['uri'] . ". Skipping HTML save.\n";
+            echo "  Warning: Non-200 status code ({$response->getStatusCode()}) for route: {$route['uri']}. Skipping HTML save.\n";
         }
     }
 

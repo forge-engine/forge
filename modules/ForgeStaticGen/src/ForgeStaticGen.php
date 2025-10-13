@@ -1,23 +1,20 @@
 <?php
 
-namespace Forge\Modules\ForgeStaticGen;
+namespace App\Modules\ForgeStaticGen;
 
-use Forge\Core\Helpers\Path;
-use Forge\Core\Traits\OutputHelper;
-use Forge\Modules\ForgeStaticGen\Contacts\ForgeStaticGenInterface;
-use Forge\Core\Contracts\Modules\MarkDownInterface;
+use App\Modules\ForgeMarkDown\Contracts\ForgeMarkDownInterface;
+use App\Modules\ForgeMarkDown\ForgeMarkDown;
+use App\Modules\ForgeStaticGen\Contracts\ForgeStaticGenInterface;
+use Forge\CLI\Traits\OutputHelper;
 
 class ForgeStaticGen implements ForgeStaticGenInterface
 {
     use OutputHelper;
 
-    private MarkDownInterface $mdParser;
-
     private string $outputDir;
 
-    public function __construct(MarkDownInterface $mdParser, string $outputDir = 'public/static')
+    public function __construct(private ForgeMarkDown $mdParser, string $outputDir = 'public/static')
     {
-        $this->mdParser = $mdParser;
         $this->outputDir = $outputDir;
     }
 
@@ -63,7 +60,6 @@ class ForgeStaticGen implements ForgeStaticGenInterface
 
     private function applyLayout(array $data): string
     {
-
         $layout = $data['front_matter']['layout'] ?? 'default';
         $layoutBuilder = new LayoutBuilder();
         $html = $layoutBuilder->render($layout, [
@@ -89,8 +85,7 @@ class ForgeStaticGen implements ForgeStaticGenInterface
     private function getHtmlFilePath($mdFile): string
     {
         $baseName = basename($mdFile, '.md');
-        $contentBasePath = Path::contentPath();
-        $docRoot = dirname(Path::contentPath());
+        $contentBasePath = BASE_PATH . "/docs/";
         $mdFileDir = dirname($mdFile);
         $contentBasePath = rtrim($contentBasePath, '/');
         $mdFileDir = rtrim($mdFileDir, '/');
@@ -98,7 +93,7 @@ class ForgeStaticGen implements ForgeStaticGenInterface
         $relativePath = trim($relativePath, '/');
         $relativePath = str_replace('//', '/', $relativePath);
 
-        return Path::basePath("{$this->outputDir}/{$relativePath}/{$baseName}.html");
+        return BASE_PATH . "/{$this->outputDir}/{$relativePath}/{$baseName}.html";
     }
 
     private function copyAssets($assetsDirSource, $assetsDirDest)

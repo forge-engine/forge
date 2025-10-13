@@ -1,47 +1,17 @@
 {
     "$schema": "./../../engine/Core/Schema/module-schema.json",
     "name": "ForgeStaticHtml",
-    "version": "1.0.1",
+    "version": "0.1.0",
     "description": "Static site generator for Forge Framework",
-    "type": "build",
+    "type": "generic",
     "order": 100,
-    "provides": [
-        "ForgeStaticGenerator@1.0.0"
-    ],
-    "requires": [
-        "ViewEngineInterface@1.0",
-        "RouterInterface@1.0"
-    ],
-    "lifecycleHooks": [],
-    "class": "Forge\\Modules\\ForgeStaticHtml\\ForgeStaticHtmlModule",
     "cli": {
-        "commands": [
-            "static:generate:html"
-        ]
-    },
-    "postInstall": {
-        "commands": [
-            "php forge.php publish forge-static-html --type=config"
-        ]
+        "commands": []
     },
     "tags": [],
     "config": {
-        "defaults": {
-            "output_dir": "public/static",
-            "base_url": "/",
-            "clean_build": true,
-            "copy_assets": true,
-            "asset_dirs": [
-                "public/assets"
-            ]
-        }
+        "defaults": {}
     },
-    "compatibility": {
-        "framework": ">=0.0.1",
-        "php": "^8.3"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/forge-engine/modules"
-    }
+    "author": "Your name",
+    "license: ""
 }

@@ -1,10 +1,8 @@
 <?php
 
-namespace Forge\Modules\ForgeMarkDown;
+namespace App\Modules\ForgeMarkDown;
 
-use Forge\Core\Contracts\Modules\MarkDownInterface;
-
-class ForgeMarkDown implements MarkDownInterface
+class ForgeMarkDown
 {
     public function parse(string $markdown): string
     {
@@ -24,11 +22,9 @@ class ForgeMarkDown implements MarkDownInterface
 
     private function parseBlockElements(string $markdown): string
     {
-        // Process code blocks first
         $markdown = $this->parseCodeBlocks($markdown);
 
         $replacements = [
-            // Headers
             '/^#{6} (.*)$/m' => function ($matches) {
                 return '<h6>' . trim($matches[1]) . '</h6>';
             },
@@ -48,17 +44,14 @@ class ForgeMarkDown implements MarkDownInterface
                 return '<h1>' . trim($matches[1]) . '</h1>';
             },
 
-            // Horizontal rules
             '/^[-*_]{3,}$/m' => function () {
                 return '<hr>';
             },
 
-            // Blockquotes
             '/^> (.*)$/m' => function ($matches) {
                 return '<blockquote>' . trim($matches[1]) . '</blockquote>';
             },
 
-            // Lists (improved handling)
             '/(\n|^)([*\-+]) (.*?)(?=\n{2,}|$)/s' => function ($matches) {
                 $items = preg_split('/\n[*\-+] /', $matches[0], -1, PREG_SPLIT_NO_EMPTY);
                 $html = "\n<ul>\n";
@@ -68,7 +61,6 @@ class ForgeMarkDown implements MarkDownInterface
                 return $html . "</ul>";
             },
 
-            // Tables
             '/^\|(.+)\|\n\|?(?:[-:]+[-| :]*)\|\n((?:^\|.*\|\n?)+)/m' => function ($matches) {
                 return $this->parseTable($matches[1], $matches[2]);
             }
@@ -80,32 +72,26 @@ class ForgeMarkDown implements MarkDownInterface
     private function parseInlineElements(string $markdown): string
     {
         $replacements = [
-            // Bold
             '/(\*\*|__)(?=\S)(.+?)(?<=\S)(\*\*|__)/s' => function ($matches) {
                 return '<strong>' . $matches[2] . '</strong>';
             },
 
-            // Italic
             '/(\*|_)(?=\S)(.+?)(?<=\S)(\*|_)/s' => function ($matches) {
                 return '<em>' . $matches[2] . '</em>';
             },
 
-            // Strikethrough
             '/~~(.+?)~~/s' => function ($matches) {
                 return '<del>' . $matches[1] . '</del>';
             },
 
-            // Images
             '/!\[(.*?)\]\((.*?)\)/' => function ($matches) {
                 return '<img src="' . htmlspecialchars($matches[2]) . '" alt="' . htmlspecialchars($matches[1]) . '">';
             },
 
-            // Links
             '/\[(.*?)\]\((.*?)\)/' => function ($matches) {
                 return '<a href="' . htmlspecialchars($matches[2]) . '">' . $matches[1] . '</a>';
             },
 
-            // Inline code
             '/`([^`]+)`/' => function ($matches) {
                 return '<code>' . htmlspecialchars($matches[1]) . '</code>';
             }
@@ -116,7 +102,6 @@ class ForgeMarkDown implements MarkDownInterface
 
     private function parseCodeBlocks(string $markdown): string
     {
-        // Fenced code blocks
         $markdown = preg_replace_callback(
             '/^```([a-zA-Z0-9-+]*)?\n(.*?)\n```$/sm',
             function ($matches) {
@@ -126,7 +111,6 @@ class ForgeMarkDown implements MarkDownInterface
             $markdown
         );
 
-        // Indented code blocks
         $markdown = preg_replace_callback(
             '/(?:\n|^)( {4}|\t)(.+?)(?=\n[^ \t]|$)/ms',
             function ($matches) {
@@ -145,7 +129,9 @@ class ForgeMarkDown implements MarkDownInterface
 
         $html = "<table>\n<thead>\n<tr>";
         foreach ($headerCells as $cell) {
-            if (!empty($cell)) $html .= '<th>' . trim($cell) . '</th>';
+            if (!empty($cell)) {
+                $html .= '<th>' . trim($cell) . '</th>';
+            }
         }
         $html .= "</tr>\n</thead>\n<tbody>";
 
@@ -154,7 +140,9 @@ class ForgeMarkDown implements MarkDownInterface
                 $cells = array_map('trim', explode('|', trim($row)));
                 $html .= "\n<tr>";
                 foreach ($cells as $cell) {
-                    if (!empty($cell)) $html .= '<td>' . $cell . '</td>';
+                    if (!empty($cell)) {
+                        $html .= '<td>' . $cell . '</td>';
+                    }
                 }
                 $html .= "</tr>";
             }
