@@ -2,21 +2,15 @@
 
 return [
     'global' => [
-        \Forge\Core\Http\Middlewares\RateLimitMiddleware::class,
-        \Forge\Core\Http\Middlewares\CircuitBreakerMiddleware::class,
-        \Forge\Core\Http\Middlewares\CorsMiddleware::class,
-        \Forge\Core\Http\Middlewares\SanitizeInputMiddleware::class,
-        \Forge\Core\Http\Middlewares\CompressionMiddleware::class,
+        // Load your middlewares here
+        //\Namespace\MiddlewareName::class
     ],
     'web' => [
-        //\Forge\Core\Http\Middlewares\RelaxSecurityHeadersMiddleware::class,
-        \Forge\Core\Http\Middlewares\SessionMiddleware::class,
-        \Forge\Core\Http\Middlewares\CsrfMiddleware::class,
-        \Forge\Core\Http\Middlewares\CookieMiddleware::class,
+        // Load your middlewares here
+        //\Namespace\MiddlewareName::class
     ],
     'api' => [
-        \Forge\Core\Http\Middlewares\IpWhiteListMiddleware::class,
-        \Forge\Core\Http\Middlewares\ApiKeyMiddleware::class,
-        \Forge\Core\Http\Middlewares\ApiMiddleware::class,
+        // Load your middlewares here
+        //\Namespace\MiddlewareName::class
     ]
 ];
