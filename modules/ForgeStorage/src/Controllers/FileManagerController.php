@@ -88,7 +88,7 @@ final class FileManagerController
     public function listDatabaseBuckets(): Response
     {
         $buckets = $this->storageService->listBucketsFromDatabase();
-        return $this->view("storage/bucket-list-database", ['buckets' => $buckets]);
+        return $this->view("storage/bucket-list-Database", ['buckets' => $buckets]);
     }
 
     #[Route('/admin/buckets/list/fs', 'GET')]

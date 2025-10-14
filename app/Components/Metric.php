@@ -64,7 +64,7 @@ final class Metric extends WireComponent
 
     private function renderWireComponent(): void
     {
-        for ($i = 0; $i < 25000; $i++) {
+        for ($i = 0; $i < 2500; $i++) {
             wire_name(name: "counter", componentId: "counter-{$i}");
         }
     }

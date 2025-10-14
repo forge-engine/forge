@@ -96,6 +96,7 @@ trait HttpTesting
             query: $uriParts["query"] ?? null,
         );
 
-        return self::$kernel->handler($request);
+
+        return Router::init(Container::getInstance())->dispatch($request);
     }
 }

@@ -66,8 +66,8 @@ class StaticGenerator
 
     private function generateDynamicRoutes(array $route, string $routeName, array $dynamicRouteConfig): void
     {
-        if ($dynamicRouteConfig['data_source'] !== 'database') {
-            echo "Warning: Dynamic route '{$routeName}' misconfigured or database data source not specified.\n";
+        if ($dynamicRouteConfig['data_source'] !== 'Database') {
+            echo "Warning: Dynamic route '{$routeName}' misconfigured or Database data source not specified.\n";
             return;
         }
 
@@ -75,7 +75,7 @@ class StaticGenerator
             $database = Container::getInstance()->get(Connection::class);
         } catch (\Throwable $e) {
             echo "Warning: Database module not available. Skipping dynamic route '{$routeName}' generation.\n";
-            echo "  Ensure the database module is installed and configured if you want to generate dynamic routes from the database.\n";
+            echo "  Ensure the Database module is installed and configured if you want to generate dynamic routes from the Database.\n";
             return;
         }
 

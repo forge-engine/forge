@@ -17,7 +17,7 @@ $startTime = TimeCollector::getStartTime();
         <div class="forge-debugbar-tab" data-tab="exceptions">Exceptions <span class="forge-debugbar-tab-count">(<?= count($data['exceptions'] ?? []) ?>)</span></div>
         <div class="forge-debugbar-tab" data-tab="views">Views</div>
         <div class="forge-debugbar-tab" data-tab="route">Route</div>
-        <div class="forge-debugbar-tab" data-tab="queries">Queries <span class="forge-debugbar-tab-count">(<?= count($data['database'] ?? []) ?>)</span></div>
+        <div class="forge-debugbar-tab" data-tab="queries">Queries <span class="forge-debugbar-tab-count">(<?= count($data['Database'] ?? []) ?>)</span></div>
         <div class="forge-debugbar-tab" data-tab="session">Session</div>
         <div class="forge-debugbar-tab" data-tab="request">Request</div>
     </div>
@@ -309,8 +309,8 @@ $startTime = TimeCollector::getStartTime();
     </div>
 
     <div class="forge-debugbar-panel" id="debugbar-panel-queries">
-        <?php if (isset($data['database']) && is_array($data['database']) && !empty($data['database'])): ?>
-        <?php foreach ($data['database'] ?? [] as $queryData): ?>
+        <?php if (isset($data['Database']) && is_array($data['Database']) && !empty($data['Database'])): ?>
+        <?php foreach ($data['Database'] ?? [] as $queryData): ?>
         <?php
                 $performanceClass = '';
                 if ($queryData['performance'] ?? '' === 'slow') {

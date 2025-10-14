@@ -29,7 +29,7 @@ use Forge\Core\Module\Attributes\Provides;
         'dynamic_routes' => [
             'documentation' => [
                 'route_pattern' => '/docs2/{category}/{slug}',
-                'data_source' => 'database',
+                'data_source' => 'Database',
                 'options' => [
                     'categories_table' => 'categories',
                     'sections_table' => 'sections',

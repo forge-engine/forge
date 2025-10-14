@@ -26,6 +26,6 @@ trait DatabaseTesting
 
     private function runMigrations(): void
     {
-        // Run database migrations
+        // Run Database migrations
     }
 }

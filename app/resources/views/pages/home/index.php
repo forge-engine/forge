@@ -12,7 +12,6 @@ use Forge\Core\View\View;
 
 View::layout(name: "main", loadFromModule: false);
 ?>
-
 <section class="container">
     <h2 class="text-2xl">Engine Status</h2>
     <ul>

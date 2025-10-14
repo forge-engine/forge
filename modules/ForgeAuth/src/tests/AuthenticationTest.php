@@ -54,8 +54,8 @@ final class AuthenticationTest extends TestCase
         // Partial implementation
     }
 
-    #[Test('Insert a new record in the database')]
-    #[Group('database')]
+    #[Test('Insert a new record in the Database')]
+    #[Group('Database')]
     #[Incomplete('Needs to check save performance in the model')]
     public function create_user(): void
     {
@@ -69,8 +69,8 @@ final class AuthenticationTest extends TestCase
         $this->assertNotNull($user->id);
     }
 
-    #[Test('Check a record exists in the database by identifier')]
-    #[Group('database')]
+    #[Test('Check a record exists in the Database by identifier')]
+    #[Group('Database')]
     public function user_exists(): void
     {
         $this->assertDatabaseHas('users', ['identifier' => $this->exampleUser['identifier']]);
@@ -78,14 +78,14 @@ final class AuthenticationTest extends TestCase
 
     #[DataProvider('userProvider')]
     #[Test]
-    #[Group('database')]
+    #[Group('Database')]
     public function multiple_users(array $users): void
     {
         $this->assertArrayHasKey('email', $users);
     }
 
     #[Test('Benchmark user lookup')]
-    #[Group('database')]
+    #[Group('Database')]
     public function benchmark_user_lookup(): array
     {
         $results = $this->benchmark(function () {
@@ -95,8 +95,8 @@ final class AuthenticationTest extends TestCase
         return $results;
     }
 
-    #[Test('Delete user from the database by using email')]
-    #[Group('database')]
+    #[Test('Delete user from the Database by using email')]
+    #[Group('Database')]
     #[Skip('Needs to check delete performance in the model')]
     public function delete_user(): void
     {
