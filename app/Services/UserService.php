@@ -14,14 +14,14 @@ class UserService
 {
     use CacheLifecycleHooks;
 
-    #[Cache(
-        key: 'user->{id}',
-        ttl: 120,
-        stale: 60,
-        onSave:[self::class, 'onCacheSave'],
-        onHit:[self::class, 'onCacheHit'],
-    )]
-    public function findUser(int $id)
+//    #[Cache(
+//        key: 'user->{id}',
+//        ttl: 120,
+//        stale: 60,
+//        onSave:[self::class, 'onCacheSave'],
+//        onHit:[self::class, 'onCacheHit'],
+//    )]
+    public function findUser(int $id): ?User
     {
         return User::find($id);
     }

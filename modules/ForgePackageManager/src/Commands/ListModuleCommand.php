@@ -18,7 +18,7 @@ final class ListModuleCommand extends Command
     }
     public function execute(array $args): int
     {
-        $registries = $this->packageManagerService->getRegisties();
+        $registries = $this->packageManagerService->getRegistries();
 
         if (empty($registries)) {
             $this->warning("No package registries configured in forge.json.");

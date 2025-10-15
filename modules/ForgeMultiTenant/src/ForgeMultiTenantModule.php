@@ -8,6 +8,7 @@ use Forge\Core\DI\Container;
 use Forge\Core\Module\Attributes\Compatibility;
 use Forge\Core\Module\Attributes\ConfigDefaults;
 use Forge\Core\Module\Attributes\Module;
+use Forge\Core\Module\Attributes\PostInstall;
 use Forge\Core\Module\Attributes\Provides;
 use Forge\Core\Module\Attributes\Repository;
 use Forge\Core\DI\Attributes\Service;
@@ -17,14 +18,16 @@ use Forge\CLI\Traits\OutputHelper;
 use App\Modules\ForgeMultiTenant\Services\TenantManager;
 use const pcov\version;
 
-#[Module(name: 'ForgeMultiTenant', version: '0.1.0', description: 'A Multi Tenant Module by Forge', order: 99)]
+#[Module(name: 'ForgeMultiTenant', version: '0.1.1', description: 'A Multi Tenant Module by Forge', order: 99)]
 #[Service]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
-#[Provides(TenantManager::class, version: '0.1.0')]
+#[Provides(TenantManager::class, version: '0.1.1')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
 #[ConfigDefaults(defaults: [
     "forge_multi_tenant" => []
 ])]
+#[PostInstall(command: 'migrate', args: ['--type=', 'module', '--module=', 'ForgeMultiTenant'])]
+#[PostInstall(command: 'seed', args: ['--type=', 'module', '--module=', 'ForgeMultiTenant'])]
 final class ForgeMultiTenantModule
 {
 	use OutputHelper;
