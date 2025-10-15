@@ -1,7 +1,7 @@
 {
     "$schema": "./../../engine/Core/Schema/module-schema.json",
     "name": "ForgeDebugBar",
-    "version": "0.1.0=1",
+    "version": "0.1.2",
     "description": "A custom module for my application",
     "type": "generic",
     "order": 6,

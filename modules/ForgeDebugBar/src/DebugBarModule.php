@@ -19,18 +19,22 @@ use Forge\Core\Module\Attributes\Compatibility;
 use Forge\Core\Module\Attributes\ConfigDefaults;
 use Forge\Core\Module\Attributes\LifecycleHook;
 use Forge\Core\Module\Attributes\Module;
+use Forge\Core\Module\Attributes\PostInstall;
+use Forge\Core\Module\Attributes\PostUninstall;
 use Forge\Core\Module\Attributes\Provides;
 use Forge\Core\Module\LifecycleHookName;
 
 #[Service]
-#[Module(name: 'ForgeDebugBar', description: 'Forge Debugbar', order: 1, version: '0.1.1')]
-#[Provides(DebugBar::class, version: '0.1.1')]
+#[Module(name: 'ForgeDebugBar', version: '0.1.2', description: 'Forge Debug Bar', order: 1)]
+#[Provides(DebugBar::class, version: '0.1.2')]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[ConfigDefaults(defaults: [
     'forge_debug_bar' => [
         'enabled' => true
     ]
 ])]
+#[PostInstall(command: 'asset:link', args: ['--type=module', 'forge-debug-bar'])]
+#[PostUninstall(command: 'asset:unlink', args: ['--type=module', 'forge-debug-bar'])]
 class DebugBarModule
 {
     private static ?MemoryCollector $memoryCollector = null;

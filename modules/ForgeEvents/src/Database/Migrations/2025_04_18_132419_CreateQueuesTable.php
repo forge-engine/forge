@@ -2,9 +2,6 @@
 
 declare(strict_types=1);
 
-
-declare(strict_types=1);
-
 use Forge\Core\Database\Attributes\Column;
 use Forge\Core\Database\Attributes\Index;
 use Forge\Core\Database\Attributes\Table;
@@ -21,19 +18,19 @@ class CreateQueuesTable extends Migration
     #[Column(name: 'id', type: ColumnType::INTEGER, primaryKey: true, autoIncrement: true)]
     public readonly string $id;
 
-    #[Column(name: 'queue', type: ColumnType::STRING, length: 255, nullable: false, default: 'default')]
+    #[Column(name: 'queue', type: ColumnType::STRING, nullable: false, default: 'default', length: 255)]
     public readonly string $queue;
 
     #[Column(name: 'payload', type: ColumnType::TEXT, nullable: false)]
     public readonly string $payload;
 
-    #[Column(name: 'attempts', type: ColumnType::INTEGER, default: 0, nullable: true)]
+    #[Column(name: 'attempts', type: ColumnType::INTEGER, nullable: true, default: 0)]
     public readonly int $attempts;
 
-    #[Column(name: 'max_retries', type: ColumnType::INTEGER, default: 1, nullable: true)]
+    #[Column(name: 'max_retries', type: ColumnType::INTEGER, nullable: true, default: 1)]
     public readonly int $max_retries;
 
-    #[Column(name: 'priority', type: ColumnType::INTEGER, default: 100, nullable: true)]
+    #[Column(name: 'priority', type: ColumnType::INTEGER, nullable: true, default: 100)]
     public readonly int $priority;
 
     #[Column(name: 'process_at', type: ColumnType::TIMESTAMP, nullable: true, default: null)]

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Forge\Core\Database\Attributes\Column;
+use Forge\Core\Database\Attributes\GroupMigration;
 use Forge\Core\Database\Attributes\Index;
 use Forge\Core\Database\Attributes\MetaData;
 use Forge\Core\Database\Attributes\SoftDelete;
@@ -11,6 +12,7 @@ use Forge\Core\Database\Attributes\Timestamps;
 use Forge\Core\Database\Enums\ColumnType;
 use Forge\Core\Database\Migrations\Migration;
 
+#[GroupMigration(name: 'user')]
 #[Table(name: 'users')]
 #[Index(columns: ['id'], name: 'idx_users_id')]
 #[Index(columns: ['email'], name: 'idx_users_email')]
@@ -26,10 +28,10 @@ class CreateUsersTable extends Migration
     #[Column(name: 'status', type: ColumnType::ENUM, enum: ['active', 'inactive', 'pending'])]
     public readonly string $status;
 
-    #[Column(name: 'identifier', type: ColumnType::STRING, length: 255, unique: true)]
+    #[Column(name: 'identifier', type: ColumnType::STRING, unique: true, length: 255)]
     public readonly string $username;
 
-    #[Column(name: 'email', type: ColumnType::STRING, length: 255, unique: true)]
+    #[Column(name: 'email', type: ColumnType::STRING, unique: true, length: 255)]
     public readonly string $email;
 
     #[Column(name: 'password', type: ColumnType::STRING, length: 255)]

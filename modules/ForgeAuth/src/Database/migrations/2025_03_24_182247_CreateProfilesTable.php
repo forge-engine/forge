@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Forge\Core\Database\Attributes\Column;
+use Forge\Core\Database\Attributes\GroupMigration;
 use Forge\Core\Database\Attributes\Index;
 use Forge\Core\Database\Attributes\MetaData;
 use Forge\Core\Database\Attributes\SoftDelete;
@@ -13,6 +14,7 @@ use Forge\Core\Database\Enums\ColumnType;
 use Forge\Core\Database\Enums\ConfirmedStatus;
 use Forge\Core\Database\Migrations\Migration;
 
+#[GroupMigration(name: 'user')]
 #[Table(name: 'profiles')]
 #[Index(columns: ['user_id'], name: 'idx_profiles_user_id')]
 #[Status(column: 'email_confirmed', enum: ConfirmedStatus::class)]

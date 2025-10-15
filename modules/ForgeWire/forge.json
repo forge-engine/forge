@@ -1,7 +1,7 @@
 {
 	"$schema": "./../../engine/Core/Schema/module-schema.json",
 	"name": "ForgeWire",
-	"version": "1.0.6",
+	"version": "1.0.7",
 	"description": "A lightway livewire like module for forge",
 	"type": "generic",
 	"order": 100,

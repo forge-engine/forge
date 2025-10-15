@@ -17,12 +17,17 @@ use Forge\Core\Config\Environment;
 use Forge\Core\Database\QueryBuilder;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\DI\Container;
+use Forge\Core\Module\Attributes\Provides;
+use Forge\Exceptions\MissingServiceException;
+use Forge\Exceptions\ResolveParameterException;
 use Forge\Traits\TimeTrait;
 use ReflectionClass;
 use RuntimeException;
 use Throwable;
+use const pcov\version;
 
 #[Service(singleton: true)]
+#[Provides(EventDispatcher::class, version: '0.2.1')]
 final class EventDispatcher
 {
     use OutputHelper;
@@ -33,6 +38,11 @@ final class EventDispatcher
     private Container $container;
     private QueryBuilder $queryBuilder;
 
+    /**
+     * @throws \ReflectionException
+     * @throws MissingServiceException
+     * @throws ResolveParameterException
+     */
     public function __construct()
     {
         $this->queryBuilder = Container::getInstance()->get(QueryBuilder::class);

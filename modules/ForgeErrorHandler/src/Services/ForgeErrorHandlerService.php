@@ -15,7 +15,7 @@ use Forge\Traits\PathHelper;
 use Throwable;
 
 #[Service]
-#[Provides(interface: ForgeErrorHandlerInterface::class, version: '0.1.1')]
+#[Provides(interface: ForgeErrorHandlerInterface::class, version: '0.1.2')]
 #[Requires]
 final class ForgeErrorHandlerService implements ForgeErrorHandlerInterface
 {

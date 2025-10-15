@@ -11,7 +11,7 @@ use Forge\Core\Module\Attributes\CLICommand;
 #[CLICommand(name: 'clear:log', description: 'Clear application logs')]
 class ForgeLoggerCommand extends Command
 {
-    public function __construct(private Config $config)
+    public function __construct(private readonly Config $config)
     {
     }
     public function execute(array $args): int

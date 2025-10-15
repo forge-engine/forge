@@ -19,7 +19,7 @@ class LocalDriver implements StorageDriverInterface
     private string $publicPath;
     private Environment $env;
 
-    public function __construct(private TemporaryUrlRepository $temporaryUrlRepository, private Config $config)
+    public function __construct(private readonly TemporaryUrlRepository $temporaryUrlRepository, private readonly Config $config)
     {
         $storageConfig = $this->config->get('forge_storage', []);
 

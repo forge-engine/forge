@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use Forge\Core\Database\Attributes\GroupMigration;
 use Forge\Core\Database\Migrations\Migration;
 
+#[GroupMigration(name: 'storage')]
 class CreateTemporaryUrlsTable extends Migration
 {
     public function up(): void
