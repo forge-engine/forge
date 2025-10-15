@@ -12,6 +12,7 @@
         "forge-auth": "0.1.0",
         "forge-testing": "0.1.0",
         "forge-engine/framework": "latest",
-        "forge-wire": "1.0.1"
+        "forge-wire": "1.0.1",
+        "forge-multi-tenant": "0.1.2"
     }
 }

@@ -13,6 +13,7 @@ use Forge\Core\Module\Attributes\Module;
 use Forge\Core\Module\Attributes\PostInstall;
 use Forge\Core\Module\Attributes\Provides;
 use Forge\Core\Module\Attributes\Requires;
+use Forge\Traits\StringHelper;
 use ReflectionException;
 use ZipArchive;
 
@@ -22,6 +23,7 @@ use ZipArchive;
 final class PackageManagerService implements PackageManagerInterface
 {
     use OutputHelper;
+    use StringHelper;
 
     private const string OFFICIAL_REGISTRY_NAME = 'forge-engine-modules';
     private const string OFFICIAL_REGISTRY_BASE_URL = 'https://github.com/forge-engine/modules';
@@ -223,7 +225,7 @@ final class PackageManagerService implements PackageManagerInterface
 
         $this->updateForgeJson($moduleName, $versionToInstall);
         $this->createForgeLockJson($moduleName, $versionToInstall, $registryDetails, $githubZipUrl, $integrityHash);
-        $this->runPostInstallAttributes($moduleInstallPath, $moduleName);
+        $this->runPostInstallAttributes($moduleInstallPath, $this->toPascalCase($moduleName));
 
         $moduleForgeJsonPath = $moduleInstallPath . '/forge.json';
         if (file_exists($moduleForgeJsonPath)) {
@@ -649,6 +651,9 @@ final class PackageManagerService implements PackageManagerInterface
     /**
      * @throws ReflectionException
      */
+    /**
+     * @throws ReflectionException
+     */
     private function runPostInstallAttributes(string $moduleInstallPath, string $moduleName): void
     {
         $moduleSrc = glob($moduleInstallPath . '/**/*.php');
@@ -657,46 +662,62 @@ final class PackageManagerService implements PackageManagerInterface
             return;
         }
 
+        // 1. Load the files
         foreach ($moduleSrc as $file) {
             require_once $file;
         }
 
+        $foundModuleClass = false;
+
+        // 2. Iterate through all declared classes
         foreach (get_declared_classes() as $class) {
             $ref = new \ReflectionClass($class);
             $moduleAttr = $ref->getAttributes(Module::class);
+
             if (empty($moduleAttr)) {
                 continue;
             }
 
-            $postInstallAttrs = $ref->getAttributes(PostInstall::class);
-            if (empty($postInstallAttrs)) {
-                $this->info("Module {$moduleName} has no PostInstall attributes defined.");
+            $moduleInstance = $moduleAttr[0]->newInstance();
+
+            if ($moduleInstance->name === $moduleName) {
+                $foundModuleClass = true;
+                $postInstallAttrs = $ref->getAttributes(PostInstall::class);
+
+                if (empty($postInstallAttrs)) {
+                    $this->info("Module {$moduleName} has no PostInstall attributes defined.");
+                    return;
+                }
+
+                $this->info("Executing PostInstall commands for module {$moduleName}...");
+
+                foreach ($postInstallAttrs as $attr) {
+                    /** @var PostInstall $instance */
+                    $instance = $attr->newInstance();
+                    $args = implode(' ', array_map('escapeshellarg', $instance->args));
+                    $command = "php forge.php {$instance->command} {$args}";
+                    $this->info("Running: {$command}");
+
+                    exec($command, $output, $code);
+
+                    if ($code !== 0) {
+                        $this->error("Command '{$command}' failed for module {$moduleName} (exit code {$code})");
+                        if (!empty($output)) {
+                            $this->error("Output:\n" . implode("\n", $output));
+                        }
+                    } else {
+                        $this->success("Command '{$command}' executed successfully.");
+                    }
+                }
+
+                // Exit after processing the correct module class
                 return;
             }
-
-            $this->info("Executing PostInstall commands for module {$moduleName}...");
-
-            foreach ($postInstallAttrs as $attr) {
-                /** @var PostInstall $instance */
-                $instance = $attr->newInstance();
-                $args = implode(' ', array_map('escapeshellarg', $instance->args));
-                $command = "php forge {$instance->command} {$args}";
-                $this->info("Running: {$command}");
-
-                exec($command, $output, $code);
-
-                if ($code !== 0) {
-                    $this->error("Command '{$command}' failed for module {$moduleName} (exit code {$code})");
-                    if (!empty($output)) {
-                        $this->error("Output:\n" . implode("\n", $output));
-                    }
-                } else {
-                    $this->success("Command '{$command}' executed successfully.");
-                }
-            }
-            return;
         }
 
-        $this->warning("No #[Module] class found in {$moduleName}, skipping PostInstall execution.");
+        // If we made it here without finding the class
+        if (!$foundModuleClass) {
+            $this->warning("No #[Module] class found for '{$moduleName}', skipping PostInstall execution.");
+        }
     }
 }
