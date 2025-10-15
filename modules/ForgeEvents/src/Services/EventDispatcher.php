@@ -191,7 +191,7 @@ final class EventDispatcher
         }
     }
 
-    private function release(int $jobId, ?int $delay = 0): void
+    public function release(int $jobId, ?int $delay = 0): void
     {
         $this->queue->release($jobId, $delay);
     }
