@@ -11,6 +11,7 @@ use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Helpers\Strings;
 use Forge\Core\Module\Attributes\Module;
 use Forge\Core\Module\Attributes\PostInstall;
+use Forge\Core\Module\Attributes\PostUninstall;
 use Forge\Core\Module\Attributes\Provides;
 use Forge\Core\Module\Attributes\Requires;
 use Forge\Traits\StringHelper;
@@ -451,6 +452,12 @@ final class PackageManagerService implements PackageManagerInterface
             return;
         }
 
+        try {
+            $this->runPostUninstallAttributes($moduleInstallPath, $this->toPascalCase($moduleName));
+        } catch (\ReflectionException $e) {
+            $this->warning("Failed to execute PostUninstall for {$moduleName}: " . $e->getMessage());
+        }
+
         $this->info("Removing module {$moduleName}...");
 
         if (!$this->removeDirectory($moduleInstallPath)) {
@@ -662,14 +669,12 @@ final class PackageManagerService implements PackageManagerInterface
             return;
         }
 
-        // 1. Load the files
         foreach ($moduleSrc as $file) {
             require_once $file;
         }
 
         $foundModuleClass = false;
 
-        // 2. Iterate through all declared classes
         foreach (get_declared_classes() as $class) {
             $ref = new \ReflectionClass($class);
             $moduleAttr = $ref->getAttributes(Module::class);
@@ -694,11 +699,12 @@ final class PackageManagerService implements PackageManagerInterface
                 foreach ($postInstallAttrs as $attr) {
                     /** @var PostInstall $instance */
                     $instance = $attr->newInstance();
-                    $args = implode(' ', array_map('escapeshellarg', $instance->args));
+                    $args = implode(' ', $instance->args);
                     $command = "php forge.php {$instance->command} {$args}";
                     $this->info("Running: {$command}");
 
                     exec($command, $output, $code);
+                    $this->line();
 
                     if ($code !== 0) {
                         $this->error("Command '{$command}' failed for module {$moduleName} (exit code {$code})");
@@ -710,14 +716,81 @@ final class PackageManagerService implements PackageManagerInterface
                     }
                 }
 
-                // Exit after processing the correct module class
                 return;
             }
         }
 
-        // If we made it here without finding the class
         if (!$foundModuleClass) {
             $this->warning("No #[Module] class found for '{$moduleName}', skipping PostInstall execution.");
+        }
+    }
+
+    /**
+     * Executes #[PostUninstall] commands defined in the module class before removal.
+     *
+     * @throws ReflectionException
+     */
+    private function runPostUninstallAttributes(string $moduleInstallPath, string $moduleName): void
+    {
+        $moduleSrc = glob($moduleInstallPath . '/**/*.php');
+        if (!$moduleSrc) {
+            $this->warning("No PHP files found in module {$moduleName}, skipping PostUninstall scanning.");
+            return;
+        }
+
+        foreach ($moduleSrc as $file) {
+            require_once $file;
+        }
+
+        $foundModuleClass = false;
+
+        foreach (get_declared_classes() as $class) {
+            $ref = new \ReflectionClass($class);
+            $moduleAttr = $ref->getAttributes(\Forge\Core\Module\Attributes\Module::class);
+
+            if (empty($moduleAttr)) {
+                continue;
+            }
+
+            $moduleInstance = $moduleAttr[0]->newInstance();
+
+            if ($moduleInstance->name === $moduleName) {
+                $foundModuleClass = true;
+                $postUninstallAttrs = $ref->getAttributes(PostUninstall::class);
+
+                if (empty($postUninstallAttrs)) {
+                    $this->info("Module {$moduleName} has no PostUninstall attributes defined.");
+                    return;
+                }
+
+                $this->info("Executing PostUninstall commands for module {$moduleName}...");
+
+                foreach ($postUninstallAttrs as $attr) {
+                    /** @var PostUninstall $instance */
+                    $instance = $attr->newInstance();
+                    $args = implode(' ', $instance->args);
+                    $command = "php forge.php {$instance->command} {$args}";
+                    $this->info("Running: {$command}");
+
+                    exec($command, $output, $code);
+                    $this->line();
+
+                    if ($code !== 0) {
+                        $this->error("Command '{$command}' failed for module {$moduleName} (exit code {$code})");
+                        if (!empty($output)) {
+                            $this->error("Output:\n" . implode("\n", $output));
+                        }
+                    } else {
+                        $this->success("Command '{$command}' executed successfully.");
+                    }
+                }
+
+                return;
+            }
+        }
+
+        if (!$foundModuleClass) {
+            $this->warning("No #[Module] class found for '{$moduleName}', skipping PostUninstall execution.");
         }
     }
 }
