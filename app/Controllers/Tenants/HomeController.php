@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Controllers;
+namespace App\Controllers\Tenants;
 
 use App\Models\Post;
 use App\Modules\ForgeAuth\Services\ForgeAuthService;
@@ -24,7 +24,7 @@ use Forge\Traits\ControllerHelper;
 use Forge\Traits\SecurityHelper;
 
 #[Service]
-#[TenantScope('central')]
+#[TenantScope('tenant')]
 #[Middleware("web")]
 final class HomeController
 {
@@ -41,18 +41,18 @@ final class HomeController
     public function index(): Response
     {
         Metrics::start("db_load_one_record_test");
-        $user = $this->userService->findUser(1);
+        $posts = Post::all();
         Metrics::stop("db_load_one_record_test");
 
         $data = [
             "title" => "Welcome to Forge Framework",
-            "user" => $user,
+            "posts" => $posts,
         ];
 
-        return $this->view(view: "pages/home/index", data: $data);
+        return $this->view(view: "pages/tenants/index", data: $data);
     }
 
-    #[Route("/", "POST")]
+    #[Route("/app", "POST")]
     public function register(Request $request): Response
     {
         try {
@@ -67,7 +67,7 @@ final class HomeController
         }
     }
 
-    #[Route("/{id}", "PATCH")]
+    #[Route("/app/{id}", "PATCH")]
     #[Middleware("App\Modules\ForgeAuth\Middlewares\AuthMiddleware")]
     public function updateUser(Request $request, string $id): Response
     {

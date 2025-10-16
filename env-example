@@ -3,8 +3,9 @@ APP_NAME="Forge Engine"
 APP_ENV=development
 APP_DEBUG=true
 APP_HMR=true
-APP_KEY=your-key
+APP_KEY=your-app-key
 VIEW_CACHE=
+CENTRAL_DOMAIN=forge-v3.test
 
 # CACHE
 CACHE_DRIVER=sqlite
@@ -21,7 +22,7 @@ CSRF_STRICT_SCHEME=true
 TRUST_PROXIES=true
 
 #Queue
-#drivers=database|in-memory|file
+#drivers=Database|in-memory|file
 QUEUE_DRIVER=database
 QUEUE_LIST=[emails,cache_refresh,page_visits]
 
@@ -36,7 +37,7 @@ SQLITE_PATH=/storage/database
 SQLITE_DB=/database.sqlite
 
 # Session Configuration
-SESSION_DRIVER=file
+SESSION_DRIVER=memory
 SESSION_DB_PATH=/storage/framework/security.sqlite
 SESSION_NAME=FORGE_SESSID
 SESSION_LIFETIME=1440
@@ -72,7 +73,7 @@ LOG_PATH=/storage/logs/forge.log
 # Forge UI
 FORGE_UI_ENABLED=true
 FORGE_UI_USE_RANDOM_KEY=true
-FORGE_UI_API_KEY=your-secure-api-key
+FORGE_UI_API_KEY=your-secure-key
 FORGE_UI_URL=/secure-url-endpoint
 FORGE_UI_URL_PREFIX=/secure-admin
 FORGE_UI_USER=my-username
@@ -98,4 +99,4 @@ FILE_STORAGE_PATH=public/storage/files
 FILE_STORAGE_DRIVER=local # Options: local
 
 #Package Manager Github Access Token
-GITHUB_TOKEN=your-personal-ga-token
+GITHUB_TOKEN=your-token
