@@ -18,7 +18,7 @@ use Forge\CLI\Traits\OutputHelper;
 use App\Modules\ForgeMultiTenant\Services\TenantManager;
 use ReflectionException;
 
-#[Module(name: 'ForgeMultiTenant', version: '0.1.3', description: 'A Multi Tenant Module by Forge', order: 0)]
+#[Module(name: 'ForgeMultiTenant', version: '0.1.5', description: 'A Multi Tenant Module by Forge', order: 0)]
 #[Service]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
@@ -27,6 +27,9 @@ use ReflectionException;
 ])]
 #[PostInstall(command: 'migrate', args: ['--type=', 'module', '--module=', 'ForgeMultiTenant'])]
 #[PostInstall(command: 'seed', args: ['--type=', 'module', '--module=', 'ForgeMultiTenant'])]
+#[PostInstall(command: 'tenant:migrate', args: [''])]
+#[PostInstall(command: 'tenant:seed', args: [''])]
+#[PostUninstall(command: 'migrate:rollback', args: ['--type=module', '--module=ForgeMultiTenant', '--group=tenant'])]
 #[PostUninstall(command: 'migrate:rollback', args: ['--type=module', '--module=ForgeMultiTenant'])]
 #[PostUninstall(command: 'seed:rollback', args: ['--type=module', '--module=ForgeMultiTenant'])]
 final class ForgeMultiTenantModule

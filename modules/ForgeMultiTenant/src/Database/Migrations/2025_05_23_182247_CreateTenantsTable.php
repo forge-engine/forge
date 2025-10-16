@@ -12,6 +12,7 @@ use Forge\Core\Database\Attributes\Timestamps;
 use Forge\Core\Database\Enums\ColumnType;
 use Forge\Core\Database\Migrations\Migration;
 
+#[GroupMigration('tenant')]
 #[Table(name: 'tenants')]
 #[Index(columns: ['domain'], name: 'idx_tenants_domain')]
 #[Index(columns: ['subdomain'], name: 'idx_tenants_subdomain')]

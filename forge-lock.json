@@ -43,10 +43,10 @@
             "integrity": "a998afd6b345fba8fee5a16c33286a01bf2bbfb9a7cdb51e6ded46c5d76ec7c7"
         },
         "forge-multi-tenant": {
-            "version": "0.1.2",
+            "version": "0.1.4",
             "registry": "forge-engine-modules",
-            "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-multi-tenant/0.1.2/0.1.2.zip",
-            "integrity": "49c7930d426b099cc9693836f787d98033ad7782d412fd8acf5a9aae1c511ec2"
+            "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-multi-tenant/0.1.4/0.1.4.zip",
+            "integrity": "e021e24f8b5ae6475a5c7bb01db2a87ae960fe66e8b5fcb8bb36e7913457a505"
         }
     }
 }
