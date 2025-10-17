@@ -143,6 +143,7 @@ final class PackageManagerService implements PackageManagerInterface
             }
 
             $this->updateForgeJson($moduleName, $versionToInstall);
+            $this->runPostInstallAttributes($moduleInstallPath, $this->toPascalCase($moduleName));
 
             $this->success("Module {$moduleName} version {$versionToInstall} installed from lock file successfully.");
         }
