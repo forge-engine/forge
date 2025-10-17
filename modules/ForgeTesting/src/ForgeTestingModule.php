@@ -15,16 +15,16 @@ use Forge\Core\Module\Attributes\Requires;
 #[
     Module(
         name: "ForgeTesting",
+        version: "0.1.3",
         description: "A Test Suite Module By Forge",
         order: 9999,
         isCli: true,
-        version: "0.1.2",
     ),
 ]
 #[Service]
 #[Compatibility(framework: ">=0.1.20", php: ">=8.3")]
 #[Repository(type: "git", url: "https://github.com/forge-engine/modules")]
-#[Provides(interface: TestCase::class, version: "0.1.2")]
+#[Provides(interface: TestCase::class, version: "0.1.3")]
 #[Requires]
 final class ForgeTestingModule
 {

@@ -10,20 +10,21 @@ use Forge\Core\View\View;
  * @var User $user
  */
 
-View::layout(name: "main", loadFromModule: false);
+layout(name: "main", fromModule: false);
 ?>
 <section class="container">
     <h2 class="text-2xl">Engine Status</h2>
     <ul>
         <li class="text-6xl">PHP Version <?= PHP_VERSION ?></li>
         <li>Database Driver: <?= $_ENV["DB_DRIVER"] ?></li>
-
+    </ul>
         <h3>User information</h3>
         <pre>
     <?php print_r($user); ?>
     </pre>
         <section>
-            <?= Component::render("forge-ui:alert", loadFromModule: true) ?>
+            <?= wire_name('counter', componentId: 'counter-1')?>
+            <?= component("forge-ui:alert", fromModule: true) ?>
             <form action="" method="POST" class="form">
                 <?= csrf_input() ?>
                 <div class="grid grid--2 mb-sm">

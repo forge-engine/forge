@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeWire\Core;
 
-use App\Modules\ForgeWire\Attributes\State;
-use App\Modules\ForgeWire\Attributes\Model;
 use App\Modules\ForgeWire\Attributes\DTO;
+use App\Modules\ForgeWire\Attributes\Model;
 use App\Modules\ForgeWire\Attributes\Service;
+use App\Modules\ForgeWire\Attributes\State;
 use App\Modules\ForgeWire\Attributes\Validate;
+use App\Modules\ForgeWire\Support\Renderer;
 use Forge\Core\DI\Container;
 use Forge\Core\Session\SessionInterface;
 use Forge\Core\Validation\Validator;
+use Forge\Exceptions\MissingServiceException;
+use Random\RandomException;
 
 final class Hydrator
 {
@@ -257,6 +260,10 @@ final class Hydrator
         return $obj;
     }
 
+    /**
+     * @throws RandomException
+     * @throws MissingServiceException
+     */
     public static function wire(
         string $componentClass,
         mixed $a = null,
@@ -277,12 +284,12 @@ final class Hydrator
 
         $id = $id ?? "fw-" . bin2hex(random_bytes(6));
 
-        $container = \Forge\Core\DI\Container::getInstance();
+        $container = Container::getInstance();
         $instance = $container->make($componentClass);
 
         (static function (
             object $instance,
-            \Forge\Core\DI\Container $c,
+            Container $c,
         ): void {
             static $serviceMap = [];
             $cls = $instance::class;
@@ -321,18 +328,18 @@ final class Hydrator
             $instance->mount($props ?? []);
         }
 
-        /** @var \App\Modules\ForgeWire\Support\Renderer $renderer */
+        /** @var Renderer $renderer */
         $renderer = $container->make(
-            \App\Modules\ForgeWire\Support\Renderer::class,
+            Renderer::class,
         );
         $html = $renderer->render($instance, $id, $componentClass);
 
-        /** @var \Forge\Core\Session\SessionInterface $session */
+        /** @var SessionInterface $session */
         $session = $container->make(
-            \Forge\Core\Session\SessionInterface::class,
+            SessionInterface::class,
         );
         $hydrator = $container->make(
-            \App\Modules\ForgeWire\Core\Hydrator::class,
+            Hydrator::class,
         );
         $sessionKey = "forgewire:{$id}";
 

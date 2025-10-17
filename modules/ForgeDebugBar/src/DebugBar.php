@@ -64,11 +64,21 @@ class DebugBar implements DebugBarInterface
         }
 
         $contentType = $response->getHeader('Content-Type') ?? '';
-        if (!str_contains($contentType, 'text/html')) {
+
+        // If it's explicitly non-HTML, we return immediately.
+        if (
+            !empty($contentType) &&
+            !str_contains(strtolower($contentType), 'text/html')
+        ) {
             return $response;
         }
 
         $content = $response->getContent();
+
+        if (is_string($content) && str_starts_with(trim($content), '{"html":')) {
+            return $response;
+        }
+
         if (!is_string($content) || str_contains($content, '</body>') === false) {
             return $response;
         }

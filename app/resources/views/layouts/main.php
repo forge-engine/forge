@@ -31,7 +31,7 @@ use Forge\Core\Helpers\ModuleResources;
         <?= $content ?>
     </div>
 
-    <script defer src="/assets/app/js/htmx.min.js" defer></script>
+    <script defer src="/assets/app/js/htmx.min.js"></script>
     <?= ModuleResources::loadScripts("forge-ui") ?>
 </body>
 

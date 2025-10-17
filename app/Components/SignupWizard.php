@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Components;
 
 use App\Dto\SignupDTO;
-use App\Services\SignupService;
-use App\Modules\ForgeWire\Attributes\State;
 use App\Modules\ForgeWire\Attributes\Action;
 use App\Modules\ForgeWire\Attributes\DTO;
 use App\Modules\ForgeWire\Attributes\Service;
+use App\Modules\ForgeWire\Attributes\State;
 use App\Modules\ForgeWire\Core\WireComponent;
+use App\Services\SignupService;
 
 final class SignupWizard extends WireComponent
 {

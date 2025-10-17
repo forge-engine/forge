@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Components;
 
 use App\DTO\ProductDTO;
-use App\Services\ProductService;
-use App\Modules\ForgeWire\Attributes\State;
 use App\Modules\ForgeWire\Attributes\Action;
 use App\Modules\ForgeWire\Attributes\Service;
+use App\Modules\ForgeWire\Attributes\State;
 use App\Modules\ForgeWire\Core\WireComponent;
+use App\Services\ProductService;
 
 final class ProductsTable extends WireComponent
 {

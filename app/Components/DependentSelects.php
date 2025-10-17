@@ -2,10 +2,10 @@
 
 namespace App\Components;
 
-use App\Services\LocationService;
-use App\Modules\ForgeWire\Attributes\State;
 use App\Modules\ForgeWire\Attributes\Service;
+use App\Modules\ForgeWire\Attributes\State;
 use App\Modules\ForgeWire\Core\WireComponent;
+use App\Services\LocationService;
 use Forge\Core\Session\SessionInterface;
 
 final class DependentSelects extends WireComponent

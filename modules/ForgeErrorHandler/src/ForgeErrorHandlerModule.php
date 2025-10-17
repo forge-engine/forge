@@ -13,8 +13,6 @@ use Forge\Core\Module\Attributes\Repository;
 use App\Modules\ForgeErrorHandler\Contracts\ForgeErrorHandlerInterface;
 use App\Modules\ForgeErrorHandler\Services\ForgeErrorHandlerService;
 use Forge\Core\DI\Attributes\Service;
-use Forge\Core\Module\Attributes\LifecycleHook;
-use Forge\Core\Module\LifecycleHookName;
 use Forge\CLI\Traits\OutputHelper;
 
 #[Module(name: 'ForgeErrorHandler', version: '0.1.2', description: 'An error handler by Forge', order: 2, core: true)]
@@ -29,11 +27,5 @@ final class ForgeErrorHandlerModule
     public function register(Container $container): void
     {
         $container->bind(ForgeErrorHandlerInterface::class, ForgeErrorHandlerService::class);
-    }
-
-    #[LifecycleHook(hook: LifecycleHookName::AFTER_MODULE_REGISTER)]
-    public function onAfterModuleRegister(): void
-    {
-        //error_log("ForgeErrorHandler:  registered!");
     }
 }

@@ -2,8 +2,7 @@
 
 namespace App\Modules\ForgeWire\Core;
 
-use App\Modules\ForgeWire\Core\Hydrator;
-use App\Modules\ForgeWire\Core\WireComponent;
+use App\Modules\ForgeWire\Attributes\Action;
 use App\Modules\ForgeWire\Support\Checksum;
 use App\Modules\ForgeWire\Support\Renderer;
 use Forge\Core\DI\Container;
@@ -59,7 +58,7 @@ final class WireKernel
                     $action !== "input" &&
                     empty(
                         $rm->getAttributes(
-                            \App\Modules\ForgeWire\Attributes\Action::class,
+                            Action::class,
                         )
                     )
                 ) {

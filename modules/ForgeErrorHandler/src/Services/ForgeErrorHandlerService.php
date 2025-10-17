@@ -1,262 +1,297 @@
 <?php
-
 declare(strict_types=1);
 
 namespace App\Modules\ForgeErrorHandler\Services;
 
+use App\Modules\ForgeErrorHandler\Contracts\ForgeErrorHandlerInterface;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Module\Attributes\Provides;
-use Forge\Core\Module\Attributes\Requires;
-use App\Modules\ForgeErrorHandler\Contracts\ForgeErrorHandlerInterface;
+use Forge\Core\Http\{Request, Response};
 use Forge\Core\Config\Environment;
-use Forge\Core\Http\Request;
-use Forge\Core\Http\Response;
 use Forge\Traits\PathHelper;
 use Throwable;
 
 #[Service]
-#[Provides(interface: ForgeErrorHandlerInterface::class, version: '0.1.2')]
-#[Requires]
-final class ForgeErrorHandlerService implements ForgeErrorHandlerInterface
+#[Provides(ForgeErrorHandlerInterface::class, version: '0.2.0')]
+final class ForgeErrorHandlerService implements
+    ForgeErrorHandlerInterface
 {
     use PathHelper;
 
-    private bool $debug;
-    private string $logPath;
+    private bool   $debug;
     private string $basePath;
-    private array $hiddenFields = ['password', 'token', 'secret'];
+    private string $logFile;
+    private array  $hiddenKeys   = ['password', 'token', 'secret', 'authorization', 'cookie'];
+    private array  $rateLimitMap = [];
 
-    public function __construct()
+    private ?object $logger;
+
+    public function __construct(?object $logger = null)
     {
-        $this->logPath = BASE_PATH . "/storage/logs/errors.log";
         $this->basePath = BASE_PATH;
-        $this->debug = Environment::getInstance()->isDebugEnabled();
+        $this->debug    = Environment::getInstance()->isDebugEnabled();
+        $this->logFile  = $this->basePath . '/storage/logs/errors.log';
+        $this->logger   = $logger && $this->implementsPsr3($logger) ? $logger : null;
 
-        set_error_handler([$this, "handleError"]);
-        set_exception_handler([$this, "handleException"]);
-        register_shutdown_function([$this, 'handleShutdown']);
+        $this->registerHandlers();
     }
+
     public function handle(Throwable $e, Request $request): Response
     {
-        $this->logError($e, $request);
+        $this->logThrowable($e, $request);
 
-        if ($this->debug) {
-            return $this->debugResponse($e, $request);
-        }
-
-        return $this->productionResponse();
+        return $this->debug
+            ? $this->buildDebugResponse($e, $request)
+            : $this->buildProductionResponse();
     }
 
-    public function handleError(int $severity, string $message, string $file, int $line): bool
+    private function registerHandlers(): void
+    {
+        set_error_handler([$this, 'phpErrorHandler']);
+        set_exception_handler([$this, 'phpExceptionHandler']);
+        register_shutdown_function([$this, 'phpShutdownHandler']);
+    }
+
+    public function phpErrorHandler(int $severity, string $message, string $file, int $line): bool
     {
         if (!(error_reporting() & $severity)) {
-            return false;
+            return true;
         }
-
         throw new \ErrorException($message, 0, $severity, $file, $line);
     }
 
-    public function handleException(Throwable $e): void
+    public function phpExceptionHandler(Throwable $e): void
     {
-        error_log("Exception caught in ForgeErrorHandlerService:");
-        error_log("File: " . $e->getFile());
-        error_log("Line: " . $e->getLine());
-        error_log($e->getTraceAsString());
-        $this->handle($e, Request::createFromGlobals())->send();
-        exit(1);
+        try {
+            $request = Request::createFromGlobals();
+            $this->handle($e, $request)->send();
+        } catch (Throwable $fatal) {
+            $this->emergencyOutput($fatal);
+        } finally {
+            exit(1);
+        }
     }
 
-    public function handleShutdown(): void
+    public function phpShutdownHandler(): void
     {
         $error = error_get_last();
-        if ($error && in_array($error['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR])) {
-            $this->handleException(new \ErrorException(
-                $error['message'],
-                $error['type'],
-                0,
-                $error['file'],
-                $error['line']
-            ));
+        if ($error === null) {
+            return;
+        }
+        $fatals = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR];
+        if (!in_array($error['type'], $fatals, true)) {
+            return;
+        }
+        $this->phpExceptionHandler(
+            new \ErrorException($error['message'], $error['type'], 0, $error['file'], $error['line'])
+        );
+    }
+
+    private function logThrowable(Throwable $e, Request $request): void
+    {
+        $fingerprint = $this->fingerprint($e);
+        $context     = $this->buildContext($e, $request, $fingerprint);
+
+        if ($this->isRateLimited($fingerprint, 300)) {
+            return;
+        }
+
+        if ($this->logger) {
+            $this->logger->error($e->getMessage(), $context);
+        } else {
+            $this->fileLog($context);
         }
     }
 
-    private function debugResponse(Throwable $e, Request $request): Response
+    private function buildContext(Throwable $e, Request $request, string $fingerprint): array
     {
-        $trace = $e->getTrace();
-        $snippets = $this->getCodeSnippets($e);
-        $filteredTrace = $this->filterTrace($trace);
+        $start  = defined('FORGE_START') ? FORGE_START : ($_SERVER['REQUEST_TIME_FLOAT'] ?? microtime(true));
+        $reqId  = $_SERVER['HTTP_X_REQUEST_ID'] ?? bin2hex(random_bytes(8));
+        $source = PHP_SAPI === 'cli'
+            ? ['cli' => implode(' ', $_SERVER['argv'] ?? [])]
+            : ['ip'   => $this->clientIp(),
+                'method' => $request->getMethod(),
+                'uri'  => $request->getUri()];
 
-        foreach ($filteredTrace as $index => &$traceItem) {
-            $traceItem['file'] = $traceItem['file'] ?? '[internal]';
-            $traceItem['line'] = $traceItem['line'] ?? 0;
-            $traceItem['function'] = $traceItem['function'] ?? '[unknown]';
-            $traceItem['args'] = array_map(fn ($arg) => is_object($arg) ? get_class($arg) : gettype($arg), $traceItem['args'] ?? []);
-            $traceItem['code_snippet'] = $snippets[$index] ?? [];
+        return [
+            'fingerprint' => $fingerprint,
+            'request_id'  => $reqId,
+            'exception'   => get_class($e),
+            'code'        => $e->getCode(),
+            'file'        => $e->getFile(),
+            'line'        => $e->getLine(),
+            'trace'       => $e->getTraceAsString(),
+            'memory'      => memory_get_peak_usage(true),
+            'duration_ms' => round((microtime(true) - $start) * 1000, 2),
+            'source'      => $source,
+            'sapi'        => PHP_SAPI,
+            'user_agent'  => $_SERVER['HTTP_USER_AGENT'] ?? '',
+            'session'     => $this->mask($_SESSION ?? []),
+            'get'         => $this->mask($request->queryParams),
+            'post'        => $this->mask($request->postData),
+        ];
+    }
+
+    private function fingerprint(Throwable $e): string
+    {
+        return substr(md5($e->getFile() . ':' . $e->getLine() . ':' . get_class($e)), 0, 8);
+    }
+
+    private function isRateLimited(string $fingerprint, int $seconds): bool
+    {
+        $now = time();
+        if (isset($this->rateLimitMap[$fingerprint]) && ($now - $this->rateLimitMap[$fingerprint]) < $seconds) {
+            return true;
         }
-        unset($traceItem);
+        $this->rateLimitMap[$fingerprint] = $now;
+        return false;
+    }
+
+    private function fileLog(array $context): void
+    {
+        $dir = dirname($this->logFile);
+        is_dir($dir) || mkdir($dir, 0775, true);
+        $line = sprintf(
+            "[%s] %s [%s] %s – %s:%d | %s\n",
+            date('Y-m-d H:i:s'),
+            $context['request_id'],
+            $context['fingerprint'],
+            $context['exception'],
+            $context['file'],
+            $context['line'],
+            str_replace(["\n", "\r"], ' ', $context['trace'])
+        );
+        file_put_contents($this->logFile, $line, FILE_APPEND | LOCK_EX);
+    }
+
+    private function buildDebugResponse(Throwable $e, Request $request): Response
+    {
+        $snippets = $this->extractSnippets($e);
+        $trace    = $this->filterTrace($e->getTrace());
+        foreach ($trace as $idx => &$frame) {
+            $frame['code_snippet'] = $snippets[$idx] ?? [];
+        }
 
         $data = [
-            'error' => [
+            'error'   => [
                 'message' => $e->getMessage(),
-                'type' => get_class($e),
-                'code' => $e->getCode(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $filteredTrace,
+                'type'    => get_class($e),
+                'code'    => $e->getCode(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
+                'trace'   => $trace,
             ],
             'request' => [
-                'method' => $request->getMethod(),
-                'uri' => $request->getUri(),
-                'query' => $this->filterSensitiveData($request->getQuery()),
-                'parameters' => $this->filterSensitiveData($request->getQuery()),
-                'headers' => $request->getHeaders(),
+                'method'     => $request->getMethod(),
+                'uri'        => $request->getUri(),
+                'headers'    => $request->getHeaders(),
+                'parameters' => $this->mask($request->serverParams),
+                'query'      => $this->mask($request->queryParams),
             ],
-            'session' => $this->filterSensitiveData($_SESSION ?? []),
-            'environment' => $this->filterSensitiveData($_ENV),
+            'session'     => $this->mask($_SESSION ?? []),
+            'environment' => $this->mask($_ENV),
         ];
 
         return new Response($this->renderErrorPage($data), 500);
     }
 
-    /**
-     * @return array[]
-     */
-    private function filterTrace(array $trace): array
+    private function buildProductionResponse(): Response
     {
-        return array_map(function ($item) {
-            unset($item['args']);
-            return $item;
-        }, $trace);
+        return new Response($this->renderUserFriendlyPage(), 500);
     }
 
-
-    private function productionResponse(): Response
+    private function mask(array $input): array
     {
-        return (new Response($this->renderUserFriendlyPage(), 500));
+        array_walk_recursive($input, function (&$v, $k) {
+            if (is_string($k) && in_array(strtolower($k), $this->hiddenKeys, true)) {
+                $v = '*****';
+            }
+        });
+        return $input;
+    }
+
+    private function filterTrace(array $trace): array
+    {
+        return array_map(fn($f) => array_diff_key($f, ['args' => 0]), $trace);
+    }
+
+    private function extractSnippets(Throwable $e): array
+    {
+        $out = [];
+        foreach ($e->getTrace() as $frame) {
+            $out[] = $this->codeSnippet($frame['file'] ?? $e->getFile(), $frame['line'] ?? $e->getLine());
+        }
+        return $out;
+    }
+
+    private function codeSnippet(string $file, int $line, int $context = 5): array
+    {
+        $real = realpath($file);
+        if (!$real || !str_starts_with($real, $this->basePath) || !is_file($real)) {
+            return [];
+        }
+        $lines = file($real, FILE_IGNORE_NEW_LINES);
+        if ($lines === false) {
+            return [];
+        }
+        $start = max(1, $line - $context);
+        $end   = min(count($lines), $line + $context);
+        $slice = [];
+        for ($i = $start; $i <= $end; $i++) {
+            $slice[$i] = $lines[$i - 1];
+        }
+        return $slice;
     }
 
     private function renderErrorPage(array $data): string
     {
         ob_start();
-        include dirname(__DIR__, 1) . '/views/error_page.php';
+        include __DIR__ . '/../views/error_page.php';
         return ob_get_clean();
     }
 
     private function renderUserFriendlyPage(): string
     {
         return <<<HTML
-       <!DOCTYPE html>
-       <html>
-       <head>
-           <style>
-               body {
-                   font-family: system-ui, sans-serif;
-                   background: #f8fafc;
-                   padding: 2rem;
-               }
-               .error-box {
-                   max-width: 600px;
-                   margin: 2rem auto;
-                   padding: 2rem;
-                   background: white;
-                   border-radius: 8px;
-                   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-               }
-           </style>
-       </head>
-       <body>
-           <div class="error-box">
-               <h1>Something Went Wrong</h1>
-               <p>We're sorry, but something went wrong. Our team has been notified.</p>
-               <p><a href="/">Return to Homepage</a></p>
-           </div>
-       </body>
-       </html>
-       HTML;
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Error</title>
+    <style>body{font-family:system-ui,sans-serif;background:#f8fafc;padding:2rem}.box{max-width:600px;margin:2rem auto;padding:2rem;background:#fff;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.1)}</style>
+</head>
+<body>
+    <div class="box">
+        <h1>Something went wrong</h1>
+        <p>We have been notified. Please try again later.</p>
+        <p><a href="/">Go home</a></p>
+    </div>
+</body>
+</html>
+HTML;
     }
 
-    private function logError(Throwable $e, Request $request): void
+    private function emergencyOutput(Throwable $e): void
     {
-        $logDir = dirname($this->logPath);
-
-        if (!is_dir($logDir)) {
-            mkdir($logDir, 0775, true);
+        $msg = "Emergency error handler – {$e->getMessage()} in {$e->getFile()}:{$e->getLine()}";
+        if (PHP_SAPI === 'cli') {
+            fwrite(STDERR, $msg . PHP_EOL);
+        } else {
+            http_response_code(500);
+            echo nl2br($msg);
         }
-
-        if (!file_exists($this->logPath)) {
-            touch($this->logPath);
-            chmod($this->logPath, 0664);
-        }
-
-        $log = sprintf(
-            "[%s] %s: %s in %s:%d\n%s\n\nRequest: %s %s\n\nSession: %s\n\n",
-            date('Y-m-d H:i:s'),
-            get_class($e),
-            $e->getMessage(),
-            $e->getFile(),
-            $e->getLine(),
-            $e->getTraceAsString(),
-            $request->getMethod(),
-            $request->getUri(),
-            json_encode($this->filterSensitiveData($_SESSION ?? []))
-        );
-
-        file_put_contents($this->logPath, $log, FILE_APPEND);
     }
 
-    private function filterSensitiveData(array $data): array
+    private function clientIp(): string
     {
-        foreach ($this->hiddenFields as $field) {
-            if (isset($data[$field])) {
-                $data[$field] = '*****';
-            }
-        }
-        return $data;
+        return $_SERVER['HTTP_X_FORWARDED_FOR']
+            ?? $_SERVER['HTTP_X_REAL_IP']
+            ?? $_SERVER['REMOTE_ADDR']
+            ?? '0.0.0.0';
     }
 
-
-    private function getCodeSnippets(Throwable $e): array
+    private function implementsPsr3(object $logger): bool
     {
-        $snippets = [];
-        foreach ($e->getTrace() as $frame) {
-            $snippets[] = $this->extractCodeSnippet(
-                $frame['file'] ?? $e->getFile(),
-                $frame['line'] ?? $e->getLine()
-            );
-        }
-        return $snippets;
-    }
-
-    /**
-     * @return array|array<<missing>,false>
-     */
-    private function extractCodeSnippet(string $filePath, int $errorLine, int $context = 5): array
-    {
-        $realFilePath = realpath($filePath);
-        if (!$realFilePath || !str_starts_with($realFilePath, $this->basePath)) {
-            return [];
-        }
-        if (!file_exists($filePath)) {
-            return [];
-        }
-
-        try {
-            $fileLines = file($realFilePath, FILE_IGNORE_NEW_LINES);
-            if ($fileLines === false) {
-                return [];
-            }
-        } catch (Throwable $e) {
-            return [];
-        }
-
-        $startLine = max(1, $errorLine - $context);
-        $endLine = min(count($fileLines), $errorLine + $context);
-        $snippet = [];
-
-        for ($i = $startLine; $i <= $endLine; $i++) {
-            $snippet[$i] = $fileLines[$i - 1] ?? '';
-        }
-
-        return $snippet;
+        return method_exists($logger, 'error') && method_exists($logger, 'debug');
     }
 }

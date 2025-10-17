@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Modules\ForgeDebugbar;
+namespace App\Modules\ForgeDebugBar;
 
 use App\Modules\ForgeDebugbar\Collectors\ExceptionCollector;
 use App\Modules\ForgeDebugbar\Collectors\MemoryCollector;
@@ -25,8 +25,8 @@ use Forge\Core\Module\Attributes\Provides;
 use Forge\Core\Module\LifecycleHookName;
 
 #[Service]
-#[Module(name: 'ForgeDebugBar', version: '0.1.2', description: 'Forge Debug Bar', order: 1)]
-#[Provides(DebugBar::class, version: '0.1.2')]
+#[Module(name: 'ForgeDebugBar', version: '0.1.3', description: 'Forge Debug Bar', order: 1)]
+#[Provides(DebugBar::class, version: '0.1.3')]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[ConfigDefaults(defaults: [
     'forge_debug_bar' => [
@@ -54,9 +54,6 @@ class DebugBarModule
     public function onAfterRequest(Request $request, Response $response): void
     {
         add_timeline_event('onAfterRequest', 'end');
-        if (!$response->hasHeader('Content-Type')) {
-            $response->setHeader('Content-Type', 'text/html; charset=UTF-8');
-        }
 
         self::$memoryCollector = MemoryCollector::instance();
 

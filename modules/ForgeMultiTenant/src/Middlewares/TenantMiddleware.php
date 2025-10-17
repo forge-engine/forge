@@ -5,7 +5,6 @@ namespace App\Modules\ForgeMultiTenant\Middlewares;
 
 use App\Modules\ForgeMultiTenant\Services\CentralDomain;
 use App\Modules\ForgeMultiTenant\Services\TenantConnectionFactory;
-use App\Modules\ForgeMultiTenant\Services\TenantQueryRewriter;
 use Forge\Core\Database\Connection;
 use Forge\Core\Database\QueryBuilder;
 use Forge\Core\DI\Container;
@@ -16,6 +15,7 @@ use Forge\Core\Middleware\Attributes\RegisterMiddleware;
 use App\Modules\ForgeMultiTenant\Services\TenantManager;
 use Forge\Exceptions\MissingServiceException;
 use Forge\Exceptions\ResolveParameterException;
+use PDO;
 use ReflectionException;
 
 #[RegisterMiddleware(group: "web", order: 1, allowDuplicate: false, overrideClass: null, enabled: true)]
@@ -42,7 +42,7 @@ final class TenantMiddleware extends Middleware {
             $newConn = $container->get(TenantConnectionFactory::class)->forTenant($tenant);
 
             $container->setInstance(Connection::class, $newConn);
-            $container->setInstance(\PDO::class, $newConn->getPdo());
+            $container->setInstance(PDO::class, $newConn->getPdo());
             $container->setInstance(QueryBuilder::class, new QueryBuilder($newConn));
         }
 

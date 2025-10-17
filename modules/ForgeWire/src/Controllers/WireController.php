@@ -30,6 +30,29 @@ final class WireController
     {
         $payload = $request->json();
         $result  = $this->kernel->process($payload, $this->session);
+        $this->gcEmptyComponents();
         return $this->jsonResponse($result);
+    }
+
+    private function gcEmptyComponents(): void
+    {
+        $allKeys = $this->session->all();
+        $components = [];
+        foreach ($allKeys as $key => $_) {
+            if (preg_match('/^forgewire:fw-[a-f0-9]+$/', $key)) {
+                $components[] = $key;
+            }
+        }
+
+        foreach ($components as $base) {
+            $state = $this->session->get($base, []);
+            if ($state === []) {
+                $this->session->remove($base);
+                $this->session->remove($base . ':models');
+                $this->session->remove($base . ':dtos');
+                $this->session->remove($base . ':fp');
+                $this->session->remove($base . ':sig');
+            }
+        }
     }
 }

@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
-ini_set('memory_limit', '2G');
+ini_set('display_errors', '0');
+ini_set('display_startup_errors', '0');
+error_reporting(E_ALL);
 
 define("BASE_PATH", dirname(__DIR__));
 
@@ -17,8 +19,4 @@ if (file_exists($maintenanceFile)) {
     exit;
 }
 
-try {
-    \Forge\Core\Engine::init();
-} catch (Throwable $e) {
-    echo $e->getMessage();
-}
+\Forge\Core\Engine::init();

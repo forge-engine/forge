@@ -2,9 +2,9 @@
 
 namespace App\Components;
 
-use App\Modules\ForgeWire\Attributes\State;
 use App\Modules\ForgeWire\Attributes\Action;
 use App\Modules\ForgeWire\Attributes\Computed;
+use App\Modules\ForgeWire\Attributes\State;
 use App\Modules\ForgeWire\Core\WireComponent;
 
 final class Counter extends WireComponent

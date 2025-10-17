@@ -2,8 +2,8 @@
 
 namespace App\Components;
 
-use App\Modules\ForgeWire\Attributes\State;
 use App\Modules\ForgeWire\Attributes\Action;
+use App\Modules\ForgeWire\Attributes\State;
 use App\Modules\ForgeWire\Core\WireComponent;
 use Forge\Core\View\Component;
 
@@ -64,7 +64,7 @@ final class Metric extends WireComponent
 
     private function renderWireComponent(): void
     {
-        for ($i = 0; $i < 2500; $i++) {
+        for ($i = 0; $i < 1; $i++) {
             wire_name(name: "counter", componentId: "counter-{$i}");
         }
     }
