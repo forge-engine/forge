@@ -18,29 +18,31 @@ layout(name: "main", fromModule: false);
         <li class="text-6xl">PHP Version <?= PHP_VERSION ?></li>
         <li>Database Driver: <?= $_ENV["DB_DRIVER"] ?></li>
     </ul>
-        <h3>User information</h3>
-        <pre>
+    <h3>User information</h3>
+    <pre>
     <?php print_r($user); ?>
     </pre>
-        <section>
-            <?= component("forge-ui:alert", fromModule: true) ?>
-            <form action="" method="POST" class="form">
-                <?= csrf_input() ?>
-                <div class="grid grid--2 mb-sm">
-                    <input class="form--input" type="text" name="identifier" placeholder="Username" required>
-                    <input class="form--input" type="password" name="password" placeholder="Password" required>
-                </div>
-                <input class="form--input mb-sm" type="email" name="email" autocomplete="email" placeholder="Email" required>
-                <button class="button" type="submit">Create User</button>
-            </form>
-            <?php if ($user): ?>
+    <section>
+        <?= component("forge-ui:alert", fromModule: true) ?>
+        <form action="" method="POST" class="form">
+            <?= csrf_input() ?>
+            <div class="grid grid--2 mb-sm">
+                <input class="form--input" type="text" name="identifier" placeholder="Username" required>
+                <input class="form--input" type="password" name="password" placeholder="Password" required>
+            </div>
+            <input class="form--input mb-sm" type="email" name="email" autocomplete="email" placeholder="Email"
+                   required>
+            <button class="button" type="submit">Create User</button>
+        </form>
+        <?php if ($user): ?>
             <form action="/<?= $user->id ?>" method="POST" class="form">
                 <input type="hidden" name="_method" value="PATCH">
-                <input class="form--input" type="text" name="identifier" placeholder="Username" value="<?= $user->identifier ?>" required>
+                <input class="form--input" type="text" name="identifier" placeholder="Username"
+                       value="<?= $user->identifier ?>" required>
                 <input type="email" name="email" placeholder="Email" value="<?= $user->email ?>" required>
                 <button class="button" type="submit">Update User</button>
             </form>
-            <?php endif; ?>
-        </section>
+        <?php endif; ?>
+    </section>
 
 </section>
