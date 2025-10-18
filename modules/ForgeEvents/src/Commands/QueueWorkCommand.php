@@ -5,16 +5,34 @@ declare(strict_types=1);
 namespace App\Modules\ForgeEvents\Commands;
 
 use App\Modules\ForgeEvents\Services\EventDispatcher;
+use Forge\CLI\Attributes\Arg;
+use Forge\CLI\Attributes\Cli;
 use Forge\CLI\Command;
-use Forge\CLI\Traits\OutputHelper;
-use Forge\Core\Module\Attributes\CLICommand;
+use Forge\CLI\Traits\Wizard;
 
-#[CLICommand(name:'queue:work', description:'Process queued events')]
+#[Cli(
+    command: 'queue:work',
+    description: 'Process queued events',
+    usage: 'queue:work [--workers=1]',
+    examples: [
+        'queue:work --workers=2',
+        'queue:work  (starts wizard)'
+    ]
+)]
 final class QueueWorkCommand extends Command
 {
-    use OutputHelper;
+    use Wizard;
 
     private static bool $shutdown = false;
+
+    #[Arg(
+        name: 'workers',
+        description: 'Number of workers per queue',
+        default: 1,
+        required: false,
+        validate: '/^\d+$/'
+    )]
+    private int $workers = 1;
 
     public function __construct(private readonly EventDispatcher $dispatcher)
     {
@@ -22,21 +40,14 @@ final class QueueWorkCommand extends Command
 
     public function execute(array $args): int
     {
-        $workers = 1;
-        foreach ($args as $a) {
-            if (str_starts_with($a, '--workers=')) {
-                $workers = (int) explode('=', $a, 2)[1];
-            } elseif (str_starts_with($a, '-w=')) {
-                $workers = (int) explode('=', $a, 2)[1];
-            }
-        }
-        $workers = max(1, $workers);
+        $this->wizard($args);
 
+        $workers = max(1, $this->workers);
         $queues = env('QUEUE_LIST', ['default']);
 
         pcntl_async_signals(true);
-        pcntl_signal(SIGINT, fn () => self::$shutdown = true);
-        pcntl_signal(SIGTERM, fn () => self::$shutdown = true);
+        pcntl_signal(SIGINT, fn() => self::$shutdown = true);
+        pcntl_signal(SIGTERM, fn() => self::$shutdown = true);
 
         foreach ($queues as $queue) {
             $pid = pcntl_fork();
@@ -49,61 +60,12 @@ final class QueueWorkCommand extends Command
                 exit(0);
             }
         }
-
+        
         while (pcntl_wait($status) !== -1) {
         }
+
         $this->info('All workers terminated.');
         return 0;
-    }
-
-    private function workerLoop(string $queue): void
-    {
-        $pid = getmypid();
-        $this->info("Worker for queue '{$queue}' started (PID {$pid})");
-
-        $jobsHandled = 0;
-        $backOff     = 0.1;
-        $maxBackOff  = 5.0;
-        $gcCycle     = 50;
-
-        $currentJobId = null;
-
-        /** @var EventDispatcher $dispatcher */
-        $dispatcher = $this->dispatcher;
-        pcntl_signal(SIGTERM, function () use (&$currentJobId, $queue, $dispatcher) {
-            if ($currentJobId) {
-                $dispatcher->release($currentJobId, 0);
-            }
-            exit(0);
-        });
-
-
-        while (!self::$shutdown) {
-            pcntl_signal_dispatch();
-            $currentJobId = null;
-            $jobProcessed = false;
-
-            while ($id = $this->dispatcher->processNextEvent($queue)) {
-                $currentJobId = $id;
-                $this->info("Queue {$queue} processed job {$id}");
-                $jobsHandled++;
-                $backOff     = 0.1;
-                $jobProcessed = true;
-
-                if ($jobsHandled % $gcCycle === 0) {
-                    gc_collect_cycles();
-                }
-            }
-
-            if (!$jobProcessed) {
-                $next = $this->dispatcher->getNextJobDelay($queue) ?? 0;
-                $sleep = $next > 0 ? min($next, $maxBackOff) : $backOff;
-                usleep((int)($sleep * 1_000_000));
-                $backOff = min($backOff * 2, $maxBackOff);
-            }
-        }
-
-        $this->warning("Worker for queue '{$queue}' (PID {$pid}) exiting gracefully.");
     }
 
     private function spawnWorkers(string $queue, int $count): void
@@ -122,5 +84,51 @@ final class QueueWorkCommand extends Command
 
         while (pcntl_wait($status) !== -1) {
         }
+    }
+
+    private function workerLoop(string $queue): void
+    {
+        $pid = getmypid();
+        $this->info("Worker for queue '{$queue}' started (PID {$pid})");
+
+        $jobsHandled = 0;
+        $backOff = 0.1;
+        $maxBackOff = 5.0;
+        $gcCycle = 50;
+        $currentJobId = null;
+
+        pcntl_signal(SIGTERM, function () use (&$currentJobId, $queue) {
+            if ($currentJobId) {
+                $this->dispatcher->release($currentJobId, 0);
+            }
+            exit(0);
+        });
+
+        while (!self::$shutdown) {
+            pcntl_signal_dispatch();
+            $currentJobId = null;
+            $jobProcessed = false;
+
+            while ($id = $this->dispatcher->processNextEvent($queue)) {
+                $currentJobId = $id;
+                $this->info("Queue {$queue} processed job {$id}");
+                $jobsHandled++;
+                $backOff = 0.1;
+                $jobProcessed = true;
+
+                if ($jobsHandled % $gcCycle === 0) {
+                    gc_collect_cycles();
+                }
+            }
+
+            if (!$jobProcessed) {
+                $next = $this->dispatcher->getNextJobDelay($queue) ?? 0;
+                $sleep = $next > 0 ? min($next, $maxBackOff) : $backOff;
+                usleep((int)($sleep * 1_000_000));
+                $backOff = min($backOff * 2, $maxBackOff);
+            }
+        }
+
+        $this->warning("Worker for queue '{$queue}' (PID {$pid}) exiting gracefully.");
     }
 }

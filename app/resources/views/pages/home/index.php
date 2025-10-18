@@ -23,7 +23,6 @@ layout(name: "main", fromModule: false);
     <?php print_r($user); ?>
     </pre>
         <section>
-            <?= wire_name('counter', componentId: 'counter-1')?>
             <?= component("forge-ui:alert", fromModule: true) ?>
             <form action="" method="POST" class="form">
                 <?= csrf_input() ?>

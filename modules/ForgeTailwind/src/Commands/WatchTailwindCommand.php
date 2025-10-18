@@ -5,66 +5,113 @@ declare(strict_types=1);
 namespace App\Modules\ForgeTailwind\Commands;
 
 use Forge\CLI\Command;
-use Forge\Core\Module\Attributes\CLICommand;
+use Forge\CLI\Attributes\Cli;
+use Forge\CLI\Attributes\Arg;
+use Forge\CLI\Traits\OutputHelper;
+use Forge\CLI\Traits\Wizard;
 
-#[CLICommand(name: 'tailwind:watch', description: 'Watch & rebuild Tailwind CSS (binary)')]
-class WatchTailwindCommand extends Command
+#[Cli(
+    command: 'tailwind:watch',
+    description: 'Watch & rebuild Tailwind CSS automatically when source changes',
+    usage: 'tailwind:watch [--input=CSS_PATH] [--output=CSS_PATH] [--platform=PLATFORM]',
+    examples: [
+        'tailwind:watch',
+        'tailwind:watch --input=app/resources/css/tailwind.css --output=public/assets/css/app.css',
+        'tailwind:watch --platform=linux-x64'
+    ]
+)]
+final class WatchTailwindCommand extends Command
 {
+    use OutputHelper;
+    use Wizard;
+
+    #[Arg(
+        name: 'input',
+        description: 'Input CSS file path (default: app/resources/assets/css/tailwind.css)',
+        required: false
+    )]
+    private ?string $inputCss = null;
+
+    #[Arg(
+        name: 'output',
+        description: 'Output CSS file path (default: public/assets/css/app.css)',
+        required: false
+    )]
+    private ?string $outputCss = null;
+
+    #[Arg(
+        name: 'platform',
+        description: 'Tailwind binary platform (default: macos-arm64)',
+        default: 'macos-arm64',
+        required: false,
+        validate: 'macos-arm64|macos-x64|windows-x64|linux-arm64|linux-arm64-musl|linux-x64|linux-x64-musl'
+    )]
+    private string $platform;
+
+    private array $binaries = [
+        'macos-arm64' => 'https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-macos-arm64',
+        'macos-x64' => 'https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-macos-x64',
+        'windows-x64' => 'https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-windows-x64.exe',
+        'linux-arm64' => 'https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-linux-arm64',
+        'linux-arm64-musl' => 'https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-linux-arm64-musl',
+        'linux-x64' => 'https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-linux-x64',
+        'linux-x64-musl' => 'https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-linux-x64-musl',
+    ];
+
     public function execute(array $args): int
     {
-        $bin_path  = BASE_PATH . '/storage/bin';
-        $bin  = $bin_path . '/tailwindcss'; 
+        $this->wizard($args);
+
+        $binPath = BASE_PATH . '/storage/bin';
+        $binName = $this->platform === 'windows-x64' ? 'tailwindcss.exe' : 'tailwindcss';
+        $bin = $binPath . '/' . $binName;
 
         if (!file_exists($bin)) {
-            $this->info('Tailwind CSS binary not found. Downloading and setting up...', 'TailwindSetup');
+            $this->info("Tailwind CSS binary not found for platform '{$this->platform}'. Downloading...", 'TailwindSetup');
 
-            if (!is_dir($bin_path)) {
-                mkdir($bin_path, 0755, true);
+            if (!is_dir($binPath)) {
+                mkdir($binPath, 0755, true);
             }
 
-            $download_url = 'https://github.com/tailwindlabs/tailwindcss/releases/latest/download/tailwindcss-macos-arm64';
-            $temp_bin_name = 'tailwindcss-macos-arm64';
-            $temp_bin_path = $bin_path . '/' . $temp_bin_name;
-
-            $download_cmd = "curl -sLO {$download_url} -o " . escapeshellarg($temp_bin_path) . " 2>&1";
-            exec($download_cmd, $out, $ret);
-
-            if ($ret !== 0) {
-                $this->error("Failed to download Tailwind CSS binary: " . implode("\n", $out), 'TailwindSetup');
+            $url = $this->binaries[$this->platform] ?? null;
+            if (!$url) {
+                $this->error("Unsupported platform '{$this->platform}'");
                 return 1;
             }
 
-            $chmod_cmd = "chmod +x " . escapeshellarg($temp_bin_path) . " 2>&1";
-            exec($chmod_cmd, $out, $ret);
-
+            $tempBin = $binPath . '/tailwindcss-temp';
+            exec("curl -sL {$url} -o " . escapeshellarg($tempBin), $out, $ret);
             if ($ret !== 0) {
-                $this->error("Failed to set executable permission for Tailwind CSS binary: " . implode("\n", $out), 'TailwindSetup');
-                unlink($temp_bin_path);
+                $this->error("Failed to download Tailwind CSS binary: " . implode("\n", $out));
                 return 1;
             }
 
-            $mv_cmd = "mv " . escapeshellarg($temp_bin_path) . " " . escapeshellarg($bin) . " 2>&1";
-            exec($mv_cmd, $out, $ret);
-
-            if ($ret !== 0) {
-                $this->error("Failed to rename/move Tailwind CSS binary: " . implode("\n", $out), 'TailwindSetup');
-                if (file_exists($temp_bin_path)) {
-                    unlink($temp_bin_path);
+            if ($this->platform !== 'windows-x64') {
+                exec("chmod +x " . escapeshellarg($tempBin), $out, $ret);
+                if ($ret !== 0) {
+                    $this->error("Failed to set executable permission: " . implode("\n", $out));
+                    unlink($tempBin);
+                    return 1;
                 }
+            }
+
+            exec("mv " . escapeshellarg($tempBin) . " " . escapeshellarg($bin), $out, $ret);
+            if ($ret !== 0) {
+                $this->error("Failed to move Tailwind binary: " . implode("\n", $out));
+                if (file_exists($tempBin)) unlink($tempBin);
                 return 1;
             }
 
-            $this->info('Tailwind CSS binary setup complete.', 'TailwindSetup');
+            $this->info("Tailwind CSS binary setup complete for platform '{$this->platform}'.", 'TailwindSetup');
         }
 
+        $input = escapeshellarg($this->inputCss ?? BASE_PATH . '/app/resources/assets/css/tailwind.css');
+        $output = escapeshellarg($this->outputCss ?? BASE_PATH . '/public/assets/css/app.css');
 
-        $in  = escapeshellarg($cfg['input_css']  ?? BASE_PATH . '/app/resources/assets/css/tailwind.css');
-        $out = escapeshellarg($cfg['output_css'] ?? BASE_PATH . '/public/assets/css/app.css');
+        $this->info('Watching CSS for changes… (Ctrl-C to stop)', 'TailwindWatch');
 
-        $this->info('Watching … (Ctrl-C to stop)', 'TailwindWatch');
-        
-        passthru(escapeshellarg($bin) . ' -i ' . $in . ' -o ' . $out . ' --minify --watch');
-        
+        passthru(escapeshellarg($bin) . " -i {$input} -o {$output} --minify --watch");
+
         return 0;
     }
 }

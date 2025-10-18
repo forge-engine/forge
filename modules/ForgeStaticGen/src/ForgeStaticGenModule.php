@@ -13,10 +13,10 @@ use Forge\Core\Module\Attributes\Provides;
 use Forge\Core\Module\Attributes\Requires;
 
 #[Service()]
-#[Module(name: 'ForgeStaticGen', description: "A Basic Static Site Generator by Forge", version: "0.1.1", isCli: true)]
-#[Requires(interface: ForgeMarkDownInterface::class, version: "0.1.0")]
+#[Module(name: 'ForgeStaticGen', version: "0.1.1", description: "A Basic Static Site Generator by Forge", isCli: true)]
+#[Requires(interface: ForgeMarkDownInterface::class, version: "0.1.1")]
 #[Compatibility(framework: ">=0.1.0", php: ">=8.3")]
-#[Provides(interface:ForgeStaticGenInterface::class, version: "0.1.0")]
+#[Provides(interface: ForgeStaticGenInterface::class, version: "0.1.1")]
 #[ConfigDefaults(defaults: [])]
 class ForgeStaticGenModule
 {

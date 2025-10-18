@@ -1,7 +1,7 @@
 {
 	"$schema": "./../../engine/Core/Schema/module-schema.json",
 	"name": "ForgeTailwind",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"description": "A tailwind cli wrapper module by forge",
 	"type": "generic",
 	"order": 100,

@@ -6,21 +6,54 @@ namespace App\Modules\ForgeTesting\Commands;
 
 use App\Modules\ForgeTesting\Services\TestRunnerService;
 use Forge\CLI\Command;
+use Forge\CLI\Attributes\Cli;
+use Forge\CLI\Attributes\Arg;
 use Forge\CLI\Traits\OutputHelper;
-use Forge\Core\Module\Attributes\CLICommand;
-use RecursiveIteratorIterator;
-use RecursiveDirectoryIterator;
-use DirectoryIterator;
+use Forge\CLI\Traits\Wizard;
 use Forge\Traits\NamespaceHelper;
 
-#[CLICommand(name: 'test', description: 'Run application tests')]
+#[Cli(
+    command: 'test',
+    description: 'Run application tests',
+    usage: 'test [--type=TYPE] [--module=MODULE] [--group=GROUP]',
+    examples: [
+        'test',
+        'test --type=module --module=users',
+        'test --group=unit',
+        'test --type=engine'
+    ]
+)]
 final class TestCommand extends Command
 {
     use OutputHelper;
+    use Wizard;
     use NamespaceHelper;
 
     private const CACHE_FILE = BASE_PATH . '/storage/framework/cache/test_cache.php';
     private const CACHE_TTL = 3600;
+
+    #[Arg(
+        name: 'type',
+        description: 'Type of tests: app, engine, module',
+        default: 'app',
+        required: false
+    )]
+    private string $type;
+
+    #[Arg(
+        name: 'module',
+        description: 'Module(s) to test (default: all)',
+        default: 'all',
+        required: false
+    )]
+    private string|array $module;
+
+    #[Arg(
+        name: 'group',
+        description: 'Filter tests by group (optional)',
+        required: false
+    )]
+    private ?string $group = null;
 
     public function __construct(private TestRunnerService $testRunnerService)
     {
@@ -28,23 +61,21 @@ final class TestCommand extends Command
 
     public function execute(array $args): int
     {
+        $this->wizard($args);
+
         $startTime = microtime(true);
-        $options = $this->parseOptions($args);
 
-        $testDirs = $this->getTestDirectories(
-            $options['type'],
-            $options['module']
-        );
-
+        $testDirs = $this->getTestDirectories($this->type, $this->module);
         if (empty($testDirs)) {
             $this->error('No test directories found');
             return 1;
         }
 
         $cache = $this->getValidatedCache($testDirs);
+
         $this->testRunnerService
             ->setTestClasses($cache['classes'])
-            ->setGroupFilter($options['group']);
+            ->setGroupFilter($this->group);
 
         $this->info("Running tests...\n");
         $results = $this->testRunnerService->runTests();
@@ -53,30 +84,6 @@ final class TestCommand extends Command
         $this->renderExecutionTime($startTime);
 
         return $results['failed'] > 0 ? 1 : 0;
-    }
-
-    private function parseOptions(array $args): array
-    {
-        $options = [
-            'type' => 'app',
-            'module' => 'all',
-            'group' => null,
-        ];
-
-        foreach ($args as $arg) {
-            if (str_starts_with($arg, '--')) {
-                [$key, $value] = explode('=', substr($arg, 2)) + [1 => null];
-                if (in_array($key, ['type', 'module', 'group'])) {
-                    $options[$key] = $value;
-                }
-            }
-        }
-
-        if ($options['type'] === 'module' && $options['module'] === 'all') {
-            $options['module'] = $this->getAllModules();
-        }
-
-        return $options;
     }
 
     private function getTestDirectories(string $type, string|array $module): array
@@ -97,27 +104,15 @@ final class TestCommand extends Command
         foreach ($modules as $moduleName) {
             $pascalCase = $this->kebabToPascal($moduleName);
             $path = BASE_PATH . "/modules/{$pascalCase}/src/tests/";
-
-            if (is_dir($path)) {
-                $dirs[] = $path;
-            }
+            if (is_dir($path)) $dirs[] = $path;
         }
 
         return $dirs;
     }
 
-    private function getAllModules(): array
+    private function kebabToPascal(string $name): string
     {
-        $modules = [];
-        $dir = new DirectoryIterator(BASE_PATH . '/modules/');
-
-        foreach ($dir as $fileInfo) {
-            if ($fileInfo->isDir() && !$fileInfo->isDot()) {
-                $modules[] = $this->pascalToKebab($fileInfo->getFilename());
-            }
-        }
-
-        return $modules;
+        return str_replace(' ', '', ucwords(str_replace('-', ' ', $name)));
     }
 
     private function getValidatedCache(array $testDirs): array
@@ -126,9 +121,9 @@ final class TestCommand extends Command
 
         if (file_exists(self::CACHE_FILE)) {
             $cache = include self::CACHE_FILE;
-
             if ($cache['meta']['hashes'] === $currentHashes &&
-                time() - $cache['meta']['timestamp'] < self::CACHE_TTL) {
+                time() - $cache['meta']['timestamp'] < self::CACHE_TTL
+            ) {
                 return $cache;
             }
         }
@@ -144,16 +139,9 @@ final class TestCommand extends Command
         $hashes = [];
         foreach ($directories as $dir) {
             $hash = '';
-            $files = new RecursiveIteratorIterator(
-                new RecursiveDirectoryIterator($dir)
-            );
-
-            foreach ($files as $file) {
-                if ($file->isFile()) {
-                    $hash .= md5_file($file->getRealPath());
-                }
+            foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir)) as $file) {
+                if ($file->isFile()) $hash .= md5_file($file->getRealPath());
             }
-
             $hashes[$dir] = md5($hash);
         }
         return $hashes;
@@ -163,16 +151,10 @@ final class TestCommand extends Command
     {
         $classes = [];
         foreach ($directories as $dir) {
-            $files = new RecursiveIteratorIterator(
-                new RecursiveDirectoryIterator($dir)
-            );
-
-            foreach ($files as $file) {
+            foreach (new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir)) as $file) {
                 if ($file->isFile() && str_ends_with($file->getFilename(), 'Test.php')) {
                     $className = $this->getClassNameFromFile($file->getPathname());
-                    if ($className && class_exists($className)) {
-                        $classes[] = $className;
-                    }
+                    if ($className && class_exists($className)) $classes[] = $className;
                 }
             }
         }
@@ -182,9 +164,9 @@ final class TestCommand extends Command
     private function updateCache(array $meta, array $testDirs): void
     {
         $cacheContent = "<?php\n\nreturn " . var_export([
-            'meta' => $meta,
-            'classes' => $this->scanTestClasses($testDirs)
-        ], true) . ';';
+                'meta' => $meta,
+                'classes' => $this->scanTestClasses($testDirs)
+            ], true) . ';';
 
         file_put_contents(self::CACHE_FILE, $cacheContent);
     }
@@ -195,9 +177,15 @@ final class TestCommand extends Command
         $this->comment("\nTests completed in {$duration}s");
     }
 
-    private function kebabToPascal(string $name): string
+    private function getAllModules(): array
     {
-        return str_replace(' ', '', ucwords(str_replace('-', ' ', $name)));
+        $modules = [];
+        foreach (new \DirectoryIterator(BASE_PATH . '/modules/') as $fileInfo) {
+            if ($fileInfo->isDir() && !$fileInfo->isDot()) {
+                $modules[] = $this->pascalToKebab($fileInfo->getFilename());
+            }
+        }
+        return $modules;
     }
 
     private function pascalToKebab(string $name): string

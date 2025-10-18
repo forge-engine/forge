@@ -15,7 +15,7 @@ use Forge\Core\Module\Attributes\Requires;
 #[
     Module(
         name: "ForgeTesting",
-        version: "0.1.3",
+        version: "0.1.4",
         description: "A Test Suite Module By Forge",
         order: 9999,
         isCli: true,
@@ -24,7 +24,7 @@ use Forge\Core\Module\Attributes\Requires;
 #[Service]
 #[Compatibility(framework: ">=0.1.20", php: ">=8.3")]
 #[Repository(type: "git", url: "https://github.com/forge-engine/modules")]
-#[Provides(interface: TestCase::class, version: "0.1.3")]
+#[Provides(interface: TestCase::class, version: "0.1.4")]
 #[Requires]
 final class ForgeTestingModule
 {

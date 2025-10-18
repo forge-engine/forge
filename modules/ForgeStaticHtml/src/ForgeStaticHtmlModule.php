@@ -9,9 +9,9 @@ use Forge\Core\Module\Attributes\ConfigDefaults;
 use Forge\Core\Module\Attributes\Module;
 use Forge\Core\Module\Attributes\Provides;
 
-#[Module(name: 'ForgeMarkDown', description: 'Static site generator for Forge Framework', isCli:true)]
+#[Module(name: 'ForgeMarkDown', description: 'Static site generator for Forge Framework', isCli: true)]
 #[Service()]
-#[Provides(interface: StaticGenerator::class, version: '0.1.0')]
+#[Provides(interface: StaticGenerator::class, version: '0.1.1')]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[ConfigDefaults(defaults: [
     'forge_static_html' => [

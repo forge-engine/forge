@@ -1,12 +1,14 @@
 {
   "$schema": "./../../engine/Core/Schema/module-schema.json",
   "name": "forge-testing",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "A Test Suite Module By Forge",
   "type": "test-suite",
   "order": 0,
   "cli": {
-    "commands": ["test"]
+    "commands": [
+      "test"
+    ]
   },
   "tags": [],
   "config": {

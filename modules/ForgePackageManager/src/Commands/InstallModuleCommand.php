@@ -5,34 +5,59 @@ declare(strict_types=1);
 namespace App\Modules\ForgePackageManager\Commands;
 
 use App\Modules\ForgePackageManager\Services\PackageManagerService;
+use Forge\CLI\Attributes\Cli;
+use Forge\CLI\Attributes\Arg;
 use Forge\CLI\Command;
-use Forge\Core\Module\Attributes\CLICommand;
+use Forge\CLI\Traits\Wizard;
+use Throwable;
 
-#[CLICommand(name: 'package:install-module', description: 'Install a module from the registry')]
+#[Cli(
+    command: 'package:install-module',
+    description: 'Install a module from the registry',
+    usage: 'package:install-module <module-name[@version]> [--force]',
+    examples: [
+        'package:install-module my-module',
+        'package:install-module my-module@1.2.0',
+        'package:install-module my-module --force'
+    ]
+)]
 final class InstallModuleCommand extends Command
 {
-    public function __construct(private PackageManagerService $packageManagerService)
+    use Wizard;
+
+    #[Arg(
+        name: 'module',
+        description: 'Module name with optional version (e.g., module-name[@1.0.0])',
+        required: true
+    )]
+    private string $moduleNameVersion;
+
+    #[Arg(
+        name: 'force',
+        description: 'Force bypass cache',
+        default: false,
+        required: false
+    )]
+    private bool $force;
+
+    public function __construct(private readonly PackageManagerService $packageManagerService)
     {
     }
+
     public function execute(array $args): int
     {
-        $this->info("You can bypass the cache by adding force to the end: php forge.php install:module module-name force");
-        if (empty($args[0])) {
-            $this->error("Module name is required. Usage: php forge.php install:module <module-name>[@version]");
-            return 1;
-        }
+        $this->wizard($args);
 
-        $moduleNameVersion = $args[0];
-        $parts = explode('@', $moduleNameVersion);
-        $moduleName = $parts[0];
-        $forceCache = $args[1] ?? null;
-        $version = $parts[1] ?? null;
-
+        [$moduleName, $version] = explode('@', $this->moduleNameVersion) + [1 => null];
 
         try {
-            $this->packageManagerService->installModule($moduleName, $version, $forceCache);
+            $force = $this->force ? 'force' : '';
+            $this->packageManagerService->installModule($moduleName, $version, $force);
+            $this->success(
+                "Module '{$moduleName}' installed successfully" . ($version ? " (v{$version})" : '')
+            );
             return 0;
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $this->error("Error installing module: " . $e->getMessage());
             return 1;
         }

@@ -14,7 +14,7 @@ use Forge\Core\Http\Response;
 #[Service]
 final class AuthMiddleware extends Middleware
 {
-    public function __construct(private ForgeAuthService $forgeAuthService)
+    public function __construct(private readonly ForgeAuthService $forgeAuthService)
     {
     }
 

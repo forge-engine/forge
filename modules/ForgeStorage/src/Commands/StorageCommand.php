@@ -1,29 +1,65 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Modules\ForgeStorage\Commands;
 
 use App\Modules\ForgeStorage\Services\StorageService;
-use Forge\CLI\Traits\OutputHelper;
+use Forge\CLI\Attributes\Cli;
+use Forge\CLI\Attributes\Arg;
 use Forge\CLI\Command;
-use Forge\Core\Module\Attributes\CLICommand;
+use Forge\CLI\Traits\OutputHelper;
+use Forge\CLI\Traits\Wizard;
 
-#[CLICommand(name: 'storage:manage', description: 'Manage storage buckets and files')]
-class StorageCommand extends Command
+#[Cli(
+    command: 'storage:bucket',
+    description: 'Manage storage buckets and files',
+    usage: 'storage:bucket <action> [--name=BUCKET_NAME] [--public]',
+    examples: [
+        'storage:bucket create --name=my-bucket --public',
+        'storage:bucket list',
+        'storage:bucket cleanup'
+    ]
+)]
+final class StorageCommand extends Command
 {
     use OutputHelper;
+    use Wizard;
 
-    public function __construct(private StorageService $storageService)
+    #[Arg(
+        name: 'action',
+        description: 'Action to perform (create, list, cleanup)',
+        required: true
+    )]
+    private string $action;
+
+    #[Arg(
+        name: 'name',
+        description: 'Bucket name (required for create)',
+        required: false
+    )]
+    private ?string $bucketName = null;
+
+    #[Arg(
+        name: 'public',
+        description: 'Mark bucket as public (only for create)',
+        default: false,
+        required: false
+    )]
+    private bool $public = false;
+
+    public function __construct(private readonly StorageService $storageService)
     {
     }
 
     public function execute(array $args): int
     {
-        $action = $args[0] ?? null;
+        $this->wizard($args);
 
         try {
-            return match ($action) {
-                'create-bucket' => $this->createBucket($args),
-                'list-buckets' => $this->listBuckets(),
+            return match ($this->action) {
+                'create' => $this->createBucket(),
+                'list' => $this->listBuckets(),
                 'cleanup' => $this->cleanupExpired(),
                 default => $this->showHelp()
             };
@@ -33,13 +69,15 @@ class StorageCommand extends Command
         }
     }
 
-    private function createBucket(array $args): int
+    private function createBucket(): int
     {
-        $name = $args[1] ?? null;
-        $public = in_array('--public', $args);
+        if (!$this->bucketName) {
+            $this->error("Bucket name is required for create action.");
+            return 1;
+        }
 
-        $this->storageService->createBucket($name, ['public' => $public]);
-        $this->success("Bucket {$name} created");
+        $this->storageService->createBucket($this->bucketName, ['public' => $this->public]);
+        $this->success("Bucket {$this->bucketName} created" . ($this->public ? " (public)" : ""));
         return 0;
     }
 
@@ -55,16 +93,18 @@ class StorageCommand extends Command
 
     private function cleanupExpired(): int
     {
-        $this->info("Cleaned up 0 expired files");
+        $count = 0;
+        //$count = $this->storageService->cleanupExpiredFiles();
+        $this->info("Cleaned up {$count} expired file(s)");
         return 0;
     }
 
     private function showHelp(): int
     {
         $this->line("Available commands:");
-        $this->line(" storage:manage create-bucket <name> [--public]");
-        $this->line(" storage:manage list-buckets");
-        $this->line(" storage:manage cleanup");
+        $this->line(" storage:bucket create --name=BUCKET_NAME [--public]");
+        $this->line(" storage:bucket list");
+        $this->line(" storage:bucket cleanup");
         return 0;
     }
 }

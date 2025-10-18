@@ -1,7 +1,7 @@
 {
     "$schema": "./../../engine/Core/Schema/module-schema.json",
     "name": "ForgeStaticHtml",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Static site generator for Forge Framework",
     "type": "generic",
     "order": 100,
@@ -12,6 +12,6 @@
     "config": {
         "defaults": {}
     },
-    "author": "Your name",
-    "license: ""
+    "author": "Forge Team",
+    "license: "MIT"
 }
