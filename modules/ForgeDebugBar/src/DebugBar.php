@@ -9,10 +9,10 @@ use Forge\Core\Http\Response;
 
 class DebugBar implements DebugBarInterface
 {
+    private static ?self $instance = null;
     private array $collectors = [];
     private float $startTime;
     private int $startMemory;
-    private static ?self $instance = null;
 
     private function __construct()
     {
@@ -31,30 +31,6 @@ class DebugBar implements DebugBarInterface
     public function addCollector(string $name, callable $collector): void
     {
         $this->collectors[$name] = $collector;
-    }
-
-
-    public function getData(): array
-    {
-        $data = [];
-
-        foreach ($this->collectors as $name => $collectorCallable) {
-            $collectorData = call_user_func($collectorCallable, $this->startTime);
-            $data[$name] = $collectorData;
-        }
-
-        $data['php_version'] = phpversion();
-
-        return $data;
-    }
-
-    public function render(): string
-    {
-        $modulePath = BASE_PATH . '/modules/ForgeDebugbar/src/views/debugbar.php';
-        ob_start();
-        extract(['data' => $this->getData()]);
-        include $modulePath;
-        return '';
     }
 
     public function injectDebugBarIfEnabled(Response $response, Container $container): Response
@@ -90,6 +66,38 @@ class DebugBar implements DebugBarInterface
         return $response;
     }
 
+    public function shouldEnableDebugBar(Container $container): bool
+    {
+        $forgeDebug = env('APP_DEBUG');
+        /** @var Config $config */
+        $config = $container->get(Config::class);
+        $configEnabled = $config->get('forge_debug_bar.enabled', true);
+        return $configEnabled && $forgeDebug;
+    }
+
+    public function render(): string
+    {
+        $modulePath = BASE_PATH . '/modules/ForgeDebugbar/src/views/debugbar.php';
+        ob_start();
+        extract(['data' => $this->getData()]);
+        include $modulePath;
+        return '';
+    }
+
+    public function getData(): array
+    {
+        $data = [];
+
+        foreach ($this->collectors as $name => $collectorCallable) {
+            $collectorData = call_user_func($collectorCallable, $this->startTime);
+            $data[$name] = $collectorData;
+        }
+
+        $data['php_version'] = phpversion();
+
+        return $data;
+    }
+
     public function injectDebugBarIntoHtml(string $htmlContent, string $debugBarHtml, Container $container): string
     {
         $cssLinkTag = sprintf('<link rel="stylesheet" href="/assets/modules/forge-debug-bar/css/debugbar.css">');
@@ -111,14 +119,5 @@ class DebugBar implements DebugBarInterface
         } else {
             return $htmlContent . "\n" . $cssLinkTag . "\n" . $debugBarHtml . "\n" . $jsScriptTag;
         }
-    }
-
-    public function shouldEnableDebugBar(Container $container): bool
-    {
-        $forgeDebug = env('APP_DEBUG');
-        /** @var Config $config */
-        $config = $container->get(Config::class);
-        $configEnabled = $config->get('forge_debug_bar.enabled', true);
-        return $configEnabled && $forgeDebug;
     }
 }

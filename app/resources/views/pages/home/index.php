@@ -1,8 +1,6 @@
 <?php
 
 use App\Modules\ForgeAuth\Models\User;
-use Forge\Core\View\Component;
-use Forge\Core\View\View;
 
 /**
  * @var string $title
@@ -10,7 +8,7 @@ use Forge\Core\View\View;
  * @var User $user
  */
 
-layout(name: "main", fromModule: false);
+layout(name: "main");
 ?>
 <section class="container">
     <h2 class="text-2xl">Engine Status</h2>
@@ -23,7 +21,6 @@ layout(name: "main", fromModule: false);
     <?php print_r($user); ?>
     </pre>
     <section>
-        <?= component("forge-ui:alert", fromModule: true) ?>
         <form action="" method="POST" class="form">
             <?= csrf_input() ?>
             <div class="grid grid--2 mb-sm">

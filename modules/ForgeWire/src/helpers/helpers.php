@@ -3,6 +3,7 @@
 use App\Modules\ForgeWire\Core\WireComponent;
 use App\Modules\ForgeWire\Support\Renderer;
 use App\Modules\ForgeWire\Core\Hydrator;
+use Forge\Core\Helpers\Strings;
 
 if (!function_exists("forgewire_is_available")) {
     function forgewire_is_available(): bool
@@ -19,10 +20,11 @@ if (!function_exists("wire")) {
      */
     function wire(
         string $componentClass,
-        mixed $props = null,
-        mixed $componentId = null,
-    ): string {
-            return Hydrator::wire($componentClass, $props, $componentId);
+        mixed  $props = null,
+        mixed  $componentId = null,
+    ): string
+    {
+        return Hydrator::wire($componentClass, $props, $componentId);
     }
 }
 
@@ -34,30 +36,49 @@ if (!function_exists("w") && function_exists("wire")) {
      */
     function w(
         string $componentClass,
-        mixed $props = null,
-        mixed $componentId = null,
-    ): string {
+        mixed  $props = null,
+        mixed  $componentId = null,
+    ): string
+    {
         return wire($componentClass, $props, $componentId);
     }
 }
 
-if (!function_exists("wire_name") && function_exists("wire")) {
+
+if (!function_exists('wire_name') && function_exists('wire')) {
     /**
-     * Name-based resolver (optional):
-     *   wire_name('products-table', ['perPage'=>5])
-     * => App\Components\ProductsTable
+     * Convert ke-bab / snake / dot name to a Wire component class
+     * and render it.
+     *
+     * products-table   -> App\Components\Wire\ProductsTable
+     * user.form        -> App\Components\Wire\UserForm
      */
     function wire_name(
         string $name,
-        mixed $props = null,
-        mixed $componentId = null,
-    ): string {
-        $pascal = str_replace(
-            " ",
-            "",
-            ucwords(str_replace(["-", "_", "."], " ", $name)),
-        );
-        $class = "App\\Components\\{$pascal}";
+        mixed  $props = null,
+        mixed  $componentId = null,
+    ): string
+    {
+        if (str_contains($name, ':')) {
+            [$module, $tail] = explode(':', $name, 2);
+            $parts = array_map(
+                fn($s) => str_replace(' ', '', ucwords(str_replace(['-', '_', '.'], ' ', $s))),
+                explode('.', $tail)
+            );
+            $class = 'App\\Modules\\' . Strings::toPascalCase($module)
+                . '\\Resources\\Components\\Wire\\' . implode('\\', $parts);
+        } else {
+            $parts = array_map(
+                fn($s) => str_replace(' ', '', ucwords(str_replace(['-', '_', '.'], ' ', $s))),
+                explode('.', $name)
+            );
+            $class = 'App\\Components\\Wire\\' . implode('\\', $parts);
+        }
+
+        if (!class_exists($class)) {
+            throw new \RuntimeException("Wire component class not found: {$class}");
+        }
+
         return wire($class, $props, $componentId);
     }
 }

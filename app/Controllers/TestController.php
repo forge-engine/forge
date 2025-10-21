@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Events\TestPagevisitedEvent;
 use App\Modules\ForgeEvents\Exceptions\EventException;
 use App\Modules\ForgeEvents\Services\EventDispatcher;
+use App\Modules\ForgeMultiTenant\Attributes\TenantScope;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Http\CookieJar;
 use Forge\Core\Http\Response;
@@ -17,6 +18,7 @@ use Forge\Traits\ControllerHelper;
 use Forge\Traits\ResponseHelper;
 
 #[Service]
+#[TenantScope("central")]
 final class TestController
 {
     use ControllerHelper;

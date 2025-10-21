@@ -14,14 +14,14 @@ abstract class WireComponent
 
     abstract public function render(): string;
 
-    protected function view(string $path, array|object $data = [], bool $loadFromModule = false): string
-    {
-        $v = new View(Container::getInstance());
-        return $v->renderComponent($path, $data);
-    }
-
     #[Action]
     public function input(...$keys): void
     {
+    }
+
+    protected function view(string $path, array|object $data = [], bool $loadFromModule = false): string
+    {
+        $v = new View(Container::getInstance());
+        return $v->renderComponentView($path, $data);
     }
 }

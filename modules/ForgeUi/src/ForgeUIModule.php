@@ -27,6 +27,7 @@ use Forge\Core\Module\Attributes\Requires;
 final class ForgeUIModule
 {
     use OutputHelper;
+
     public function register(Container $container): void
     {
     }
