@@ -33,14 +33,16 @@ final class HomeController
 
     public function __construct(
         public readonly ForgeAuthService $forgeAuthService,
-        public readonly UserService $userService,
-    ) {}
+        public readonly UserService      $userService,
+    )
+    {
+    }
 
     #[Route("/")]
     public function index(): Response
     {
         Metrics::start("db_load_one_record_test");
-        $user = [];
+        $user = $this->userService->findUser(1);
         Metrics::stop("db_load_one_record_test");
 
         $data = [
@@ -70,7 +72,7 @@ final class HomeController
     #[Middleware("App\Modules\ForgeAuth\Middlewares\AuthMiddleware")]
     public function updateUser(Request $request, string $id): Response
     {
-        $id = (int) $id;
+        $id = (int)$id;
         $data = [
             "identifier" => $request->postData["identifier"],
             "email" => $request->postData["email"],
