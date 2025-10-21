@@ -24,7 +24,7 @@ use Forge\Traits\ControllerHelper;
 use Forge\Traits\SecurityHelper;
 
 #[Service]
-#[TenantScope('central')]
+#[TenantScope("central")]
 #[Middleware("web")]
 final class HomeController
 {
@@ -34,14 +34,13 @@ final class HomeController
     public function __construct(
         public readonly ForgeAuthService $forgeAuthService,
         public readonly UserService $userService,
-    ) {
-    }
+    ) {}
 
     #[Route("/")]
     public function index(): Response
     {
         Metrics::start("db_load_one_record_test");
-        $user = $this->userService->findUser(1);
+        $user = [];
         Metrics::stop("db_load_one_record_test");
 
         $data = [

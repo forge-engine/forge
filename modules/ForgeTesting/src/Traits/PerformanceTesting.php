@@ -4,15 +4,17 @@ namespace App\Modules\ForgeTesting\Traits;
 
 trait PerformanceTesting
 {
-    protected function assertMaxExecutionTime(float $maxSeconds, callable $test): void
-    {
+    protected function assertMaxExecutionTime(
+        float $maxSeconds,
+        callable $test,
+    ): void {
         $start = microtime(true);
         $test();
         $duration = microtime(true) - $start;
 
         $this->assertTrue(
             $duration <= $maxSeconds,
-            "Execution time exceeded: {$duration}s (max: {$maxSeconds}s)"
+            "Execution time exceeded: {$duration}s (max: {$maxSeconds}s)",
         );
     }
 
@@ -26,10 +28,10 @@ trait PerformanceTesting
         }
 
         return [
-            'avg' => array_sum($times) / count($times),
-            'min' => min($times),
-            'max' => max($times),
-            'total' => array_sum($times)
+            "avg" => array_sum($times) / count($times),
+            "min" => min($times),
+            "max" => max($times),
+            "total" => array_sum($times),
         ];
     }
 }

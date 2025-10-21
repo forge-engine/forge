@@ -9,7 +9,6 @@ use Forge\Core\Http\Request;
 use Forge\Core\Http\Response;
 use Forge\Core\Routing\Router;
 use Forge\Core\Services\TokenManager;
-use Forge\Core\View\View;
 
 trait HttpTesting
 {
@@ -95,7 +94,6 @@ trait HttpTesting
             cookies: [],
             query: $uriParts["query"] ?? null,
         );
-
 
         return Router::init(Container::getInstance())->dispatch($request);
     }

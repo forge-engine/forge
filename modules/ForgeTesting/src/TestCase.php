@@ -7,6 +7,7 @@ namespace App\Modules\ForgeTesting;
 use App\Modules\ForgeTesting\Attributes\AfterEach;
 use App\Modules\ForgeTesting\Attributes\BeforeEach;
 use App\Modules\ForgeTesting\Traits\Assertions;
+use App\Modules\ForgeTesting\Traits\CacheTesting;
 use App\Modules\ForgeTesting\Traits\DatabaseTesting;
 use App\Modules\ForgeTesting\Traits\HttpTesting;
 use App\Modules\ForgeTesting\Traits\PerformanceTesting;
@@ -18,6 +19,7 @@ abstract class TestCase
     use DatabaseTesting;
     use PerformanceTesting;
     use HttpTesting;
+    use CacheTesting;
 
     protected static ?\Forge\Core\Http\Kernel $kernel = null;
 
