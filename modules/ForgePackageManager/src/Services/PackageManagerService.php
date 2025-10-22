@@ -15,11 +15,12 @@ use Forge\Core\Module\Attributes\PostUninstall;
 use Forge\Core\Module\Attributes\Provides;
 use Forge\Core\Module\Attributes\Requires;
 use Forge\Traits\StringHelper;
+use ReflectionClass;
 use ReflectionException;
 use ZipArchive;
 
 #[Service]
-#[Provides(interface: PackageManagerInterface::class, version: '0.1.0')]
+#[Provides(interface: PackageManagerInterface::class, version: '0.1.6')]
 #[Requires()]
 final class PackageManagerService implements PackageManagerInterface
 {
@@ -49,18 +50,23 @@ final class PackageManagerService implements PackageManagerInterface
         $this->ensureModulesDirectoryExists();
     }
 
+    private function ensureCacheDirectoryExists(): void
+    {
+        if (!is_dir($this->cachePath)) {
+            mkdir($this->cachePath, 0755, true);
+        }
+    }
+
+    private function ensureModulesDirectoryExists(): void
+    {
+        if (!is_dir($this->modulesPath)) {
+            mkdir($this->modulesPath, 0755, true);
+        }
+    }
+
     public function getRegistries(): array
     {
         return $this->registries;
-    }
-
-    public function getDefaultRegistryDetails(): array
-    {
-        return [
-            'name' => self::OFFICIAL_REGISTRY_NAME,
-            'url' => self::OFFICIAL_REGISTRY_BASE_URL,
-            'branch' => self::OFFICIAL_REGISTRY_BRANCH
-        ];
     }
 
     public function installFromLock(): void
@@ -155,6 +161,18 @@ final class PackageManagerService implements PackageManagerInterface
         }
     }
 
+    private function readForgeLockJson(): array
+    {
+        $forgeLockJsonPath = BASE_PATH . '/forge-lock.json';
+        if (!file_exists($forgeLockJsonPath)) {
+            $defaultLockData = ['modules' => []];
+            file_put_contents($forgeLockJsonPath, json_encode($defaultLockData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+            return $defaultLockData;
+        }
+        $content = file_get_contents($forgeLockJsonPath);
+        return json_decode($content, true) ?? ['modules' => []];
+    }
+
     private function getRegistryByName(string $name): array
     {
         foreach ($this->registries as $registry) {
@@ -163,6 +181,247 @@ final class PackageManagerService implements PackageManagerInterface
             }
         }
         return $this->getDefaultRegistryDetails();
+    }
+
+    public function getDefaultRegistryDetails(): array
+    {
+        return [
+            'name' => self::OFFICIAL_REGISTRY_NAME,
+            'url' => self::OFFICIAL_REGISTRY_BASE_URL,
+            'branch' => self::OFFICIAL_REGISTRY_BRANCH
+        ];
+    }
+
+    private function generateModuleInstallFolderName(string $fullName): string
+    {
+        return Strings::toPascalCase($fullName);
+    }
+
+    private function getCachePath(): string
+    {
+        return $this->cachePath;
+    }
+
+    private function getModulesPath(): string
+    {
+        return $this->modulesPath;
+    }
+
+    private function installFrameworkModule(?string $version = null): void
+    {
+        $this->info("Installing Forge Engine Framework...");
+
+        $installScriptPath = BASE_PATH . '/install.php';
+        if (!file_exists($installScriptPath)) {
+            $this->error("Error: install.php script not found in project root.");
+            return;
+        }
+
+        $command = "php " . escapeshellarg($installScriptPath);
+        if ($version) {
+            $command .= " --version=" . escapeshellarg($version);
+        }
+
+        $this->info("Executing framework install script: {$command}");
+
+        $process = proc_open(
+            $command,
+            [
+                0 => ['pipe', 'r'],
+                1 => ['pipe', 'w'],
+                2 => ['pipe', 'w'],
+            ],
+            $pipes
+        );
+
+        if (is_resource($process)) {
+            fclose($pipes[0]);
+
+            $stdout = stream_get_contents($pipes[1]);
+            fclose($pipes[1]);
+
+            $stderr = stream_get_contents($pipes[2]);
+            fclose($pipes[2]);
+
+            $returnCode = proc_close($process);
+
+            echo $stdout;
+
+            if ($returnCode !== 0) {
+                $this->error("Framework install script failed with exit code: {$returnCode}");
+                if (!empty($stderr)) {
+                    $this->error("Install script error output:\n" . $stderr);
+                }
+            } else {
+                $this->success("Forge Framework installed successfully.");
+                if (!empty($stderr)) {
+                    $this->warning("Framework install script had warnings:\n" . $stderr);
+                }
+                $this->updateForgeJson(self::FRAMEWORK_MODULE_NAME, $version ?: 'latest');
+            }
+        } else {
+            $this->error("Failed to execute framework install script.");
+        }
+    }
+
+    private function updateForgeJson(string $moduleName, string $version): void
+    {
+        $forgeJsonPath = BASE_PATH . '/forge.json';
+        $forgeConfig = $this->readForgeJson();
+
+        if (!isset($forgeConfig['modules']['forge-engine/framework'])) {
+            $forgeConfig['modules']['forge-engine/framework'] = 'latest';
+        }
+
+        $forgeConfig['modules'][$moduleName] = $version;
+        $this->writeForgeJson($forgeConfig);
+    }
+
+    private function readForgeJson(): array
+    {
+        $forgeJsonPath = BASE_PATH . '/forge.json';
+        if (!file_exists($forgeJsonPath)) {
+            $defaultConfig = [
+                'name' => 'Forge Framework',
+                'engine' => [
+                    'name' => 'forge-engine',
+                    'version' => 'latest'
+                ],
+                'modules' => [
+
+                ],
+            ];
+            file_put_contents($forgeJsonPath, json_encode($defaultConfig, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+            return $defaultConfig;
+        }
+        $content = file_get_contents($forgeJsonPath);
+        return json_decode($content, true) ?? ['modules' => []];
+    }
+
+    private function writeForgeJson(array $data): void
+    {
+        $forgeJsonPath = BASE_PATH . '/forge.json';
+        file_put_contents($forgeJsonPath, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+    }
+
+    private function downloadFile(string $url, string $destination, ?string $token = null): bool|string
+    {
+        $context = null;
+        if ($token) {
+            $context = stream_context_create([
+                'http' => [
+                    'header' => "Authorization: token $token\r\n"
+                ]
+            ]);
+        }
+
+        $fileContent = @file_get_contents($url, false, $context);
+        if ($fileContent === false) {
+            return false;
+        }
+        if (file_put_contents($destination, $fileContent) !== false) {
+            $calculatedHash = hash_file('sha256', $destination);
+            return $calculatedHash;
+        }
+        return false;
+    }
+
+    private function extractModule(string $zipPath, string $destinationPath, string $sourcePathInZip): bool
+    {
+        $zip = new ZipArchive();
+        if ($zip->open($zipPath) === true) {
+            $this->removeDirectory($destinationPath);
+            if (!mkdir($destinationPath, 0755, true) && !is_dir($destinationPath)) {
+                $this->error("Failed to create module directory: {$destinationPath}");
+                return false;
+            }
+
+            $zip->extractTo($destinationPath);
+
+            $zip->close();
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private function removeDirectory(string $dir): bool
+    {
+        if (!is_dir($dir)) {
+            return true;
+        }
+        $files = array_diff(scandir($dir), ['.', '..']);
+        foreach ($files as $file) {
+            (is_dir("$dir/$file")) ? $this->removeDirectory("$dir/$file") : unlink("$dir/$file");
+        }
+        return rmdir($dir);
+    }
+
+    /**
+     * @throws ReflectionException
+     */
+    private function runPostInstallAttributes(string $moduleInstallPath, string $moduleName): void
+    {
+        $moduleSrc = glob($moduleInstallPath . '/**/*.php');
+        if (!$moduleSrc) {
+            $this->warning("No PHP files found in module {$moduleName}, skipping PostInstall scanning.");
+            return;
+        }
+
+        foreach ($moduleSrc as $file) {
+            require_once $file;
+        }
+
+        $foundModuleClass = false;
+
+        foreach (get_declared_classes() as $class) {
+            $ref = new ReflectionClass($class);
+            $moduleAttr = $ref->getAttributes(Module::class);
+
+            if (empty($moduleAttr)) {
+                continue;
+            }
+
+            $moduleInstance = $moduleAttr[0]->newInstance();
+
+            if ($moduleInstance->name === $moduleName) {
+                $foundModuleClass = true;
+                $postInstallAttrs = $ref->getAttributes(PostInstall::class);
+
+                if (empty($postInstallAttrs)) {
+                    $this->info("Module {$moduleName} has no PostInstall attributes defined.");
+                    return;
+                }
+
+                $this->info("Executing PostInstall commands for module {$moduleName}...");
+
+                foreach ($postInstallAttrs as $attr) {
+                    /** @var PostInstall $instance */
+                    $instance = $attr->newInstance();
+                    $args = implode(' ', $instance->args);
+                    $command = "php forge.php {$instance->command} {$args}";
+                    $this->info("Running: {$command}");
+
+                    exec($command, $output, $code);
+                    $this->line();
+
+                    if ($code !== 0) {
+                        $this->error("Command '{$command}' failed for module {$moduleName} (exit code {$code})");
+                        if (!empty($output)) {
+                            $this->error("Output:\n" . implode("\n", $output));
+                        }
+                    } else {
+                        $this->success("Command '{$command}' executed successfully.");
+                    }
+                }
+
+                return;
+            }
+        }
+
+        if (!$foundModuleClass) {
+            $this->warning("No #[Module] class found for '{$moduleName}', skipping PostInstall execution.");
+        }
     }
 
     /**
@@ -256,246 +515,6 @@ final class PackageManagerService implements PackageManagerInterface
             }
         }
         $this->success("Module {$moduleName} version {$versionToInstall} installed successfully.");
-    }
-
-    private function ensureCacheDirectoryExists(): void
-    {
-        if (!is_dir($this->cachePath)) {
-            mkdir($this->cachePath, 0755, true);
-        }
-    }
-
-    private function ensureModulesDirectoryExists(): void
-    {
-        if (!is_dir($this->modulesPath)) {
-            mkdir($this->modulesPath, 0755, true);
-        }
-    }
-
-    private function installFrameworkModule(?string $version = null): void
-    {
-        $this->info("Installing Forge Engine Framework...");
-
-        $installScriptPath = BASE_PATH . '/install.php';
-        if (!file_exists($installScriptPath)) {
-            $this->error("Error: install.php script not found in project root.");
-            return;
-        }
-
-        $command = "php " . escapeshellarg($installScriptPath);
-        if ($version) {
-            $command .= " --version=" . escapeshellarg($version);
-        }
-
-        $this->info("Executing framework install script: {$command}");
-
-        $process = proc_open(
-            $command,
-            [
-                0 => ['pipe', 'r'],
-                1 => ['pipe', 'w'],
-                2 => ['pipe', 'w'],
-            ],
-            $pipes
-        );
-
-        if (is_resource($process)) {
-            fclose($pipes[0]);
-
-            $stdout = stream_get_contents($pipes[1]);
-            fclose($pipes[1]);
-
-            $stderr = stream_get_contents($pipes[2]);
-            fclose($pipes[2]);
-
-            $returnCode = proc_close($process);
-
-            echo $stdout;
-
-            if ($returnCode !== 0) {
-                $this->error("Framework install script failed with exit code: {$returnCode}");
-                if (!empty($stderr)) {
-                    $this->error("Install script error output:\n" . $stderr);
-                }
-            } else {
-                $this->success("Forge Framework installed successfully.");
-                if (!empty($stderr)) {
-                    $this->warning("Framework install script had warnings:\n" . $stderr);
-                }
-                $this->updateForgeJson(self::FRAMEWORK_MODULE_NAME, $version ?: 'latest');
-            }
-        } else {
-            $this->error("Failed to execute framework install script.");
-        }
-    }
-
-    private function readForgeLockJson(): array
-    {
-        $forgeLockJsonPath = BASE_PATH . '/forge-lock.json';
-        if (!file_exists($forgeLockJsonPath)) {
-            $defaultLockData = ['modules' => []];
-            file_put_contents($forgeLockJsonPath, json_encode($defaultLockData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-            return $defaultLockData;
-        }
-        $content = file_get_contents($forgeLockJsonPath);
-        return json_decode($content, true) ?? ['modules' => []];
-    }
-
-    private function updateForgeJson(string $moduleName, string $version): void
-    {
-        $forgeJsonPath = BASE_PATH . '/forge.json';
-        $forgeConfig = $this->readForgeJson();
-
-        // Ensure framework is always present
-        if (!isset($forgeConfig['modules']['forge-engine/framework'])) {
-            $forgeConfig['modules']['forge-engine/framework'] = 'latest';
-        }
-
-        $forgeConfig['modules'][$moduleName] = $version;
-        $this->writeForgeJson($forgeConfig);
-    }
-
-    private function createForgeLockJson(string $moduleName, string $version, array $registryDetails, string $downloadUrl, string $integrityHash): void
-    {
-        $forgeLockJsonPath = BASE_PATH . '/forge-lock.json';
-        $lockData = $this->readForgeLockJson();
-
-        $lockData['modules'][$moduleName] = [
-            'version' => $version,
-            'registry' => $registryDetails['name'] ?? self::OFFICIAL_REGISTRY_NAME,
-            'url' => $downloadUrl,
-            'integrity' => $integrityHash,
-        ];
-
-        $this->writeForgeLockJson($lockData);
-    }
-
-    private function getCachePath(): string
-    {
-        return $this->cachePath;
-    }
-
-    private function getModulesPath(): string
-    {
-        return $this->modulesPath;
-    }
-
-    private function readForgeJson(): array
-    {
-        $forgeJsonPath = BASE_PATH . '/forge.json';
-        if (!file_exists($forgeJsonPath)) {
-            $defaultConfig = [
-                'name' => 'Forge Framework',
-                'engine' => [
-                    'name' => 'forge-engine',
-                    'version' => 'latest'
-                ],
-                'modules' => [
-
-                ],
-            ];
-            file_put_contents($forgeJsonPath, json_encode($defaultConfig, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-            return $defaultConfig;
-        }
-        $content = file_get_contents($forgeJsonPath);
-        return json_decode($content, true) ?? ['modules' => []];
-    }
-
-    private function writeForgeJson(array $data): void
-    {
-        $forgeJsonPath = BASE_PATH . '/forge.json';
-        file_put_contents($forgeJsonPath, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-    }
-
-    private function writeForgeLockJson(array $data): void
-    {
-        $forgeLockJsonPath = BASE_PATH . '/forge-lock.json';
-        file_put_contents($forgeLockJsonPath, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-    }
-
-    private function removeDirectory(string $dir): bool
-    {
-        if (!is_dir($dir)) {
-            return true;
-        }
-        $files = array_diff(scandir($dir), ['.', '..']);
-        foreach ($files as $file) {
-            (is_dir("$dir/$file")) ? $this->removeDirectory("$dir/$file") : unlink("$dir/$file");
-        }
-        return rmdir($dir);
-    }
-
-    private function generateModuleInstallFolderName(string $fullName): string
-    {
-        return Strings::toPascalCase($fullName);
-    }
-
-    public function removeModule(string $moduleName): void
-    {
-        if ($moduleName === self::FRAMEWORK_MODULE_NAME) {
-            $this->warning("Uninstalling 'forge-engine/framework' may cause critical system errors.");
-            $this->warning("Only proceed if you understand the risks. Most functionality will be disabled.");
-            $this->warning("It's highly recommended to reinstall the framework afterwards to restore functionality.");
-        }
-
-        if ($moduleName === self::PACKAGE_MANAGER_MODULE_NAME) {
-            $this->warning("Uninstalling 'forge-package-manager' will disable automatic module management.");
-            $this->warning("You will need to manually download and install modules until another package manager is installed.");
-            $this->warning("Consider installing another package manager or reinstalling forge-package-manager afterwards.");
-        }
-
-        $moduleInstallFolderName = $this->generateModuleInstallFolderName($moduleName);
-        $moduleInstallPath = $this->getModulesPath() . $moduleInstallFolderName;
-
-        if (!is_dir($moduleInstallPath)) {
-            $this->warning("Module '{$moduleName}' is not currently installed, or the installation folder is missing: {$moduleInstallPath}");
-            $this->warning("Skipping module removal.");
-            return;
-        }
-
-        try {
-            $this->runPostUninstallAttributes($moduleInstallPath, $this->toPascalCase($moduleName));
-        } catch (\ReflectionException $e) {
-            $this->warning("Failed to execute PostUninstall for {$moduleName}: " . $e->getMessage());
-        }
-
-        $this->info("Removing module {$moduleName}...");
-
-        if (!$this->removeDirectory($moduleInstallPath)) {
-            $this->error("Failed to delete module directory: {$moduleInstallPath}");
-            return;
-        }
-
-        $this->updateForgeJsonOnModuleRemoval($moduleName);
-        $this->updateForgeLockJsonOnModuleRemoval($moduleName);
-
-        $this->success("Module {$moduleName} removed successfully.");
-    }
-
-    private function updateForgeJsonOnModuleRemoval(string $moduleName): void
-    {
-        $forgeJsonPath = BASE_PATH . '/forge.json';
-        $forgeConfig = $this->readForgeJson();
-        if (isset($forgeConfig['modules'][$moduleName])) {
-            unset($forgeConfig['modules'][$moduleName]);
-            $this->writeForgeJson($forgeConfig);
-            $this->info("Removed '{$moduleName}' from forge.json.");
-        } else {
-            $this->warning("Module '{$moduleName}' not found in forge.json modules section. Skipping forge.json update.");
-        }
-    }
-
-    private function updateForgeLockJsonOnModuleRemoval(string $moduleName): void
-    {
-        $forgeLockJsonPath = BASE_PATH . '/forge-lock.json';
-        $lockData = $this->readForgeLockJson();
-        if (isset($lockData['modules'][$moduleName])) {
-            unset($lockData['modules'][$moduleName]);
-            $this->writeForgeLockJson($lockData);
-            $this->info("Removed '{$moduleName}' from forge-lock.json.");
-        } else {
-            $this->warning("Module '{$moduleName}' not found in forge-lock.json modules section. Skipping forge-lock.json update.");
-        }
     }
 
     public function getModuleInfo(?string $moduleName = null, ?string $version = null): ?array
@@ -594,7 +613,6 @@ final class PackageManagerService implements PackageManagerInterface
             return "https://raw.githubusercontent.com/{$matches['user']}/{$matches['repo']}/{$branch}";
         }
 
-        // Handle HTTPS format
         if (preg_match('#^https?://github\.com/(?<user>[^/]+)/(?<repo>[^/]+)#i', $registryUrl, $matches)) {
             return "https://raw.githubusercontent.com/{$matches['user']}/{$matches['repo']}/{$branch}";
         }
@@ -615,115 +633,67 @@ final class PackageManagerService implements PackageManagerInterface
         return $githubZipUrl;
     }
 
-    private function downloadFile(string $url, string $destination, ?string $token = null): bool|string
+    private function createForgeLockJson(string $moduleName, string $version, array $registryDetails, string $downloadUrl, string $integrityHash): void
     {
-        $context = null;
-        if ($token) {
-            $context = stream_context_create([
-                'http' => [
-                    'header' => "Authorization: token $token\r\n"
-                ]
-            ]);
-        }
+        $forgeLockJsonPath = BASE_PATH . '/forge-lock.json';
+        $lockData = $this->readForgeLockJson();
 
-        $fileContent = @file_get_contents($url, false, $context);
-        if ($fileContent === false) {
-            return false;
-        }
-        if (file_put_contents($destination, $fileContent) !== false) {
-            $calculatedHash = hash_file('sha256', $destination);
-            return $calculatedHash;
-        }
-        return false;
+        $lockData['modules'][$moduleName] = [
+            'version' => $version,
+            'registry' => $registryDetails['name'] ?? self::OFFICIAL_REGISTRY_NAME,
+            'url' => $downloadUrl,
+            'integrity' => $integrityHash,
+        ];
+
+        $this->writeForgeLockJson($lockData);
     }
 
-    private function extractModule(string $zipPath, string $destinationPath, string $sourcePathInZip): bool
+    private function writeForgeLockJson(array $data): void
     {
-        $zip = new ZipArchive();
-        if ($zip->open($zipPath) === true) {
-            $this->removeDirectory($destinationPath);
-            if (!mkdir($destinationPath, 0755, true) && !is_dir($destinationPath)) {
-                $this->error("Failed to create module directory: {$destinationPath}");
-                return false;
-            }
-
-            $zip->extractTo($destinationPath);
-
-            $zip->close();
-            return true;
-        } else {
-            return false;
-        }
+        $forgeLockJsonPath = BASE_PATH . '/forge-lock.json';
+        file_put_contents($forgeLockJsonPath, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
 
-    /**
-     * @throws ReflectionException
-     */
-    /**
-     * @throws ReflectionException
-     */
-    private function runPostInstallAttributes(string $moduleInstallPath, string $moduleName): void
+    public function removeModule(string $moduleName): void
     {
-        $moduleSrc = glob($moduleInstallPath . '/**/*.php');
-        if (!$moduleSrc) {
-            $this->warning("No PHP files found in module {$moduleName}, skipping PostInstall scanning.");
+        if ($moduleName === self::FRAMEWORK_MODULE_NAME) {
+            $this->warning("Uninstalling 'forge-engine/framework' may cause critical system errors.");
+            $this->warning("Only proceed if you understand the risks. Most functionality will be disabled.");
+            $this->warning("It's highly recommended to reinstall the framework afterwards to restore functionality.");
+        }
+
+        if ($moduleName === self::PACKAGE_MANAGER_MODULE_NAME) {
+            $this->warning("Uninstalling 'forge-package-manager' will disable automatic module management.");
+            $this->warning("You will need to manually download and install modules until another package manager is installed.");
+            $this->warning("Consider installing another package manager or reinstalling forge-package-manager afterwards.");
+        }
+
+        $moduleInstallFolderName = $this->generateModuleInstallFolderName($moduleName);
+        $moduleInstallPath = $this->getModulesPath() . $moduleInstallFolderName;
+
+        if (!is_dir($moduleInstallPath)) {
+            $this->warning("Module '{$moduleName}' is not currently installed, or the installation folder is missing: {$moduleInstallPath}");
+            $this->warning("Skipping module removal.");
             return;
         }
 
-        foreach ($moduleSrc as $file) {
-            require_once $file;
+        try {
+            $this->runPostUninstallAttributes($moduleInstallPath, $this->toPascalCase($moduleName));
+        } catch (\ReflectionException $e) {
+            $this->warning("Failed to execute PostUninstall for {$moduleName}: " . $e->getMessage());
         }
 
-        $foundModuleClass = false;
+        $this->info("Removing module {$moduleName}...");
 
-        foreach (get_declared_classes() as $class) {
-            $ref = new \ReflectionClass($class);
-            $moduleAttr = $ref->getAttributes(Module::class);
-
-            if (empty($moduleAttr)) {
-                continue;
-            }
-
-            $moduleInstance = $moduleAttr[0]->newInstance();
-
-            if ($moduleInstance->name === $moduleName) {
-                $foundModuleClass = true;
-                $postInstallAttrs = $ref->getAttributes(PostInstall::class);
-
-                if (empty($postInstallAttrs)) {
-                    $this->info("Module {$moduleName} has no PostInstall attributes defined.");
-                    return;
-                }
-
-                $this->info("Executing PostInstall commands for module {$moduleName}...");
-
-                foreach ($postInstallAttrs as $attr) {
-                    /** @var PostInstall $instance */
-                    $instance = $attr->newInstance();
-                    $args = implode(' ', $instance->args);
-                    $command = "php forge.php {$instance->command} {$args}";
-                    $this->info("Running: {$command}");
-
-                    exec($command, $output, $code);
-                    $this->line();
-
-                    if ($code !== 0) {
-                        $this->error("Command '{$command}' failed for module {$moduleName} (exit code {$code})");
-                        if (!empty($output)) {
-                            $this->error("Output:\n" . implode("\n", $output));
-                        }
-                    } else {
-                        $this->success("Command '{$command}' executed successfully.");
-                    }
-                }
-
-                return;
-            }
+        if (!$this->removeDirectory($moduleInstallPath)) {
+            $this->error("Failed to delete module directory: {$moduleInstallPath}");
+            return;
         }
 
-        if (!$foundModuleClass) {
-            $this->warning("No #[Module] class found for '{$moduleName}', skipping PostInstall execution.");
-        }
+        $this->updateForgeJsonOnModuleRemoval($moduleName);
+        $this->updateForgeLockJsonOnModuleRemoval($moduleName);
+
+        $this->success("Module {$moduleName} removed successfully.");
     }
 
     /**
@@ -746,8 +716,8 @@ final class PackageManagerService implements PackageManagerInterface
         $foundModuleClass = false;
 
         foreach (get_declared_classes() as $class) {
-            $ref = new \ReflectionClass($class);
-            $moduleAttr = $ref->getAttributes(\Forge\Core\Module\Attributes\Module::class);
+            $ref = new ReflectionClass($class);
+            $moduleAttr = $ref->getAttributes(Module::class);
 
             if (empty($moduleAttr)) {
                 continue;
@@ -793,5 +763,47 @@ final class PackageManagerService implements PackageManagerInterface
         if (!$foundModuleClass) {
             $this->warning("No #[Module] class found for '{$moduleName}', skipping PostUninstall execution.");
         }
+    }
+    
+    private function updateForgeJsonOnModuleRemoval(string $moduleName): void
+    {
+        $forgeJsonPath = BASE_PATH . '/forge.json';
+        $forgeConfig = $this->readForgeJson();
+        if (isset($forgeConfig['modules'][$moduleName])) {
+            unset($forgeConfig['modules'][$moduleName]);
+            $this->writeForgeJson($forgeConfig);
+            $this->info("Removed '{$moduleName}' from forge.json.");
+        } else {
+            $this->warning("Module '{$moduleName}' not found in forge.json modules section. Skipping forge.json update.");
+        }
+    }
+
+    private function updateForgeLockJsonOnModuleRemoval(string $moduleName): void
+    {
+        $forgeLockJsonPath = BASE_PATH . '/forge-lock.json';
+        $lockData = $this->readForgeLockJson();
+        if (isset($lockData['modules'][$moduleName])) {
+            unset($lockData['modules'][$moduleName]);
+            $this->writeForgeLockJson($lockData);
+            $this->info("Removed '{$moduleName}' from forge-lock.json.");
+        } else {
+            $this->warning("Module '{$moduleName}' not found in forge-lock.json modules section. Skipping forge-lock.json update.");
+        }
+    }
+
+    public function moduleHasMigrations(string $module): bool
+    {
+        return is_dir(BASE_PATH . "/modules/{$module}/src/Database/Migrations");
+    }
+
+    public function moduleHasSeeders(string $module): bool
+    {
+        return is_dir(BASE_PATH . "/modules/{$module}/src/Database/Seeders");
+    }
+
+    public function moduleHasAssets(string $module): bool
+    {
+        return is_dir(BASE_PATH . "/modules/{$module}/src/Resources/assets") ||
+            is_dir(BASE_PATH . "/public/modules/{$module}");
     }
 }
