@@ -23,17 +23,16 @@ use const pcov\version;
 #[
     Module(
         name: "ForgeWire",
-        version: "1.0.7",
+        version: "1.0.9",
         description: "A lightway livewire like module for forge",
         order: 99,
     ),
 ]
 #[Service]
-#[Provides(ForgeWireModule::class, version: '0.1.8')]
 #[Compatibility(framework: ">=0.1.0", php: ">=8.3")]
 #[Repository(type: "git", url: "https://github.com/forge-engine/modules")]
-#[PostInstall(command: 'asset:link', args: ['--type=module', 'forge-wire'])]
-#[PostUninstall(command: 'asset:unlink', args: ['--type=module', 'forge-wire'])]
+#[PostInstall(command: 'asset:link', args: ['--type=module', '--module=forge-wire'])]
+#[PostUninstall(command: 'asset:unlink', args: ['--type=module', '--module=forge-wire'])]
 final class ForgeWireModule
 {
     use OutputHelper;

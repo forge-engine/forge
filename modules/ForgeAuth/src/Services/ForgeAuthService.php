@@ -17,15 +17,16 @@ use Forge\Core\Helpers\Flash;
 use Forge\Core\Session\SessionInterface;
 
 #[Service]
-#[Provides(interface: ForgeAuthInterface::class, version: '0.1.4')]
+#[Provides(interface: ForgeAuthInterface::class, version: '0.1.7')]
 #[Requires(SessionInterface::class, version: '>=0.1.0')]
 #[Requires(Config::class, version: '>=0.1.0')]
-class ForgeAuthService implements ForgeAuthInterface
+final class ForgeAuthService implements ForgeAuthInterface
 {
     public function __construct(
         private readonly Config           $config,
         private readonly SessionInterface $session
-    ) {
+    )
+    {
     }
 
     /**
@@ -71,21 +72,6 @@ class ForgeAuthService implements ForgeAuthInterface
         return $user;
     }
 
-    public function logout(): void
-    {
-        if (!$this->session->isStarted()) {
-            $this->session->start();
-        }
-
-        $this->session->clear();
-    }
-
-    public function user(): ?User
-    {
-        $userId = $this->session->get('user_id');
-        return $userId ? User::findById($userId) : null;
-    }
-
     /**
      * @throws LoginException
      */
@@ -114,5 +100,20 @@ class ForgeAuthService implements ForgeAuthInterface
     {
         $this->session->remove('login_attempts');
         $this->session->remove('last_login_attempt');
+    }
+
+    public function logout(): void
+    {
+        if (!$this->session->isStarted()) {
+            $this->session->start();
+        }
+
+        $this->session->clear();
+    }
+
+    public function user(): ?User
+    {
+        $userId = $this->session->get('user_id');
+        return $userId ? User::findById($userId) : null;
     }
 }

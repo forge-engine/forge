@@ -14,11 +14,11 @@ use Throwable;
 #[Cli(
     command: 'package:install-module',
     description: 'Install a module from the registry',
-    usage: 'package:install-module <module-name[@version]> [--force]',
+    usage: 'package:install-module --module=<module-name[@version]> [--force]',
     examples: [
-        'package:install-module my-module',
-        'package:install-module my-module@1.2.0',
-        'package:install-module my-module --force'
+        'package:install-module --module=my-module',
+        'package:install-module --module=my-module@1.2.0',
+        'package:install-module --module=my-module --force'
     ]
 )]
 final class InstallModuleCommand extends Command

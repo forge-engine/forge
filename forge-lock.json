@@ -47,6 +47,12 @@
             "registry": "forge-engine-modules",
             "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-multi-tenant/0.1.4/0.1.4.zip",
             "integrity": "e021e24f8b5ae6475a5c7bb01db2a87ae960fe66e8b5fcb8bb36e7913457a505"
+        },
+        "forge-welcome": {
+            "version": "0.1.4",
+            "registry": "forge-engine-modules",
+            "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-welcome/0.1.4/0.1.4.zip",
+            "integrity": "7c03c73a9b200cf9f00d0ad6f4a77e33d527e3953bf63c364419b8f1e3e69053"
         }
     }
 }

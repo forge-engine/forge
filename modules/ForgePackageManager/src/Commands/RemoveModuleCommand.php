@@ -14,9 +14,9 @@ use Throwable;
 #[Cli(
     command: 'package:remove-module',
     description: 'Remove an installed module',
-    usage: 'package:remove-module <module-name>',
+    usage: 'package:remove-module --module=<module-name>',
     examples: [
-        'package:remove-module my-module'
+        'package:remove-module --module=my-module'
     ]
 )]
 final class RemoveModuleCommand extends Command
