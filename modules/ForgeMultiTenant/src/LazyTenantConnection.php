@@ -3,7 +3,8 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeMultiTenant;
 
-use Forge\Core\Database\Connection;
+
+use App\Modules\ForgeDatabaseSQL\DB\Connection;
 use PDO;
 
 final class LazyTenantConnection extends Connection
@@ -16,14 +17,14 @@ final class LazyTenantConnection extends Connection
         $this->factory = $factory;
     }
 
-    private function real(): Connection
-    {
-        return $this->real ??= ($this->factory)();
-    }
-
     public function getPdo(): \PDO
     {
         return $this->real()->getPdo();
+    }
+
+    private function real(): Connection
+    {
+        return $this->real ??= ($this->factory)();
     }
 
     public function beginTransaction(): bool

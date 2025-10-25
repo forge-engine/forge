@@ -14,7 +14,7 @@ use App\Modules\ForgeEvents\Queues\FileQueue;
 use App\Modules\ForgeEvents\Queues\InMemoryQueue;
 use Forge\CLI\Traits\OutputHelper;
 use Forge\Core\Config\Environment;
-use Forge\Core\Database\QueryBuilder;
+use Forge\Core\Contracts\Database\QueryBuilderInterface;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\DI\Container;
 use Forge\Core\Module\Attributes\Provides;
@@ -22,9 +22,9 @@ use Forge\Exceptions\MissingServiceException;
 use Forge\Exceptions\ResolveParameterException;
 use Forge\Traits\TimeTrait;
 use ReflectionClass;
+use ReflectionException;
 use RuntimeException;
 use Throwable;
-use const pcov\version;
 
 #[Service(singleton: true)]
 #[Provides(EventDispatcher::class, version: '0.2.1')]
@@ -36,16 +36,16 @@ final class EventDispatcher
     private array $listeners = [];
     private Queueinterface $queue;
     private Container $container;
-    private QueryBuilder $queryBuilder;
+    private QueryBuilderInterface $queryBuilder;
 
     /**
-     * @throws \ReflectionException
+     * @throws ReflectionException
      * @throws MissingServiceException
      * @throws ResolveParameterException
      */
     public function __construct()
     {
-        $this->queryBuilder = Container::getInstance()->get(QueryBuilder::class);
+        $this->queryBuilder = Container::getInstance()->get(QueryBuilderInterface::class);
         $this->container = Container::getInstance();
         $this->queue = $this->driverSetup();
     }
@@ -108,7 +108,7 @@ final class EventDispatcher
         $payload = unserialize($job['payload']);
 
         $this->handleEvent($payload, $job['id'] ?? null);
-        return (string) $job['id'];
+        return (string)$job['id'];
     }
 
     private function handleEvent(array $payload, ?int $jobId): void
@@ -137,6 +137,13 @@ final class EventDispatcher
             } catch (Throwable $e) {
                 $this->handleFailure($payload, $e, $jobId);
             }
+        }
+    }
+
+    private function deleteJob(?int $jobId): void
+    {
+        if ($jobId !== null) {
+            $this->queryBuilder->reset()->setTable('queue_jobs')->where('id', '=', $jobId)->delete();
         }
     }
 
@@ -194,12 +201,5 @@ final class EventDispatcher
     public function release(int $jobId, ?int $delay = 0): void
     {
         $this->queue->release($jobId, $delay);
-    }
-
-    private function deleteJob(?int $jobId): void
-    {
-        if ($jobId !== null) {
-            $this->queryBuilder->reset()->setTable('queue_jobs')->where('id', '=', $jobId)->delete();
-        }
     }
 }

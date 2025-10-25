@@ -11,18 +11,18 @@ use App\Modules\ForgeTesting\Attributes\Incomplete;
 use App\Modules\ForgeTesting\Attributes\Skip;
 use App\Modules\ForgeTesting\Attributes\Test;
 use App\Modules\ForgeTesting\TestCase;
-use Forge\Core\Database\QueryBuilder;
+use Forge\Core\Contracts\Database\QueryBuilderInterface;
 use Forge\Core\DI\Container;
 
 #[Group('auth')]
 final class AuthenticationTest extends TestCase
 {
-    private QueryBuilder $queryBuilder;
+    private QueryBuilderInterface $queryBuilder;
     private array $exampleUser = [];
 
     public function __construct()
     {
-        $this->queryBuilder = Container::getInstance()->get(QueryBuilder::class);
+        $this->queryBuilder = Container::getInstance()->get(QueryBuilderInterface::class);
         $this->exampleUser = [
             'identifier' => 'example',
             'email' => 'test@example.com',
@@ -101,19 +101,19 @@ final class AuthenticationTest extends TestCase
     public function delete_user(): void
     {
         $user = $this->queryBuilder->reset()
-        ->where('email', '=', $this->exampleUser['email'])
-        ->setTable('users')->delete();
+            ->where('email', '=', $this->exampleUser['email'])
+            ->setTable('users')->delete();
         $this->assertTrue($user ? true : false);
     }
 
     public function userProvider(): array
     {
         $users = $this->queryBuilder
-        ->reset()
-        ->setTable('users')
-        ->select('*')
-        ->limit(10)
-        ->get(null);
+            ->reset()
+            ->setTable('users')
+            ->select('*')
+            ->limit(10)
+            ->get(null);
 
         $dataProvider = [];
         foreach ($users as $user) {

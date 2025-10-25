@@ -1,0 +1,11 @@
+{
+	"$schema": "./../../engine/Core/Schema/module-schema.json",
+	"name": "ForgeSqlOrm",
+	"version": "0.1.0",
+	"description": "SQL ORM Support (SQLite, MySQL, PostgreSQL)",
+	"type": "generic",
+	"order": 99,
+	"tags": [],
+	"author": "Forge Team",
+	"license: "MIT"
+}

@@ -3,10 +3,12 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeMultiTenant\Services;
 
+use App\Modules\ForgeDatabaseSQL\DB\Connection;
+use App\Modules\ForgeDatabaseSQL\DB\DatabaseConfig;
 use App\Modules\ForgeMultiTenant\DTO\Tenant;
 use App\Modules\ForgeMultiTenant\Enums\Strategy;
-use Forge\Core\Database\Connection;
-use Forge\Core\Database\DatabaseConfig;
+use Forge\Core\Contracts\Database\DatabaseConfigInterface;
+use Forge\Core\Contracts\Database\DatabaseConnectionInterface;
 use Forge\Core\DI\Container;
 use Forge\Exceptions\MissingServiceException;
 use Forge\Exceptions\ResolveParameterException;
@@ -27,7 +29,7 @@ final class TenantConnectionFactory
      * VIEW    → same PDO + run SET once
      * DB      → new PDO (cached per tenant)
      */
-    public function forTenant(Tenant $tenant): Connection
+    public function forTenant(Tenant $tenant): DatabaseConnectionInterface
     {
         if ($tenant->strategy === Strategy::COLUMN) {
             $key = 'tenant.conn.' . $tenant->id;
@@ -47,12 +49,12 @@ final class TenantConnectionFactory
      * @throws ReflectionException
      * @throws MissingServiceException
      */
-    private function build(Tenant $tenant): Connection
+    private function build(Tenant $tenant): DatabaseConnectionInterface
     {
         return match ($tenant->strategy) {
-            Strategy::COLUMN => $this->container->get(Connection::class),
-            Strategy::VIEW   => $this->viewConnection($tenant),
-            Strategy::DB     => $this->dbConnection($tenant),
+            Strategy::COLUMN => $this->container->get(DatabaseConnectionInterface::class),
+            Strategy::VIEW => $this->viewConnection($tenant),
+            Strategy::DB => $this->dbConnection($tenant),
         };
     }
 
@@ -75,7 +77,7 @@ final class TenantConnectionFactory
      */
     private function dbConnection(Tenant $tenant): Connection
     {
-        $base = $this->container->get(DatabaseConfig::class);
+        $base = $this->container->get(DatabaseConfigInterface::class);
 
         if ($base->driver === 'sqlite' && $tenant->dbName !== null) {
             $dbFile = BASE_PATH . '/storage/Database/' . $tenant->dbName . '.sqlite';
@@ -83,26 +85,26 @@ final class TenantConnectionFactory
                 touch($dbFile);
             }
             $config = new DatabaseConfig(
-                driver:   'sqlite',
+                driver: 'sqlite',
                 database: $dbFile,
-                host:     $base->host,
+                host: $base->host,
                 username: $base->username,
                 password: $base->password,
-                port:     $base->port,
-                charset:  $base->charset
+                port: $base->port,
+                charset: $base->charset
             );
             return new Connection($config);
         }
 
         // MySQL / PostgreSQL
         $config = new DatabaseConfig(
-            driver:   $base->driver,
+            driver: $base->driver,
             database: $tenant->dbName,
-            host:     $base->host,
+            host: $base->host,
             username: $base->username,
             password: $base->password,
-            port:     $base->port,
-            charset:  $base->charset
+            port: $base->port,
+            charset: $base->charset
         );
         return new Connection($config);
     }

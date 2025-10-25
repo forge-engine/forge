@@ -16,7 +16,7 @@ use Forge\CLI\Traits\OutputHelper;
 #[
     Module(
         name: "ForgeEvents",
-        version: "0.2.2",
+        version: "0.2.3",
         description: "An Event Queue system by forge",
         order: 99,
     ),
@@ -28,5 +28,7 @@ final class ForgeEventsModule
 {
     use OutputHelper;
 
-    public function register(Container $container): void {}
+    public function register(Container $container): void
+    {
+    }
 }

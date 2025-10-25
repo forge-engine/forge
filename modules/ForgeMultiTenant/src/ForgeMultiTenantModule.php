@@ -12,13 +12,10 @@ use Forge\Core\Module\Attributes\PostInstall;
 use Forge\Core\Module\Attributes\PostUninstall;
 use Forge\Core\Module\Attributes\Repository;
 use Forge\Core\DI\Attributes\Service;
-use Forge\Core\Module\Attributes\LifecycleHook;
-use Forge\Core\Module\LifecycleHookName;
 use Forge\CLI\Traits\OutputHelper;
 use App\Modules\ForgeMultiTenant\Services\TenantManager;
-use ReflectionException;
 
-#[Module(name: 'ForgeMultiTenant', version: '0.1.6', description: 'A Multi Tenant Module by Forge', order: 0)]
+#[Module(name: 'ForgeMultiTenant', version: '0.1.7', description: 'A Multi Tenant Module by Forge', order: 2)]
 #[Service]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
@@ -42,11 +39,4 @@ final class ForgeMultiTenantModule
             return new TenantManager($container);
         });
     }
-
-    #[LifecycleHook(hook: LifecycleHookName::AFTER_MODULE_REGISTER)]
-    public function onAfterModuleRegister(): void
-    {
-
-    }
-
 }

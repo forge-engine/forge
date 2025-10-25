@@ -1,7 +1,6 @@
 <?php
-use App\Dto\UserDto;
-use Forge\Core\View\Component;
-use Forge\Core\View\View;
+
+use App\Modules\ForgeAuth\Dto\UserDto;
 
 /**
  * @var string $title
@@ -9,13 +8,12 @@ use Forge\Core\View\View;
  * @var UserDto $user
  */
 
-View::layout(name: "main", loadFromModule: false);
+layout(name: "main");
 ?>
 <section class="container">
     <h2>Login Administration</h2>
 
-    <?= Component::render(name: "forge-ui:flash-message", loadFromModule: true)?>
-
+    <?= component(name: "ForgeUi:Ui/FlashMessage", fromModule: true) ?>
     <section>
         <form action="" method="POST" class="form">
             <?= csrf_input() ?>
@@ -24,5 +22,4 @@ View::layout(name: "main", loadFromModule: false);
             <button class="button mt-sm" type="submit">Login</button>
         </form>
     </section>
-
-    </div>
+</section>

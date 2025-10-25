@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-use Forge\Core\Database\Attributes\GroupMigration;
-use Forge\Core\Database\Migrations\Migration;
+
+use App\Modules\ForgeDatabaseSQL\DB\Attributes\GroupMigration;
+use App\Modules\ForgeDatabaseSQL\DB\Migrations\Migration;
 
 #[GroupMigration(name: 'storage')]
 class CreateStorageTable extends Migration
@@ -24,10 +25,10 @@ class CreateStorageTable extends Migration
                     'created_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
                     'updated_at' => 'TIMESTAMP NULL'
                 ],
-                // TODO: migrate to new migration version
-                // [
-                //     'CONSTRAINT fk_storage_bucket_id FOREIGN KEY (bucket_id) REFERENCES buckets(id) ON DELETE CASCADE'
-                // ]
+            // TODO: migrate to new migration version
+            // [
+            //     'CONSTRAINT fk_storage_bucket_id FOREIGN KEY (bucket_id) REFERENCES buckets(id) ON DELETE CASCADE'
+            // ]
             );
         $this->execute($this->queryBuilder->getSql());
         $this->execute("CREATE UNIQUE INDEX idx_storage_path ON storage(path);");

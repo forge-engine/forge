@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
-use App\Models\Post;
+use App\Modules\ForgeAuth\Models\Profile;
+use App\Modules\ForgeAuth\Models\User;
 use App\Modules\ForgeAuth\Services\ForgeAuthService;
 use App\Modules\ForgeAuth\Validation\ForgeAuthValidate;
 use App\Modules\ForgeMultiTenant\Attributes\TenantScope;
+use App\Modules\ForgeSqlOrm\ORM\QueryBuilder;
 use App\Services\UserService;
-use Exception;
 use Forge\Core\Debug\Metrics;
 use Forge\Core\DI\Attributes\Service;
-use Forge\Core\Helpers\Debuger;
 use Forge\Core\Helpers\Flash;
 use Forge\Core\Helpers\Redirect;
 use Forge\Core\Http\Attributes\Middleware;
@@ -34,6 +34,7 @@ final class HomeController
     public function __construct(
         public readonly ForgeAuthService $forgeAuthService,
         public readonly UserService      $userService,
+        public readonly QueryBuilder     $builder
     )
     {
     }
@@ -42,7 +43,21 @@ final class HomeController
     public function index(): Response
     {
         Metrics::start("db_load_one_record_test");
-        $user = $this->userService->findUser(1);
+        $user = User::with('profiles')->id(1)->first();
+
+//        $jhon = new User();
+//        $jhon->email = 'test@example.com';
+//        $jhon->password = password_hash('test', PASSWORD_DEFAULT);
+//        $jhon->status = 'active';
+//        $jhon->identifier = 'test';
+//        $jhon->metadata = [
+//            "notifications" => [
+//                "email" => true,
+//                "mentions" => false
+//            ]
+//        ];
+//        $jhon->save();
+        //dd($user);
         Metrics::stop("db_load_one_record_test");
 
         $data = [

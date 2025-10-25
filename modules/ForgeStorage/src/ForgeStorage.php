@@ -18,7 +18,7 @@ use Forge\Core\Module\Attributes\Repository;
 
 #[Module(name: 'ForgeStorage', description: 'A Forge Storage Solution by forge team.')]
 #[Service]
-#[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
+#[Compatibility(framework: '>=0.1.2', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
 #[ConfigDefaults(defaults: [
     'forge_storage' => [

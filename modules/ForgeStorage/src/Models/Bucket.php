@@ -4,25 +4,22 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeStorage\Models;
 
-use Forge\Core\Database\Table;
-use Forge\Core\Database\Column;
-use Forge\Core\Database\Model;
+use App\Modules\ForgeSqlOrm\ORM\Attributes\Column;
+use App\Modules\ForgeSqlOrm\ORM\Attributes\Table;
+use App\Modules\ForgeSqlOrm\ORM\Model;
+use App\Modules\ForgeSqlOrm\ORM\Values\Cast;
+use App\Modules\ForgeSqlOrm\Traits\HasMetaData;
+use App\Modules\ForgeSqlOrm\Traits\HasTimeStamps;
 
 #[Table("buckets")]
 final class Bucket extends Model
 {
-    #[Column("varchar(36)", primary: true)]
+    use HasTimeStamps;
+    use HasMetaData;
+    
+    #[Column(primary: true, cast: Cast::STRING)]
     public string $id;
 
-    #[Column("varchar(255)")]
+    #[Column(cast: Cast::STRING)]
     public string $name;
-
-    #[Column("timestamp", nullable: true)]
-    public ?string $created_at = null;
-
-    #[Column("timestamp", nullable: true)]
-    public ?string $updated_at = null;
-
-    protected bool $softDelete = false;
-    protected array $hidden = [];
 }

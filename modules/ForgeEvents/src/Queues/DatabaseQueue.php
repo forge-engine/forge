@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\ForgeEvents\Queues;
 
 use App\Modules\ForgeEvents\Contracts\QueueInterface;
-use Forge\Core\Database\QueryBuilder;
+use Forge\Core\Contracts\Database\QueryBuilderInterface;
 use Forge\Core\DI\Attributes\Service;
 use PDO;
 
@@ -14,7 +14,7 @@ class DatabaseQueue implements QueueInterface
 {
     private string $queueName = 'default';
 
-    public function __construct(private QueryBuilder $queryBuilder)
+    public function __construct(private readonly QueryBuilderInterface $queryBuilder)
     {
     }
 
@@ -29,7 +29,7 @@ class DatabaseQueue implements QueueInterface
         $processAt = null;
 
         if ($delay > 0) {
-            $delayInSeconds = (int) ($delay / 1000);
+            $delayInSeconds = (int)($delay / 1000);
             $processAtTimestamp = time() + $delayInSeconds;
             $processAt = date('Y-m-d H:i:s', $processAtTimestamp);
         }
@@ -72,8 +72,8 @@ class DatabaseQueue implements QueueInterface
                 $stmt = $this->queryBuilder->getConnection()->getPdo()->prepare($sql);
                 $stmt->execute([
                     ':reserved' => $now,
-                    ':queue'    => $queue,
-                    ':now'      => $now,
+                    ':queue' => $queue,
+                    ':now' => $now,
                 ]);
                 $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -123,18 +123,18 @@ class DatabaseQueue implements QueueInterface
 
         $processAt = null;
         if ($delay > 0) {
-            $delayInSeconds = (int) ($delay / 100);
+            $delayInSeconds = (int)($delay / 100);
             $processAtTimestamp = time() + $delayInSeconds;
             $processAt = date('Y-m-d H:i:s', $processAtTimestamp);
         }
 
         $this->queryBuilder->reset()->setTable('queue_jobs')
-        ->where('id', '=', $jobId)
-        ->update([
-            'reserved_at' => null,
-            'process_at' => $processAt,
-            'attempts' => $attempts,
-        ]);
+            ->where('id', '=', $jobId)
+            ->update([
+                'reserved_at' => null,
+                'process_at' => $processAt,
+                'attempts' => $attempts,
+            ]);
     }
 
     public function getNextJobDelay(string $queue = 'default'): ?float
@@ -164,12 +164,6 @@ class DatabaseQueue implements QueueInterface
         return $delay > 0 ? (float)$delay : 0;
     }
 
-
-    public function delete(int $jobId): void
-    {
-        $this->queryBuilder->setTable('queue_jobs')->where('id', '=', $jobId)->delete();
-    }
-
     public function count(): int
     {
         return $this->queryBuilder->setTable('queue_jobs')->where('queue', '=', $this->queueName)->count();
@@ -178,6 +172,11 @@ class DatabaseQueue implements QueueInterface
     public function clear(): void
     {
         $this->queryBuilder->setTable('queue_jobs')->where('queue', '=', $this->queueName)->delete();
+    }
+
+    public function delete(int $jobId): void
+    {
+        $this->queryBuilder->setTable('queue_jobs')->where('id', '=', $jobId)->delete();
     }
 
     protected function markJobAsReserved(int $jobId): void

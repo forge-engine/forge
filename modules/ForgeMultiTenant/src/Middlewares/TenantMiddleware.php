@@ -5,8 +5,9 @@ namespace App\Modules\ForgeMultiTenant\Middlewares;
 
 use App\Modules\ForgeMultiTenant\Services\CentralDomain;
 use App\Modules\ForgeMultiTenant\Services\TenantConnectionFactory;
-use Forge\Core\Database\Connection;
-use Forge\Core\Database\QueryBuilder;
+use App\Modules\ForgeSqlOrm\ORM\QueryBuilder;
+use Forge\Core\Contracts\Database\DatabaseConnectionInterface;
+use Forge\Core\Contracts\Database\QueryBuilderInterface;
 use Forge\Core\DI\Container;
 use Forge\Core\Http\Middleware;
 use Forge\Core\Http\Request;
@@ -19,9 +20,12 @@ use PDO;
 use ReflectionException;
 
 #[RegisterMiddleware(group: "web", order: 1, allowDuplicate: false, overrideClass: null, enabled: true)]
-final class TenantMiddleware extends Middleware {
+final class TenantMiddleware extends Middleware
+{
 
-    public function __construct(private readonly TenantManager $tenantManager) {}
+    public function __construct(private readonly TenantManager $tenantManager)
+    {
+    }
 
     /**
      * @throws ReflectionException
@@ -31,7 +35,7 @@ final class TenantMiddleware extends Middleware {
     public function handle(Request $request, callable $next): Response
     {
         $rawHost = $request->getHeader('Host') ?? $request->serverParams['HTTP_HOST'] ?? '';
-        $host    = CentralDomain::stripPort($rawHost);
+        $host = CentralDomain::stripPort($rawHost);
 
         $tenant = $this->tenantManager->resolveByDomain($host) ?? null;
 
@@ -41,9 +45,9 @@ final class TenantMiddleware extends Middleware {
             $container = Container::getInstance();
             $newConn = $container->get(TenantConnectionFactory::class)->forTenant($tenant);
 
-            $container->setInstance(Connection::class, $newConn);
+            $container->setInstance(DatabaseConnectionInterface::class, $newConn);
             $container->setInstance(PDO::class, $newConn->getPdo());
-            $container->setInstance(QueryBuilder::class, new QueryBuilder($newConn));
+            $container->setInstance(QueryBuilderInterface::class, new QueryBuilder($newConn));
         }
 
         return $next($request);

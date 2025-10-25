@@ -5,7 +5,7 @@ namespace App\Modules\ForgeMultiTenant\Services;
 
 use App\Modules\ForgeMultiTenant\DTO\Tenant;
 use App\Modules\ForgeMultiTenant\Enums\Strategy;
-use Forge\Core\Database\QueryBuilder;
+use Forge\Core\Contracts\Database\QueryBuilderInterface;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\DI\Container;
 use Forge\Core\Module\Attributes\Provides;
@@ -15,10 +15,13 @@ use ReflectionException;
 use RuntimeException;
 
 #[Service]
-final class TenantManager  {
-    public function __construct(private readonly Container $container) {}
-
+final class TenantManager
+{
     private ?Tenant $current = null;
+
+    public function __construct(private readonly Container $container)
+    {
+    }
 
     /**
      * @throws ReflectionException
@@ -59,14 +62,26 @@ final class TenantManager  {
      */
     private function fetchFromDb(): array
     {
-        $rows = $this->container->get(QueryBuilder::class)
+        $rows = $this->container->get(QueryBuilderInterface::class)
             ->setTable('tenants')
             ->get();
-        $out  = [];
+        $out = [];
         foreach ($rows as $row) {
             $out[$row['id']] = $row;
         }
         return $out;
+    }
+
+    private function arrayToDto(array $row): Tenant
+    {
+        return new Tenant(
+            id: $row['id'],
+            domain: $row['domain'],
+            subdomain: $row['subdomain'] ?? null,
+            strategy: Strategy::from($row['strategy'] ?? 'column'),
+            dbName: $row['db_name'] ?? null,
+            connection: $row['connection'] ?? null
+        );
     }
 
     public function current(): ?Tenant
@@ -88,9 +103,8 @@ final class TenantManager  {
         } catch (MissingServiceException|ResolveParameterException|ReflectionException $e) {
 
         }
-       return [];
+        return [];
     }
-
 
     /** @throws RuntimeException if not found */
     public function find(string $id): Tenant
@@ -104,17 +118,5 @@ final class TenantManager  {
             throw new RuntimeException("Tenant [$id] not found.");
         }
         return $this->arrayToDto($rows[$id]);
-    }
-
-    private function arrayToDto(array $row): Tenant
-    {
-        return new Tenant(
-            id:        $row['id'],
-            domain:    $row['domain'],
-            subdomain: $row['subdomain'] ?? null,
-            strategy:  Strategy::from($row['strategy'] ?? 'column'),
-            dbName:    $row['db_name']   ?? null,
-            connection:$row['connection']?? null
-        );
     }
 }

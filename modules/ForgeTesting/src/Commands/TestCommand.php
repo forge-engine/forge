@@ -55,7 +55,7 @@ final class TestCommand extends Command
     )]
     private ?string $group = null;
 
-    public function __construct(private TestRunnerService $testRunnerService)
+    public function __construct(private readonly TestRunnerService $testRunnerService)
     {
     }
 

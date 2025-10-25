@@ -1,7 +1,7 @@
 {
   "$schema": "./../../engine/Core/Schema/module-schema.json",
   "name": "forge-storage",
-  "version": "1.0.1",
+  "version": "0.1.2",
   "description": "Multi-driver storage system with bucket management",
   "type": "storage",
   "order": 40,

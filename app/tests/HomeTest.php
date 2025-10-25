@@ -17,7 +17,6 @@ final class HomeTest extends TestCase
     #[Test("Home / route is working")]
     public function home_route_is_ok(): void
     {
-        /*** @var Response $response */
         $response = $this->get("/");
         $this->assertHttpStatus(200, $response);
     }

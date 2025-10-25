@@ -2,8 +2,9 @@
 
 declare(strict_types=1);
 
-use Forge\Core\Database\Attributes\GroupMigration;
-use Forge\Core\Database\Migrations\Migration;
+
+use App\Modules\ForgeDatabaseSQL\DB\Attributes\GroupMigration;
+use App\Modules\ForgeDatabaseSQL\DB\Migrations\Migration;
 
 #[GroupMigration(name: 'storage')]
 class CreateBucketsTable extends Migration

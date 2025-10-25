@@ -7,19 +7,21 @@ use App\Modules\ForgeMultiTenant\Attributes\TenantScope;
 use Forge\Traits\ResponseHelper;
 use Forge\Core\Http\{Middleware, Request, Response};
 use Forge\Core\Middleware\Attributes\RegisterMiddleware;
+use ReflectionException;
 
 #[RegisterMiddleware(group: 'web', order: 2)]
 final class ScopeMiddleware extends Middleware
 {
     use ResponseHelper;
+
     /**
-     * @throws \ReflectionException
+     * @throws ReflectionException
      */
     public function handle(Request $request, callable $next): Response
     {
-        $route   = $request->getAttribute('_route');
-        $attr    = $this->extractScope($route);
-        $tenant  = $request->getAttribute('tenant');
+        $route = $request->getAttribute('_route');
+        $attr = $this->extractScope($route);
+        $tenant = $request->getAttribute('tenant');
 
         $required = $attr?->value ?? 'both';
 
@@ -34,7 +36,7 @@ final class ScopeMiddleware extends Middleware
     }
 
     /**
-     * @throws \ReflectionException
+     * @throws ReflectionException
      */
     private function extractScope(array $route): ?object
     {

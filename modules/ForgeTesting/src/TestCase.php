@@ -12,16 +12,19 @@ use App\Modules\ForgeTesting\Traits\DatabaseTesting;
 use App\Modules\ForgeTesting\Traits\HttpTesting;
 use App\Modules\ForgeTesting\Traits\PerformanceTesting;
 use Forge\Core\Bootstrap\Bootstrap;
+use Forge\Core\Http\Kernel;
+use RuntimeException;
 
 abstract class TestCase
 {
     use Assertions;
+
     use DatabaseTesting;
     use PerformanceTesting;
     use HttpTesting;
     use CacheTesting;
 
-    protected static ?\Forge\Core\Http\Kernel $kernel = null;
+    protected static ?Kernel $kernel = null;
 
     #[BeforeEach]
     public function setup(): void
@@ -33,15 +36,17 @@ abstract class TestCase
     }
 
     #[AfterEach]
-    public function tearDown(): void {}
+    public function tearDown(): void
+    {
+    }
 
     protected function markTestIncomplete(string $message = ""): void
     {
-        throw new \RuntimeException("TEST_INCOMPLETE: $message");
+        throw new RuntimeException("TEST_INCOMPLETE: $message");
     }
 
     protected function markTestSkipped(string $message = ""): void
     {
-        throw new \RuntimeException("TEST_SKIPPED: $message");
+        throw new RuntimeException("TEST_SKIPPED: $message");
     }
 }

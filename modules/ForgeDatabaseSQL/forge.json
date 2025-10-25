@@ -1,0 +1,10 @@
+{
+	"$schema": "./../../engine/Core/Schema/module-schema.json",
+	"name": "ForgeDatabaseSQL",
+	"version": "0.1.0",
+	"description": "SQL database support (SQLite, MySQL, PostgreSQL)",
+	"type": "database",
+	"order": 0,
+	"tags": [],
+	"author": "Forge Team",
+	"license: "MIT"

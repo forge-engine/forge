@@ -25,7 +25,7 @@ use Forge\Core\Module\Attributes\Provides;
 use Forge\Core\Module\LifecycleHookName;
 
 #[Service]
-#[Module(name: 'ForgeDebugBar', version: '0.1.3', description: 'Forge Debug Bar', order: 1)]
+#[Module(name: 'ForgeDebugBar', version: '0.1.3', description: 'Forge Debug Bar', order: 3)]
 #[Provides(DebugBar::class, version: '0.1.3')]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[ConfigDefaults(defaults: [

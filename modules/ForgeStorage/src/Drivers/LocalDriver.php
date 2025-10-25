@@ -19,7 +19,9 @@ class LocalDriver implements StorageDriverInterface
     private string $publicPath;
     private Environment $env;
 
-    public function __construct(private readonly TemporaryUrlRepository $temporaryUrlRepository, private readonly Config $config)
+    public function __construct(
+        private readonly TemporaryUrlRepository $temporaryUrlRepository,
+        private readonly Config                 $config)
     {
         $storageConfig = $this->config->get('forge_storage', []);
 
@@ -28,17 +30,22 @@ class LocalDriver implements StorageDriverInterface
         $this->env = Environment::getInstance();
     }
 
+    public function get(string $bucket, string $path)
+    {
+        return file_get_contents($this->getBucketPath($bucket) . '/' . $path);
+    }
+
+    private function getBucketPath(string $bucket): string
+    {
+        return "{$this->root}/{$bucket}";
+    }
+
     public function put(string $bucket, string $path, $contents, array $options = []): bool
     {
         $fullPath = $this->getBucketPath($bucket) . '/' . $path;
         $this->ensureDirectoryExists(dirname($fullPath));
 
         return file_put_contents($fullPath, $contents) !== false;
-    }
-
-    public function get(string $bucket, string $path)
-    {
-        return file_get_contents($this->getBucketPath($bucket) . '/' . $path);
     }
 
     public function delete(string $bucket, string $path): bool
@@ -58,6 +65,14 @@ class LocalDriver implements StorageDriverInterface
         return $bucketConfig['public']
             ? $this->publicPath . "/{$bucket}/{$path}"
             : "/storage/{$bucket}/{$path}";
+    }
+
+    private function getBucketConfig(string $bucket): array
+    {
+        $configFile = $this->getBucketPath($bucket) . '/.config';
+        return file_exists($configFile)
+            ? json_decode(file_get_contents($configFile), true)
+            : ['public' => false, 'expire' => null];
     }
 
     public function temporaryUrl(string $bucket, string $path, int $expires): string
@@ -81,7 +96,7 @@ class LocalDriver implements StorageDriverInterface
 
     public function listBuckets(): array
     {
-        return array_filter(scandir($this->root), fn ($dir) => !in_array($dir, ['.', '..']));
+        return array_filter(scandir($this->root), fn($dir) => !in_array($dir, ['.', '..']));
     }
 
     public function createBucket(string $name, array $config = []): bool
@@ -91,18 +106,5 @@ class LocalDriver implements StorageDriverInterface
             return mkdir($path, 0755, true);
         }
         return true;
-    }
-
-    private function getBucketPath(string $bucket): string
-    {
-        return "{$this->root}/{$bucket}";
-    }
-
-    private function getBucketConfig(string $bucket): array
-    {
-        $configFile = $this->getBucketPath($bucket) . '/.config';
-        return file_exists($configFile)
-            ? json_decode(file_get_contents($configFile), true)
-            : ['public' => false, 'expire' => null];
     }
 }

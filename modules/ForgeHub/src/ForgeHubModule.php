@@ -16,7 +16,7 @@ use Forge\Core\Module\Attributes\HubItem;
 use Forge\Core\Module\ForgeIcon;
 use Forge\Core\Security\PermissionsEnum;
 
-#[Module(name: 'ForgeHub', description: 'Administration Hub for Forge Framework', order: 1)]
+#[Module(name: 'ForgeHub', description: 'Administration Hub for Forge Framework', order: 6)]
 #[HubItem(label: 'CLI Command', route: '/hub/commands', icon: ForgeIcon::COG, order: 3, permissions: [PermissionsEnum::RUN_COMMAND, PermissionsEnum::VIEW_COMMAND])]
 #[HubItem(label: 'Logs', route: '/hub/logs', icon: ForgeIcon::LOG)]
 #[Service]
@@ -56,11 +56,11 @@ final class ForgeHubModule
                 /** @var NexusItem $instance */
                 $instance = $attribute->newInstance();
                 $newEntry = [
-                    'label'       => $instance->label,
-                    'route'       => $instance->route,
-                    'icon'        => $instance->icon?->value ?? null,
-                    'order'       => $instance->order,
-                    'permissions' => array_map(fn ($perm) => $perm->value, $instance->permissions),
+                    'label' => $instance->label,
+                    'route' => $instance->route,
+                    'icon' => $instance->icon?->value ?? null,
+                    'order' => $instance->order,
+                    'permissions' => array_map(fn($perm) => $perm->value, $instance->permissions),
                 ];
 
                 $existingEntryKey = array_search($newEntry['route'], array_column($existingEntries, 'route'));
@@ -81,7 +81,7 @@ final class ForgeHubModule
             }
         }
 
-        usort($menuEntries, fn ($a, $b) => $a['order'] <=> $b['order']);
+        usort($menuEntries, fn($a, $b) => $a['order'] <=> $b['order']);
 
         if ($hasChanges) {
             $output = "<?php\n\nreturn [\n";

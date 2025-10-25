@@ -5,59 +5,52 @@ declare(strict_types=1);
 namespace App\Modules\ForgeAuth\Models;
 
 use App\Modules\ForgeAuth\Dto\UserMetadataDto;
-use Forge\Core\Database\Table;
-use Forge\Core\Database\Column;
-use Forge\Core\Database\Model;
-use Forge\Traits\RepositoryTrait;
-use Forge\Traits\HasMetaData;
-use Forge\Traits\Hastimestamps;
-use Forge\Traits\Metadata;
-use Forge\Traits\SoftDeletes;
+use App\Modules\ForgeSqlOrm\ORM\CanLoadRelations;
+use App\Modules\ForgeSqlOrm\ORM\Values\Cast;
+use App\Modules\ForgeSqlOrm\ORM\Values\Relate;
+use App\Modules\ForgeSqlOrm\ORM\Values\Relation;
+use App\Modules\ForgeSqlOrm\ORM\Values\RelationKind;
+use App\Modules\ForgeSqlOrm\Traits\{HasTimeStamps};
+use App\Modules\ForgeSqlOrm\ORM\Attributes\{Table, Column};
+use App\Modules\ForgeSqlOrm\ORM\Model;
 
+/**
+ * @property-read Profile $profiles  Has-one relation to the user's profile.
+ */
 #[Table("users")]
 class User extends Model
 {
-    use Hastimestamps;
-    use SoftDeletes;
-    use HasMetaData;
-    use Metadata;
-    use RepositoryTrait;
+    use HasTimeStamps;
+    use CanLoadRelations;
 
-    protected array $hidden = ["password"];
-    protected bool $softDelete = true;
-
-    protected array $casts = [
-        'metadata' => 'json'
-    ];
-
-    #[Column("integer", primary: true)]
+    #[Column(primary: true, cast: Cast::INT)]
     public int $id;
 
-    #[Column("varchar(255)")]
+    #[Column(cast: Cast::STRING)]
     public string $status;
 
-    #[Column("varchar(255)")]
+    #[Column(cast: Cast::STRING)]
     public string $identifier;
 
-    #[Column("varchar(255)")]
+    #[Column(cast: Cast::STRING)]
     public string $email;
 
-    #[Column("varchar(255)")]
+    #[Column(cast: Cast::STRING)]
     public string $password;
 
-    /**
-     * Get the user Metada as a friendly DTO object
-     */
-    public function metadata(): UserMetadataDto
+    #[Column(cast: Cast::JSON)]
+    public ?UserMetadataDto $metadata;
+
+    #[Relate(RelationKind::HasOne, Profile::class, 'user_id')]
+    public function profiles(): Relation
     {
-        return new UserMetadataDto(...$this->metadata);
+        return self::describe(__FUNCTION__);
     }
 
-    /**
-     * Get the user profile relation
-     */
-    public function profile(): ?Profile
+    public function toArray(): array
     {
-        return Profile::findBy('user_id', $this->id);
+        $out = parent::toArray();
+        unset($out['password']);
+        return $out;
     }
 }
