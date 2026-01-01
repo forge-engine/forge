@@ -12,15 +12,15 @@ use ReflectionException;
 
 enum Cast: string
 {
-    case INT = 'int';
-    case FLOAT = 'float';
-    case BOOL = 'bool';
-    case STRING = 'string';
-    case JSON = 'json';
-    case DATE = 'date';
-    case DATETIME = 'datetime';
-    case TIMESTAMP = 'timestamp';
-    case ENUM = 'enum';
+    case INT = "int";
+    case FLOAT = "float";
+    case BOOL = "bool";
+    case STRING = "string";
+    case JSON = "json";
+    case DATE = "date";
+    case DATETIME = "datetime";
+    case TIMESTAMP = "timestamp";
+    case ENUM = "enum";
 }
 
 /**
@@ -39,14 +39,20 @@ function cast(mixed $value, Cast $type, ?string $dtoClass = null): mixed
         return null;
     }
 
-    return match ($trueType = $type) {
-        Cast::INT => (int)$value,
-        Cast::FLOAT => (float)$value,
-        Cast::BOOL => (bool)$value,
-        Cast::STRING => (string)$value,
+    return match (($trueType = $type)) {
+        Cast::INT => (int) $value,
+        Cast::FLOAT => (float) $value,
+        Cast::BOOL => filter_var(
+            $value,
+            FILTER_VALIDATE_BOOLEAN,
+            FILTER_NULL_ON_FAILURE,
+        ) ?? false,
+        Cast::STRING => (string) $value,
         Cast::JSON => is_string($value)
             ? ($dtoClass && is_subclass_of($dtoClass, BaseDto::class)
-                ? $dtoClass::from(json_decode($value, true, 512, JSON_THROW_ON_ERROR))
+                ? $dtoClass::from(
+                    json_decode($value, true, 512, JSON_THROW_ON_ERROR),
+                )
                 : json_decode($value, true, 512, JSON_THROW_ON_ERROR))
             : $value,
         Cast::ENUM => $dtoClass && is_subclass_of($dtoClass, BackedEnum::class)

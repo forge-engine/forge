@@ -14,9 +14,6 @@ use App\Modules\ForgeSqlOrm\Traits\{HasTimeStamps};
 use App\Modules\ForgeSqlOrm\ORM\Attributes\{Table, Column};
 use App\Modules\ForgeSqlOrm\ORM\Model;
 
-/**
- * @property-read Profile $profiles  Has-one relation to the user's profile.
- */
 #[Table("users")]
 class User extends Model
 {
@@ -41,8 +38,8 @@ class User extends Model
     #[Column(cast: Cast::JSON)]
     public ?UserMetadataDto $metadata;
 
-    #[Relate(RelationKind::HasOne, Profile::class, 'user_id')]
-    public function profiles(): Relation
+    #[Relate(RelationKind::HasOne, Profile::class, "user_id")]
+    public function profile(): Relation
     {
         return self::describe(__FUNCTION__);
     }
@@ -50,7 +47,7 @@ class User extends Model
     public function toArray(): array
     {
         $out = parent::toArray();
-        unset($out['password']);
+        unset($out["password"]);
         return $out;
     }
 }

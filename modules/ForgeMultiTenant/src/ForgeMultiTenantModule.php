@@ -15,7 +15,7 @@ use Forge\Core\DI\Attributes\Service;
 use Forge\CLI\Traits\OutputHelper;
 use App\Modules\ForgeMultiTenant\Services\TenantManager;
 
-#[Module(name: 'ForgeMultiTenant', version: '0.1.7', description: 'A Multi Tenant Module by Forge', order: 2)]
+#[Module(name: 'ForgeMultiTenant', version: '0.1.8', description: 'A Multi Tenant Module by Forge', order: 2)]
 #[Service]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]

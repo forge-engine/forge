@@ -14,7 +14,7 @@ layout(name: "main");
     <h2 class="text-2xl">Engine Status</h2>
     <ul>
         <li class="text-6xl">PHP Version <?= PHP_VERSION ?></li>
-        <li>Database Driver: <?= $_ENV["DB_DRIVER"] ?></li>
+        <li>Database Driver: <?= env("DB_DRIVER") ?></li>
     </ul>
     <h3>User information</h3>
     <pre>
@@ -22,7 +22,7 @@ layout(name: "main");
     </pre>
 
     <section>
-        <?= form_open('/users', 'POST', ['class' => 'form']) ?>
+        <?= form_open("/users", "POST", ["class" => "form"]) ?>
         <div class="grid grid--2 mb-sm">
             <input class="form--input" type="text" name="identifier" placeholder="Username" required>
             <input class="form--input" type="password" name="password" placeholder="Password" required>
@@ -32,7 +32,7 @@ layout(name: "main");
         <button class="button" type="submit">Create User</button>
         <?= form_close() ?>
         <?php if ($user): ?>
-            <?= form_open("/{$user->id}", 'PATCH', ['class' => 'form']) ?>
+            <?= form_open("/{$user->id}", "PATCH", ["class" => "form"]) ?>
             <input class="form--input" type="text" name="identifier" placeholder="Username"
                    value="<?= $user->identifier ?>" required>
             <input type="email" name="email" placeholder="Email" value="<?= $user->email ?>" required>

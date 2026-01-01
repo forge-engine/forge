@@ -14,7 +14,7 @@ use Forge\Traits\ControllerHelper;
 use Forge\Traits\SecurityHelper;
 
 #[Service]
-#[TenantScope('tenant')]
+#[TenantScope("tenant")]
 #[Middleware("web")]
 final class DashboardController
 {
@@ -23,6 +23,7 @@ final class DashboardController
 
     public function __construct(private readonly ForgeAuthService $authService)
     {
+        //
     }
 
     #[Route("/dashboard")]

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
-use App\Modules\ForgeAuth\Models\Profile;
 use App\Modules\ForgeAuth\Models\User;
 use App\Modules\ForgeAuth\Services\ForgeAuthService;
 use App\Modules\ForgeAuth\Validation\ForgeAuthValidate;
@@ -33,30 +32,30 @@ final class HomeController
 
     public function __construct(
         public readonly ForgeAuthService $forgeAuthService,
-        public readonly UserService      $userService,
-        public readonly QueryBuilder     $builder
-    )
-    {
+        public readonly UserService $userService,
+        public readonly QueryBuilder $builder,
+    ) {
+        //
     }
 
     #[Route("/")]
     public function index(): Response
     {
         Metrics::start("db_load_one_record_test");
-        $user = User::with('profiles')->id(1)->first();
+        $user = User::find(2);
 
-//        $jhon = new User();
-//        $jhon->email = 'test@example.com';
-//        $jhon->password = password_hash('test', PASSWORD_DEFAULT);
-//        $jhon->status = 'active';
-//        $jhon->identifier = 'test';
-//        $jhon->metadata = [
-//            "notifications" => [
-//                "email" => true,
-//                "mentions" => false
-//            ]
-//        ];
-//        $jhon->save();
+        //        $jhon = new User();
+        //        $jhon->email = 'test@example.com';
+        //        $jhon->password = password_hash('test', PASSWORD_DEFAULT);
+        //        $jhon->status = 'active';
+        //        $jhon->identifier = 'test';
+        //        $jhon->metadata = [
+        //            "notifications" => [
+        //                "email" => true,
+        //                "mentions" => false
+        //            ]
+        //        ];
+        //        $jhon->save();
         //dd($user);
         Metrics::stop("db_load_one_record_test");
 
@@ -87,7 +86,7 @@ final class HomeController
     #[Middleware("App\Modules\ForgeAuth\Middlewares\AuthMiddleware")]
     public function updateUser(Request $request, string $id): Response
     {
-        $id = (int)$id;
+        $id = (int) $id;
         $data = [
             "identifier" => $request->postData["identifier"],
             "email" => $request->postData["email"],

@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 use App\Modules\ForgeAuth\Models\User;
 use App\Modules\ForgeMultiTenant\Attributes\TenantScoped;
-use Forge\Core\Database\Attributes\Column;
-use Forge\Core\Database\Attributes\GroupMigration;
-use Forge\Core\Database\Attributes\Index;
-use Forge\Core\Database\Attributes\Relations\BelongsTo;
-use Forge\Core\Database\Attributes\Table;
-use Forge\Core\Database\Migrations\Migration;
-use \Forge\Core\Database\Enums\ColumnType;
+use App\Modules\ForgeDatabaseSQL\DB\Attributes\Column;
+use App\Modules\ForgeDatabaseSQL\DB\Attributes\GroupMigration;
+use App\Modules\ForgeDatabaseSQL\DB\Attributes\Index;
+use App\Modules\ForgeDatabaseSQL\DB\Attributes\Relations\BelongsTo;
+use App\Modules\ForgeDatabaseSQL\DB\Attributes\Table;
+use App\Modules\ForgeDatabaseSQL\DB\Migrations\Migration;
+use App\Modules\ForgeDatabaseSQL\DB\Enums\ColumnType;
 
 #[TenantScoped]
 #[GroupMigration('tenants')]

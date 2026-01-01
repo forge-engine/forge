@@ -7,6 +7,7 @@ namespace App\Modules\ForgeDatabaseSQL\DB;
 use Forge\Core\Config\Environment;
 use Forge\Core\Contracts\Database\DatabaseConfigInterface;
 use Forge\Core\Contracts\Database\DatabaseConnectionInterface;
+use App\Modules\ForgeDatabaseSQL\DB\Migrations\Migration;
 use Forge\Core\Debug\Metrics;
 use Forge\Core\DI\Container;
 

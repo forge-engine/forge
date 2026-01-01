@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeAuth\Models;
 
-
 use App\Modules\ForgeSqlOrm\ORM\Attributes\Column;
 use App\Modules\ForgeSqlOrm\ORM\Attributes\Table;
 use App\Modules\ForgeSqlOrm\ORM\Model;
@@ -46,5 +45,4 @@ class Profile extends Model
 
     #[Column(cast: Cast::STRING)]
     public ?string $email_confirmed;
-    
 }

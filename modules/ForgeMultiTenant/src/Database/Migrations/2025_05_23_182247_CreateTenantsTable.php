@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-use Forge\Core\Database\Attributes\Column;
-use Forge\Core\Database\Attributes\GroupMigration;
-use Forge\Core\Database\Attributes\Index;
-use Forge\Core\Database\Attributes\MetaData;
-use Forge\Core\Database\Attributes\SoftDelete;
-use Forge\Core\Database\Attributes\Table;
-use Forge\Core\Database\Attributes\Timestamps;
-use Forge\Core\Database\Enums\ColumnType;
-use Forge\Core\Database\Migrations\Migration;
+use App\Modules\ForgeDatabaseSQL\DB\Attributes\Column;
+use App\Modules\ForgeDatabaseSQL\DB\Attributes\GroupMigration;
+use App\Modules\ForgeDatabaseSQL\DB\Attributes\Index;
+use App\Modules\ForgeDatabaseSQL\DB\Attributes\MetaData;
+use App\Modules\ForgeDatabaseSQL\DB\Attributes\SoftDelete;
+use App\Modules\ForgeDatabaseSQL\DB\Attributes\Table;
+use App\Modules\ForgeDatabaseSQL\DB\Attributes\Timestamps;
+use App\Modules\ForgeDatabaseSQL\DB\Enums\ColumnType;
+use App\Modules\ForgeDatabaseSQL\DB\Migrations\Migration;
 
 #[GroupMigration('tenant')]
 #[Table(name: 'tenants')]
