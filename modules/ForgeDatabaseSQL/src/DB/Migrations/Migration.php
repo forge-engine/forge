@@ -15,30 +15,35 @@ use App\Modules\ForgeDatabaseSQL\DB\Attributes\Table;
 use App\Modules\ForgeDatabaseSQL\DB\Attributes\Timestamps;
 use App\Modules\ForgeDatabaseSQL\DB\Enums\ColumnType;
 use App\Modules\ForgeDatabaseSQL\DB\Schema\FormatterInterface;
-use App\Modules\ForgeSqlOrm\ORM\QueryBuilder;
 use Forge\Core\Contracts\Database\DatabaseConnectionInterface;
 use Forge\Core\Contracts\Database\QueryBuilderInterface;
-use Forge\Core\Database\Migrations\Migration as BaseMigration;
 use Forge\Core\Helpers\Strings;
 use PDOException;
 use ReflectionClass;
 
-abstract class Migration extends BaseMigration
+abstract class Migration
 {
     protected array $schema = [];
     protected array $indexes = [];
     protected array $relationships = [];
-    protected QueryBuilderInterface $queryBuilder;
+    protected ?QueryBuilderInterface $queryBuilder = null;
     private array $columnOrder = [];
 
     public function __construct(
         protected DatabaseConnectionInterface $pdo,
         protected FormatterInterface $formatter,
     ) {
-        $this->queryBuilder = new QueryBuilder($this->pdo);
+        if (class_exists(\App\Modules\ForgeSqlOrm\ORM\QueryBuilder::class)) {
+            $this->queryBuilder = new \App\Modules\ForgeSqlOrm\ORM\QueryBuilder($this->pdo);
+        }
         $this->formatter = $formatter;
-        $this->reflectSchema();
-        $this->reflectRelationships();
+        
+        $reflector = new ReflectionClass($this);
+        $tableAttributes = $reflector->getAttributes(Table::class);
+        if (!empty($tableAttributes)) {
+            $this->reflectSchema();
+            $this->reflectRelationships();
+        }
     }
 
     private function reflectSchema(): void
@@ -48,10 +53,11 @@ abstract class Migration extends BaseMigration
         $columnOrder = [];
 
         $tableAttributes = $reflector->getAttributes(Table::class);
-        if (!empty($tableAttributes)) {
-            $table = $tableAttributes[0]->newInstance();
-            $this->schema["table"] = $table->name;
+        if (empty($tableAttributes)) {
+            return;
         }
+        $table = $tableAttributes[0]->newInstance();
+        $this->schema["table"] = $table->name;
 
         foreach ($reflector->getProperties() as $property) {
             $columnAttributes = $property->getAttributes(Column::class);
@@ -259,7 +265,7 @@ abstract class Migration extends BaseMigration
 
     public function up(): void
     {
-        if (empty($this->schema)) {
+        if (empty($this->schema) || !isset($this->schema["table"])) {
             return;
         }
 
@@ -275,7 +281,11 @@ abstract class Migration extends BaseMigration
 
         $columnsSql = implode(",\n", $columnDefinitions);
 
-        $sql = "CREATE TABLE `{$this->schema["table"]}` (\n{$columnsSql}\n)";
+        // Use proper identifier quotes based on driver and add IF NOT EXISTS
+        $driver = $this->pdo->getDriver();
+        $identifierQuote = $this->getIdentifierQuote($driver);
+        $quotedTableName = $identifierQuote . $this->schema["table"] . $identifierQuote;
+        $sql = "CREATE TABLE IF NOT EXISTS {$quotedTableName} (\n{$columnsSql}\n)";
 
         if (!empty($this->indexes)) {
             foreach ($this->indexes as $index) {
@@ -297,11 +307,21 @@ abstract class Migration extends BaseMigration
             $this->formatter->skipForeignKeys = true;
         }
 
-        $this->queryBuilder->execute($sql);
+        $this->execute($sql);
     }
 
     protected function execute(string $sql): void
     {
+        if (empty(trim($sql))) {
+            throw new MigrationException(
+                "Migration " . static::class . " attempted to execute empty SQL. " .
+                "For raw migrations, ensure your SQL is properly built before calling execute(). " .
+                "The QueryBuilder's createTable() and getSql() methods are not implemented - " .
+                "build SQL strings manually instead.",
+                $sql,
+            );
+        }
+        
         try {
             $this->pdo->exec($sql);
         } catch (PDOException $e) {
@@ -314,15 +334,178 @@ abstract class Migration extends BaseMigration
 
     public function down(): void
     {
-        if (empty($this->schema)) {
+        if (empty($this->schema) || !isset($this->schema["table"])) {
             return;
         }
 
-        $sql = $this->queryBuilder
-            ->setTable($this->schema["table"])
-            ->dropTable($this->schema["table"]);
+        $sql = $this->dropTable($this->schema["table"]);
+        $this->execute($sql);
+    }
 
-        $this->queryBuilder->execute($sql);
+    /**
+     * Create a table with the given columns
+     * 
+     * @param string $tableName The name of the table
+     * @param array<string, string> $columns Array of column definitions (e.g., ['id' => 'INTEGER PRIMARY KEY AUTOINCREMENT'])
+     * @param bool $ifNotExists Whether to add IF NOT EXISTS clause
+     * @return string The generated SQL
+     */
+    public function createTable(string $tableName, array $columns, bool $ifNotExists = false): string
+    {
+        $driver = $this->pdo->getDriver();
+        return $this->buildCreateTableSql($tableName, $columns, $ifNotExists, $driver);
+    }
+
+    /**
+     * Drop a table
+     * 
+     * @param string $tableName The name of the table to drop
+     * @return string The generated SQL
+     */
+    public function dropTable(string $tableName): string
+    {
+        $driver = $this->pdo->getDriver();
+        return $this->buildDropTableSql($tableName, $driver);
+    }
+
+    /**
+     * Create an index on a table
+     * 
+     * @param string $tableName The name of the table
+     * @param string $indexName The name of the index
+     * @param array<string> $columns Array of column names
+     * @param bool $unique Whether the index is unique
+     * @return string The generated SQL
+     */
+    public function createIndex(string $tableName, string $indexName, array $columns, bool $unique = false): string
+    {
+        $driver = $this->pdo->getDriver();
+        $identifierQuote = $this->getIdentifierQuote($driver);
+        $quotedColumns = array_map(fn($col) => $identifierQuote . $col . $identifierQuote, $columns);
+        $quotedTableName = $identifierQuote . $tableName . $identifierQuote;
+        $quotedIndexName = $identifierQuote . $indexName . $identifierQuote;
+        
+        $uniqueClause = $unique ? 'UNIQUE ' : '';
+        
+        return sprintf(
+            'CREATE %sINDEX IF NOT EXISTS %s ON %s (%s)',
+            $uniqueClause,
+            $quotedIndexName,
+            $quotedTableName,
+            implode(', ', $quotedColumns)
+        );
+    }
+
+    /**
+     * Add a foreign key constraint
+     * 
+     * @param string $tableName The name of the table
+     * @param string $foreignKey The foreign key column name
+     * @param string $referencedTable The referenced table name
+     * @param string $referencedColumn The referenced column name (default: 'id')
+     * @param string $onDelete The ON DELETE action (default: 'CASCADE')
+     * @return string|null The generated SQL, or null if SQLite (foreign keys skipped)
+     */
+    public function addForeignKey(string $tableName, string $foreignKey, string $referencedTable, string $referencedColumn = 'id', string $onDelete = 'CASCADE'): ?string
+    {
+        $driver = $this->pdo->getDriver();
+        
+        // SQLite foreign keys are handled differently - skip ALTER TABLE for SQLite
+        if ($driver === 'sqlite') {
+            return null;
+        }
+        
+        $identifierQuote = $this->getIdentifierQuote($driver);
+        
+        $quotedTable = $identifierQuote . $tableName . $identifierQuote;
+        $quotedForeignKey = $identifierQuote . $foreignKey . $identifierQuote;
+        $quotedReferencedTable = $identifierQuote . $referencedTable . $identifierQuote;
+        $quotedReferencedColumn = $identifierQuote . $referencedColumn . $identifierQuote;
+        
+        return sprintf(
+            'ALTER TABLE %s ADD FOREIGN KEY (%s) REFERENCES %s(%s) ON DELETE %s',
+            $quotedTable,
+            $quotedForeignKey,
+            $quotedReferencedTable,
+            $quotedReferencedColumn,
+            $onDelete
+        );
+    }
+
+    /**
+     * Build CREATE TABLE SQL based on database driver
+     */
+    private function buildCreateTableSql(string $tableName, array $columns, bool $ifNotExists, string $driver): string
+    {
+        $identifierQuote = $this->getIdentifierQuote($driver);
+        $quotedTableName = $identifierQuote . $tableName . $identifierQuote;
+        
+        $columnDefinitions = [];
+        foreach ($columns as $columnName => $columnDef) {
+            $quotedColumnName = $identifierQuote . $columnName . $identifierQuote;
+            $normalizedDef = $this->normalizeColumnDefinition($columnDef, $driver);
+            $columnDefinitions[] = $quotedColumnName . ' ' . $normalizedDef;
+        }
+        
+        $columnsSql = implode(",\n    ", $columnDefinitions);
+        $ifNotExistsClause = $ifNotExists ? ' IF NOT EXISTS' : '';
+        
+        $sql = "CREATE TABLE{$ifNotExistsClause} {$quotedTableName} (\n    {$columnsSql}\n)";
+        
+        if ($driver === 'mysql') {
+            $sql .= ' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci';
+        }
+        
+        return $sql;
+    }
+
+    /**
+     * Build DROP TABLE SQL based on database driver
+     */
+    private function buildDropTableSql(string $tableName, string $driver): string
+    {
+        $identifierQuote = $this->getIdentifierQuote($driver);
+        $quotedTableName = $identifierQuote . $tableName . $identifierQuote;
+        return "DROP TABLE {$quotedTableName}";
+    }
+
+    /**
+     * Get identifier quote character based on driver
+     */
+    private function getIdentifierQuote(string $driver): string
+    {
+        return match ($driver) {
+            'mysql' => '`',
+            'sqlite', 'pgsql' => '"',
+            default => '"',
+        };
+    }
+
+    /**
+     * Normalize column definition based on database driver
+     */
+    private function normalizeColumnDefinition(string $definition, string $driver): string
+    {
+        $definition = trim($definition);
+            
+        if ($driver === 'pgsql') {
+            if (preg_match('/\bINTEGER\b/i', $definition) && preg_match('/\b(?:AUTO_INCREMENT|AUTOINCREMENT)\b/i', $definition)) {
+                $definition = preg_replace('/\bINTEGER\b/i', 'SERIAL', $definition);
+                $definition = preg_replace('/\s+(?:AUTO_INCREMENT|AUTOINCREMENT)\b/i', '', $definition);
+            } elseif (preg_match('/\bBIGINT\b/i', $definition) && preg_match('/\b(?:AUTO_INCREMENT|AUTOINCREMENT)\b/i', $definition)) {
+                $definition = preg_replace('/\bBIGINT\b/i', 'BIGSERIAL', $definition);
+                $definition = preg_replace('/\s+(?:AUTO_INCREMENT|AUTOINCREMENT)\b/i', '', $definition);
+            }
+        } elseif ($driver === 'mysql') {
+            $definition = preg_replace('/\bAUTOINCREMENT\b/i', 'AUTO_INCREMENT', $definition);
+            if (preg_match('/\bINTEGER\b(?!\s+(?:UNSIGNED|ZEROFILL))/i', $definition)) {
+                $definition = preg_replace('/\bINTEGER\b/i', 'INT', $definition);
+            }
+        } elseif ($driver === 'sqlite') {
+            $definition = preg_replace('/\bAUTO_INCREMENT\b/i', 'AUTOINCREMENT', $definition);
+        }
+        
+        return $definition;
     }
 
     /**

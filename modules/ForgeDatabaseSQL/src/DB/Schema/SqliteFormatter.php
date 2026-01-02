@@ -84,9 +84,9 @@ class SqliteFormatter implements FormatterInterface
 
     public function formatIndex(array $index): string
     {
-        $columns = array_map(fn($col) => "`$col`", $index['columns']);
+        $columns = array_map(fn($col) => "\"$col\"", $index['columns']);
         return sprintf(
-            'CREATE %sINDEX "%s" ON "%s" (%s)',
+            'CREATE %sINDEX IF NOT EXISTS "%s" ON "%s" (%s)',
             $index['unique'] ? 'UNIQUE ' : '',
             $index['name'],
             $index['table'],

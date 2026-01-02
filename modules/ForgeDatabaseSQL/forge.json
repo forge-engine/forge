@@ -1,7 +1,7 @@
 {
 	"$schema": "./../../engine/Core/Schema/module-schema.json",
 	"name": "ForgeDatabaseSQL",
-	"version": "0.1.1",
+	"version": "0.2.0",
 	"description": "SQL database support (SQLite, MySQL, PostgreSQL)",
 	"type": "database",
 	"order": 0,

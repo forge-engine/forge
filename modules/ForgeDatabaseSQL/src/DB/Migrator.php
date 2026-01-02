@@ -7,6 +7,7 @@ namespace App\Modules\ForgeDatabaseSQL\DB;
 use App\Modules\ForgeDatabaseSQL\DB\Attributes\GroupMigration;
 use App\Modules\ForgeDatabaseSQL\DB\Migrations\Migration;
 use App\Modules\ForgeDatabaseSQL\DB\Schema\MySqlFormatter;
+use App\Modules\ForgeDatabaseSQL\DB\Schema\PostgreSqlFormatter;
 use App\Modules\ForgeDatabaseSQL\DB\Schema\SqliteFormatter;
 use Forge\Core\Contracts\Database\DatabaseConnectionInterface;
 use Forge\Traits\StringHelper;
@@ -82,6 +83,10 @@ final class Migrator
     private function getPendingMigrations(?string $scope, ?string $module, ?string $group): array
     {
         $ran = $this->getRanMigrationNames();
+        // Normalize ran migrations to lowercase for case-insensitive comparison
+        $ranNormalized = array_map('strtolower', $ran);
+        $ranLookup = array_flip($ranNormalized);
+        
         $scope = $scope ?? 'all';
         $module = $module ? $this->toPascalCase($module) : null;
 
@@ -92,7 +97,11 @@ final class Migrator
         $pendingFiles = [];
 
         foreach ($allFiles as $path) {
-            if (in_array(basename($path), $ran)) {
+            $migrationName = basename($path);
+            $migrationNameNormalized = strtolower($migrationName);
+            
+            // Check if migration has already been run (case-insensitive comparison)
+            if (isset($ranLookup[$migrationNameNormalized])) {
                 continue;
             }
 
@@ -342,6 +351,18 @@ final class Migrator
             throw new RuntimeException("Migration batch number not set.");
         }
 
+        $migrationName = basename($path);
+        
+        $stmt = $this->connection->prepare(
+            "SELECT COUNT(*) FROM " . self::MIGRATIONS_TABLE . " WHERE migration = ?"
+        );
+        $stmt->execute([$migrationName]);
+        $exists = (int)$stmt->fetchColumn() > 0;
+        
+        if ($exists) {
+            return;
+        }
+
         [, $type, $module, $group] = $this->extractMigrationMetadata($path);
 
         $migration = $this->resolveMigration($path);
@@ -355,7 +376,7 @@ final class Migrator
         );
 
         $stmt->execute([
-            basename($path),
+            $migrationName,
             $this->currentBatch,
             $type,
             $module,
@@ -377,6 +398,7 @@ final class Migrator
         $formatter = match ($driver) {
             'mysql' => new MySqlFormatter(),
             'sqlite' => new SqliteFormatter(),
+            'pgsql' => new PostgreSqlFormatter(),
             default => throw new RuntimeException("Unsupported Database driver: $driver")
         };
 

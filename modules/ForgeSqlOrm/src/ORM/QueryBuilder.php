@@ -8,6 +8,8 @@ use PDOStatement;
 
 final class QueryBuilder implements QueryBuilderInterface
 {
+    private string $lastSql = '';
+
     public function __construct(
         private DatabaseConnectionInterface $conn,
         private string                      $table = '',
@@ -335,7 +337,10 @@ final class QueryBuilder implements QueryBuilderInterface
 
     public function createTable(string $n, array $c, bool $i = false): string
     {
-        return '';
+        $driver = $this->conn->getDriver();
+        $sql = $this->buildCreateTableSql($n, $c, $i, $driver);
+        $this->lastSql = $sql;
+        return $sql;
     }
 
     public function createIndex(string $n, array $c, bool $u = false): string
@@ -345,12 +350,91 @@ final class QueryBuilder implements QueryBuilderInterface
 
     public function dropTable(string $n): string
     {
-        return '';
+        $driver = $this->conn->getDriver();
+        $sql = $this->buildDropTableSql($n, $driver);
+        $this->lastSql = $sql;
+        return $sql;
     }
 
     public function getSql(): string
     {
-        return '';
+        return $this->lastSql;
+    }
+
+    /**
+     * Build CREATE TABLE SQL based on database driver
+     */
+    private function buildCreateTableSql(string $tableName, array $columns, bool $ifNotExists, string $driver): string
+    {
+        $identifierQuote = $this->getIdentifierQuote($driver);
+        $quotedTableName = $identifierQuote . $tableName . $identifierQuote;
+        
+        $columnDefinitions = [];
+        foreach ($columns as $columnName => $columnDef) {
+            $quotedColumnName = $identifierQuote . $columnName . $identifierQuote;
+            $normalizedDef = $this->normalizeColumnDefinition($columnDef, $driver);
+            $columnDefinitions[] = $quotedColumnName . ' ' . $normalizedDef;
+        }
+        
+        $columnsSql = implode(",\n    ", $columnDefinitions);
+        $ifNotExistsClause = $ifNotExists ? ' IF NOT EXISTS' : '';
+        
+        $sql = "CREATE TABLE{$ifNotExistsClause} {$quotedTableName} (\n    {$columnsSql}\n)";
+        
+        if ($driver === 'mysql') {
+            $sql .= ' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci';
+        }
+        
+        return $sql;
+    }
+
+    /**
+     * Build DROP TABLE SQL based on database driver
+     */
+    private function buildDropTableSql(string $tableName, string $driver): string
+    {
+        $identifierQuote = $this->getIdentifierQuote($driver);
+        $quotedTableName = $identifierQuote . $tableName . $identifierQuote;
+        return "DROP TABLE {$quotedTableName}";
+    }
+
+    /**
+     * Get identifier quote character based on driver
+     */
+    private function getIdentifierQuote(string $driver): string
+    {
+        return match ($driver) {
+            'mysql' => '`',
+            'sqlite', 'pgsql' => '"',
+            default => '"',
+        };
+    }
+
+    /**
+     * Normalize column definition based on database driver
+     */
+    private function normalizeColumnDefinition(string $definition, string $driver): string
+    {
+        $definition = trim($definition);
+            
+        if ($driver === 'pgsql') {
+            if (preg_match('/\bINTEGER\b/i', $definition) && preg_match('/\b(?:AUTO_INCREMENT|AUTOINCREMENT)\b/i', $definition)) {
+                $definition = preg_replace('/\bINTEGER\b/i', 'SERIAL', $definition);
+                $definition = preg_replace('/\s+(?:AUTO_INCREMENT|AUTOINCREMENT)\b/i', '', $definition);
+            } elseif (preg_match('/\bBIGINT\b/i', $definition) && preg_match('/\b(?:AUTO_INCREMENT|AUTOINCREMENT)\b/i', $definition)) {
+                $definition = preg_replace('/\bBIGINT\b/i', 'BIGSERIAL', $definition);
+                $definition = preg_replace('/\s+(?:AUTO_INCREMENT|AUTOINCREMENT)\b/i', '', $definition);
+            }
+        } elseif ($driver === 'mysql') {
+            $definition = preg_replace('/\bAUTOINCREMENT\b/i', 'AUTO_INCREMENT', $definition);
+            if (preg_match('/\bINTEGER\b(?!\s+(?:UNSIGNED|ZEROFILL))/i', $definition)) {
+                $definition = preg_replace('/\bINTEGER\b/i', 'INT', $definition);
+            }
+        } elseif ($driver === 'sqlite') {
+            $definition = preg_replace('/\bAUTO_INCREMENT\b/i', 'AUTOINCREMENT', $definition);
+        }
+        
+        return $definition;
     }
 
     public function setTable(string $table): QueryBuilderInterface

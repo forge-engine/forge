@@ -6,7 +6,7 @@ namespace App\Modules\ForgeDatabaseSQL\DB\Schema;
 
 use DateTimeInterface;
 
-final class MySqlFormatter implements FormatterInterface
+final class PostgreSqlFormatter implements FormatterInterface
 {
     public bool $skipForeignKeys = false;
     private array $relationships = [];
@@ -14,26 +14,26 @@ final class MySqlFormatter implements FormatterInterface
     public function formatColumn(string $name, array $attributes): string
     {
         $typeMapping = [
-            'UUID' => 'CHAR(36)',
+            'UUID' => 'UUID',
             'STRING' => 'VARCHAR(255)',
             'TEXT' => 'TEXT',
-            'INTEGER' => 'INT',
+            'INTEGER' => 'INTEGER',
             'BOOLEAN' => 'BOOLEAN',
-            'FLOAT' => 'FLOAT',
+            'FLOAT' => 'REAL',
             'DECIMAL' => 'DECIMAL',
             'DATE' => 'DATE',
-            'DATETIME' => 'DATETIME',
+            'DATETIME' => 'TIMESTAMP',
             'TIMESTAMP' => 'TIMESTAMP',
             'ENUM' => $this->formatEnum($attributes),
-            'JSON' => 'JSON',
-            'BLOB' => 'BLOB',
-            'ARRAY' => 'JSON',
+            'JSON' => 'JSONB',
+            'BLOB' => 'BYTEA',
+            'ARRAY' => 'TEXT[]',
         ];
 
         $dbType = $typeMapping[$attributes['type']] ?? $attributes['type'];
 
         $definition = [
-            "`$name`",
+            "\"$name\"",
             $dbType,
             $attributes['nullable'] ? 'NULL' : 'NOT NULL',
             $this->getPrimaryKeyClause($attributes),
@@ -51,8 +51,8 @@ final class MySqlFormatter implements FormatterInterface
             return 'VARCHAR(255)';
         }
 
-        $values = $attributes['enum'];
-        return 'ENUM(' . implode(',', $values) . ')';
+        $values = array_map(fn($v) => "'$v'", $attributes['enum']);
+        return 'VARCHAR(255)';
     }
 
     private function getPrimaryKeyClause(array $attributes): string
@@ -61,13 +61,7 @@ final class MySqlFormatter implements FormatterInterface
             return '';
         }
 
-        $clause = 'PRIMARY KEY';
-
-        if ($attributes['autoIncrement'] && $attributes['type'] === 'INT') {
-            $clause .= ' AUTO_INCREMENT';
-        }
-
-        return $clause;
+        return 'PRIMARY KEY';
     }
 
     private function formatDefault(mixed $value): string
@@ -94,9 +88,9 @@ final class MySqlFormatter implements FormatterInterface
 
     public function formatIndex(array $index): string
     {
-        $columns = array_map(fn($col) => "`$col`", $index['columns']);
+        $columns = array_map(fn($col) => "\"$col\"", $index['columns']);
         return sprintf(
-            'CREATE %sINDEX IF NOT EXISTS `%s` ON `%s` (%s) USING BTREE',
+            'CREATE %sINDEX IF NOT EXISTS "%s" ON "%s" (%s)',
             $index['unique'] ? 'UNIQUE ' : '',
             $index['name'],
             $index['table'],
@@ -106,7 +100,7 @@ final class MySqlFormatter implements FormatterInterface
 
     public function formatTableOptions(): string
     {
-        return 'ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci';
+        return '';
     }
 
     public function addRelationship(string $type, array $config): void
@@ -116,6 +110,10 @@ final class MySqlFormatter implements FormatterInterface
 
     public function formatRelationships(string $table): string
     {
+        if ($this->skipForeignKeys ?? false) {
+            return '';
+        }
+
         return implode(";\n", array_map(
             fn($rel) => match ($rel['type']) {
                 'belongsTo' => $this->formatBelongsTo($table, $rel['config']),
@@ -129,7 +127,7 @@ final class MySqlFormatter implements FormatterInterface
     private function formatBelongsTo(string $table, array $config): string
     {
         return sprintf(
-            'ALTER TABLE `%s` ADD FOREIGN KEY (`%s`) REFERENCES `%s`(id) ON DELETE %s',
+            'ALTER TABLE "%s" ADD FOREIGN KEY ("%s") REFERENCES "%s"(id) ON DELETE %s',
             $table,
             $config['foreignKey'],
             $config['relatedTable'],
@@ -140,12 +138,12 @@ final class MySqlFormatter implements FormatterInterface
     private function formatManyToMany(array $config): string
     {
         return sprintf(
-            'CREATE TABLE `%s` (
-                `%s` INT UNSIGNED NOT NULL,
-                `%s` INT UNSIGNED NOT NULL,
-                PRIMARY KEY (`%s`, `%s`),
-                FOREIGN KEY (`%s`) REFERENCES `%s`(id) ON DELETE CASCADE,
-                FOREIGN KEY (`%s`) REFERENCES `%s`(id) ON DELETE CASCADE
+            'CREATE TABLE "%s" (
+                "%s" INTEGER NOT NULL,
+                "%s" INTEGER NOT NULL,
+                PRIMARY KEY ("%s", "%s"),
+                FOREIGN KEY ("%s") REFERENCES "%s"(id) ON DELETE CASCADE,
+                FOREIGN KEY ("%s") REFERENCES "%s"(id) ON DELETE CASCADE
             )',
             $config['joinTable'],
             $config['foreignKey'],
