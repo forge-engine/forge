@@ -1,20 +1,20 @@
 {
-  "$schema": "./../../engine/Core/Schema/module-schema.json",
-  "name": "forge-package-manager",
-  "version": "0.1.6",
-  "description": "A Package Manager By Forge",
-  "type": "package-manager",
-  "order": 0,
-  "cli": {
-    "commands": [
-      "install:module",
-      "remove:module"
-    ]
-  },
-  "tags": [],
-  "config": {
-    "defaults": {}
-  },
-  "author": "Forge Team",
-  "license": "MIT"
+    "$schema": "./../../engine/Core/Schema/module-schema.json",
+    "name": "forge-package-manager",
+    "version": "1.0.0",
+    "description": "A Package Manager By Forge",
+    "type": "package-manager",
+    "order": 0,
+    "cli": {
+        "commands": [
+            "install:module",
+            "remove:module"
+        ]
+    },
+    "tags": [],
+    "config": {
+        "defaults": []
+    },
+    "author": "Forge Team",
+    "license": "MIT"
 }
