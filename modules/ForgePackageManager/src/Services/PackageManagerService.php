@@ -962,8 +962,10 @@ final class PackageManagerService implements PackageManagerInterface
         $moduleInstallPath = $this->getModulesPath() . $moduleInstallFolderName;
 
         if (!is_dir($moduleInstallPath)) {
-            $this->warning("Module '{$moduleName}' is not currently installed, or the installation folder is missing: {$moduleInstallPath}");
-            $this->warning("Skipping module removal.");
+            $this->info("Cleaning stale module entry: {$moduleName}");
+            $this->updateForgeJsonOnModuleRemoval($moduleName);
+            $this->updateForgeLockJsonOnModuleRemoval($moduleName);
+            $this->success("Stale module entry '{$moduleName}' cleaned successfully.");
             return;
         }
 
