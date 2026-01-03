@@ -100,3 +100,6 @@ FILE_STORAGE_DRIVER=local # Options: local
 
 #Package Manager Github Access Token
 GITHUB_TOKEN=your-token
+
+# Developer Mode (enables dev:* commands)
+FORGE_DEVELOPER_MODE=false
