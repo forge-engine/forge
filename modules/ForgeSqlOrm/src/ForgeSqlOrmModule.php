@@ -17,7 +17,7 @@ use Forge\Core\Module\Attributes\Repository;
 use Forge\Core\DI\Attributes\Service;
 use Forge\CLI\Traits\OutputHelper;
 
-.1.6', description: 'SQL ORM Support (SQLite, MySQL, PostgreSQL)', order: 1,
+.1.7', description: 'SQL ORM Support (SQLite, MySQL, PostgreSQL)', order: 1,
     type: 'core')]
 #[Service]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
