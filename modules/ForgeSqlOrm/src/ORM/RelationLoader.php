@@ -21,26 +21,44 @@ final class RelationLoader
      */
     public function load(string ...$relations): void
     {
-        foreach ($relations as $relation) {
-            $this->loadOne($relation);
+        $relationMap = $this->groupRelations($relations);
+        
+        foreach ($relationMap as $relation => $nested) {
+            $this->loadOne($relation, $nested);
         }
     }
 
     /**
      * @throws ReflectionException
      */
-    private function loadOne(string $relation): void
+    private function loadOne(string $relation, array $nested = []): void
     {
+        if (empty($this->parents)) {
+            return;
+        }
+
         $rel = $this->parents[0]::describe($relation);
         $kind = $rel->kind;
 
-        $localKeys = [];
-        foreach ($this->parents as $p) {
-            $localKeys[] = (string)$p->{$rel->localKey};
+        $localKeysMap = [];
+        $parentIndexMap = [];
+        
+        foreach ($this->parents as $index => $p) {
+            $key = (string)$p->{$rel->localKey};
+            if ($key !== '' && $key !== '0') {
+                $localKeysMap[$key] = true;
+                if (!isset($parentIndexMap[$key])) {
+                    $parentIndexMap[$key] = [];
+                }
+                $parentIndexMap[$key][] = $index;
+            }
         }
 
-        $localKeys = array_unique(array_filter($localKeys, fn($v) => $v !== null));
+        $localKeys = array_keys($localKeysMap);
         if ($localKeys === []) {
+            foreach ($this->parents as $parent) {
+                $parent->setRelation($relation, $kind === RelationKind::HasOne ? null : []);
+            }
             return;
         }
 
@@ -54,16 +72,50 @@ final class RelationLoader
 
         $bucket = [];
         foreach ($children as $child) {
-            $bucket[(string)$child->{$foreignColumn}][] = $child;
-        }
-
-        foreach ($this->parents as $parent) {
-            $key = (string)$parent->{$rel->localKey};
+            $foreignKey = (string)$child->{$foreignColumn};
             if ($kind === RelationKind::HasOne) {
-                $parent->setRelation($relation, $bucket[$key][0] ?? null);
+                $bucket[$foreignKey] = $child;
             } else {
-                $parent->setRelation($relation, $bucket[$key] ?? []);
+                if (!isset($bucket[$foreignKey])) {
+                    $bucket[$foreignKey] = [];
+                }
+                $bucket[$foreignKey][] = $child;
             }
         }
+
+        foreach ($this->parents as $index => $parent) {
+            $key = (string)$parent->{$rel->localKey};
+            $value = $bucket[$key] ?? ($kind === RelationKind::HasOne ? null : []);
+            $parent->setRelation($relation, $value);
+            
+            if (!empty($nested) && $value !== null) {
+                $childrenToLoad = $kind === RelationKind::HasOne ? [$value] : $value;
+                if (!empty($childrenToLoad)) {
+                    $loader = new RelationLoader(...$childrenToLoad);
+                    $loader->load(...$nested);
+                }
+            }
+        }
+    }
+
+    private function groupRelations(array $relations): array
+    {
+        $grouped = [];
+        
+        foreach ($relations as $relation) {
+            $parts = explode('.', $relation, 2);
+            $main = $parts[0];
+            $nested = isset($parts[1]) ? [$parts[1]] : [];
+            
+            if (!isset($grouped[$main])) {
+                $grouped[$main] = [];
+            }
+            
+            if (!empty($nested)) {
+                $grouped[$main] = array_merge($grouped[$main], $nested);
+            }
+        }
+        
+        return $grouped;
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Modules\ForgeAuth\Models\User;
+use App\Modules\ForgeAuth\Repositories\UserRepository;
 use App\Modules\ForgeAuth\Services\ForgeAuthService;
 use App\Modules\ForgeAuth\Validation\ForgeAuthValidate;
 use App\Modules\ForgeMultiTenant\Attributes\TenantScope;
@@ -33,6 +34,7 @@ final class HomeController
     public function __construct(
         public readonly ForgeAuthService $forgeAuthService,
         public readonly UserService $userService,
+        public readonly UserRepository $userRepository,
         public readonly QueryBuilder $builder,
     ) {
         //
@@ -42,7 +44,7 @@ final class HomeController
     public function index(): Response
     {
         Metrics::start("db_load_one_record_test");
-        $user = User::find(2);
+        $user = $this->userRepository->findById(2);
 
         //        $jhon = new User();
         //        $jhon->email = 'test@example.com';

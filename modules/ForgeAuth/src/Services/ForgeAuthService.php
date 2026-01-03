@@ -8,11 +8,13 @@ use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Module\Attributes\Provides;
 use Forge\Core\Module\Attributes\Requires;
 use App\Modules\ForgeAuth\Contracts\ForgeAuthInterface;
+use App\Modules\ForgeAuth\Dto\CreateUserData;
 use App\Modules\ForgeAuth\Exceptions\JwtTokenExpiredException;
 use App\Modules\ForgeAuth\Exceptions\JwtTokenInvalidException;
 use App\Modules\ForgeAuth\Exceptions\LoginException;
 use App\Modules\ForgeAuth\Exceptions\UserRegistrationException;
 use App\Modules\ForgeAuth\Models\User;
+use App\Modules\ForgeAuth\Repositories\UserRepository;
 use Exception;
 use Forge\Core\Config\Config;
 use Forge\Core\Helpers\Flash;
@@ -33,7 +35,8 @@ final class ForgeAuthService implements ForgeAuthInterface
     public function __construct(
         private readonly Config           $config,
         private readonly SessionInterface $session,
-        private readonly JwtService      $jwtService
+        private readonly JwtService      $jwtService,
+        private readonly UserRepository  $users
     )
     {
     }
@@ -49,13 +52,15 @@ final class ForgeAuthService implements ForgeAuthInterface
     public function register(array $credentials): bool
     {
         try {
-            $user = new User();
-            $user->identifier = $credentials["identifier"];
-            $user->password = password_hash($credentials["password"], PASSWORD_BCRYPT);
-            $user->email = $credentials["email"];
-            $user->status = 'active';
-            $user->metadata = $credentials["metadata"] ?? [];
-            $user->save();
+            $data = new CreateUserData(
+                identifier: $credentials["identifier"],
+                email: $credentials["email"],
+                password: password_hash($credentials["password"], PASSWORD_BCRYPT),
+                status: 'active',
+                metadata: $credentials["metadata"] ?? null
+            );
+
+            $this->users->create($data);
             return true;
         } catch (Exception $e) {
             throw new UserRegistrationException();
@@ -69,7 +74,7 @@ final class ForgeAuthService implements ForgeAuthInterface
     {
         $this->validateLoginAttempt();
 
-        $user = User::findBy("identifier", $credentials['identifier']);
+        $user = $this->users->findByIdentifier($credentials['identifier']);
 
         if (!$user || !password_verify($credentials['password'], $user->password)) {
             $this->handleFailedLogin();
@@ -132,7 +137,7 @@ final class ForgeAuthService implements ForgeAuthInterface
         }
 
         $userId = $this->session->get('user_id');
-        $user = $userId ? User::find($userId) : null;
+        $user = $userId ? $this->users->findById((int)$userId) : null;
         $this->cachedUser = $user;
 
         return $user;
@@ -198,7 +203,7 @@ final class ForgeAuthService implements ForgeAuthInterface
             return null;
         }
 
-        $user = User::find($userId);
+        $user = $this->users->findById((int)$userId);
         if (!$user) {
             return null;
         }
@@ -219,7 +224,7 @@ final class ForgeAuthService implements ForgeAuthInterface
             return null;
         }
 
-        $user = User::find($userId);
+        $user = $this->users->findById((int)$userId);
         if ($user) {
             $this->cachedUser = $user;
         }

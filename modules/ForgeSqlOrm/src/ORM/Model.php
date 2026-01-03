@@ -89,24 +89,9 @@ abstract class Model implements JsonSerializable
         return self::$reflections[static::class] ??= new ReflectionClass(static::class);
     }
 
-    final public static function findBy(string $field, mixed $value): ?static
-    {
-        return static::query()->where(column: $field, operator: '=', value: $value)->first();
-    }
-
     final public static function query(): ModelQuery
     {
         return new ModelQuery(static::class);
-    }
-
-    final public static function find(int|string $id): ?static
-    {
-        return static::query()->id($id)->first();
-    }
-
-    final public static function all(): array
-    {
-        return static::query()->get();
     }
 
     final public static function table(): string
@@ -346,9 +331,36 @@ abstract class Model implements JsonSerializable
             if (in_array($name, $protected, true)) {
                 continue;
             }
-            $out[$name] = $p->getValue($this);
+            $value = $p->getValue($this);
+            
+            if ($value instanceof BaseDto) {
+                $out[$name] = $value->toArray();
+            } elseif ($value instanceof DateTimeImmutable) {
+                $out[$name] = $value->format('Y-m-d H:i:s');
+            } elseif (is_array($value)) {
+                $out[$name] = $this->arrayToArray($value);
+            } else {
+                $out[$name] = $value;
+            }
         }
         return $out;
+    }
+
+    private function arrayToArray(array $value): array
+    {
+        $result = [];
+        foreach ($value as $key => $item) {
+            if ($item instanceof BaseDto) {
+                $result[$key] = $item->toArray();
+            } elseif ($item instanceof DateTimeImmutable) {
+                $result[$key] = $item->format('Y-m-d H:i:s');
+            } elseif (is_array($item)) {
+                $result[$key] = $this->arrayToArray($item);
+            } else {
+                $result[$key] = $item;
+            }
+        }
+        return $result;
     }
 
     public function jsonSerialize(): array

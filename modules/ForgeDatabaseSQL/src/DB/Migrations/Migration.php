@@ -281,7 +281,6 @@ abstract class Migration
 
         $columnsSql = implode(",\n", $columnDefinitions);
 
-        // Use proper identifier quotes based on driver and add IF NOT EXISTS
         $driver = $this->pdo->getDriver();
         $identifierQuote = $this->getIdentifierQuote($driver);
         $quotedTableName = $identifierQuote . $this->schema["table"] . $identifierQuote;

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeSqlOrm;
 
+use App\Modules\ForgeSqlOrm\ORM\Cache\QueryCache;
 use App\Modules\ForgeSqlOrm\ORM\QueryBuilder;
 use Forge\Core\Contracts\Database\DatabaseConnectionInterface;
 use Forge\Core\Contracts\Database\QueryBuilderInterface;
@@ -35,6 +36,10 @@ final class ForgeSqlOrmModule
             return new QueryBuilder($c->get(DatabaseConnectionInterface::class));
         });
         Metrics::stop('query_builder_resolution');
+
+        $container->singleton(QueryCache::class, function () {
+            return new QueryCache(3600);
+        });
     }
 
 }

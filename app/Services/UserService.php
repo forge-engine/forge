@@ -34,6 +34,6 @@ class UserService
 
     public function all(): array
     {
-        return User::all();
+        return [];
     }
 }
