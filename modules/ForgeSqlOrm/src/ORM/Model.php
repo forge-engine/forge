@@ -14,15 +14,17 @@ use ReflectionNamedType;
 use RuntimeException;
 use function App\Modules\ForgeSqlOrm\ORM\Values\cast;
 use App\Modules\ForgeSqlOrm\ORM\Attributes\Column;
+use App\Modules\ForgeSqlOrm\ORM\Attributes\ProtectedFields;
 use App\Modules\ForgeSqlOrm\ORM\Attributes\Table;
 use Forge\Core\DI\Attributes\Service;
+use JsonSerializable;
 use LogicException;
 use ReflectionClass;
 use ReflectionException;
 use ReflectionProperty;
 
 #[Service]
-abstract class Model
+abstract class Model implements JsonSerializable
 {
     use CanLoadRelations;
 
@@ -38,6 +40,8 @@ abstract class Model
     private static ?string $softDeleteColumn = null;
 
     private static ?array $softDeleteColumnCache = null;
+
+    private static array $protectedFields = [];
 
     private bool $exists = false;
 
@@ -314,13 +318,34 @@ abstract class Model
         $this->relations[$name] = $value;
     }
 
+    private static function protectedFields(): array
+    {
+        if (!isset(self::$protectedFields[static::class])) {
+            $attributes = static::reflection()->getAttributes(ProtectedFields::class);
+            self::$protectedFields[static::class] = $attributes !== []
+                ? $attributes[0]->newInstance()->fields
+                : [];
+        }
+        return self::$protectedFields[static::class];
+    }
+
     public function toArray(): array
     {
         $out = [];
+        $protected = static::protectedFields();
         foreach (self::reflection()->getProperties(ReflectionProperty::IS_PUBLIC) as $p) {
             if ($p->isStatic()) continue;
-            $out[$p->getName()] = $p->getValue($this);
+            $name = $p->getName();
+            if (in_array($name, $protected, true)) {
+                continue;
+            }
+            $out[$name] = $p->getValue($this);
         }
         return $out;
+    }
+
+    public function jsonSerialize(): array
+    {
+        return $this->toArray();
     }
 }

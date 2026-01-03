@@ -11,10 +11,11 @@ use App\Modules\ForgeSqlOrm\ORM\Values\Relate;
 use App\Modules\ForgeSqlOrm\ORM\Values\Relation;
 use App\Modules\ForgeSqlOrm\ORM\Values\RelationKind;
 use App\Modules\ForgeSqlOrm\Traits\{HasTimeStamps};
-use App\Modules\ForgeSqlOrm\ORM\Attributes\{Table, Column};
+use App\Modules\ForgeSqlOrm\ORM\Attributes\{Table, Column, ProtectedFields};
 use App\Modules\ForgeSqlOrm\ORM\Model;
 
 #[Table("users")]
+#[ProtectedFields(['password'])]
 class User extends Model
 {
     use HasTimeStamps;
@@ -42,12 +43,5 @@ class User extends Model
     public function profile(): Relation
     {
         return self::describe(__FUNCTION__);
-    }
-
-    public function toArray(): array
-    {
-        $out = parent::toArray();
-        unset($out["password"]);
-        return $out;
     }
 }

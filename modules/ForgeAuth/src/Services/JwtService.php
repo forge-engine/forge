@@ -37,24 +37,39 @@ final class JwtService
     {
         $parts = explode('.', $token);
         if (count($parts) !== 3) {
-            throw new JwtTokenInvalidException();
+            throw new JwtTokenInvalidException('Invalid token format: expected 3 parts');
         }
 
         [$headerEncoded, $payloadEncoded, $signatureEncoded] = $parts;
 
-        $secret = $this->getSecret();
-        $signature = hash_hmac('sha256', $headerEncoded . '.' . $payloadEncoded, $secret, true);
-        $expectedSignature = $this->base64UrlDecode($signatureEncoded);
-
-        if (!hash_equals($signature, $expectedSignature)) {
-            throw new JwtTokenInvalidException();
+        try {
+            $secret = $this->getSecret();
+        } catch (JwtTokenInvalidException $e) {
+            throw $e;
         }
 
-        $payloadJson = $this->base64UrlDecode($payloadEncoded);
+        $signature = hash_hmac('sha256', $headerEncoded . '.' . $payloadEncoded, $secret, true);
+
+        try {
+            $expectedSignature = $this->base64UrlDecode($signatureEncoded);
+        } catch (JwtTokenInvalidException $e) {
+            throw new JwtTokenInvalidException('Invalid token signature encoding');
+        }
+
+        if (!hash_equals($signature, $expectedSignature)) {
+            throw new JwtTokenInvalidException('Invalid token signature');
+        }
+
+        try {
+            $payloadJson = $this->base64UrlDecode($payloadEncoded);
+        } catch (JwtTokenInvalidException $e) {
+            throw new JwtTokenInvalidException('Invalid token payload encoding');
+        }
+
         $payload = json_decode($payloadJson, true);
 
         if (!is_array($payload)) {
-            throw new JwtTokenInvalidException();
+            throw new JwtTokenInvalidException('Invalid token payload format');
         }
 
         if (isset($payload['exp']) && $payload['exp'] < time()) {
@@ -84,7 +99,12 @@ final class JwtService
 
     private function base64UrlDecode(string $data): string
     {
-        $decoded = base64_decode(str_replace(['-', '_'], ['+', '/'], $data), true);
+        $data = str_replace(['-', '_'], ['+', '/'], $data);
+        $remainder = strlen($data) % 4;
+        if ($remainder) {
+            $data .= str_repeat('=', 4 - $remainder);
+        }
+        $decoded = base64_decode($data, true);
         if ($decoded === false) {
             throw new JwtTokenInvalidException();
         }

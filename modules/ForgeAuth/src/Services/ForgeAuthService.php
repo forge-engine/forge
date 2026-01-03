@@ -8,7 +8,6 @@ use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Module\Attributes\Provides;
 use Forge\Core\Module\Attributes\Requires;
 use App\Modules\ForgeAuth\Contracts\ForgeAuthInterface;
-use App\Modules\ForgeAuth\Exceptions\JwtRefreshTokenInvalidException;
 use App\Modules\ForgeAuth\Exceptions\JwtTokenExpiredException;
 use App\Modules\ForgeAuth\Exceptions\JwtTokenInvalidException;
 use App\Modules\ForgeAuth\Exceptions\LoginException;
@@ -133,7 +132,7 @@ final class ForgeAuthService implements ForgeAuthInterface
         }
 
         $userId = $this->session->get('user_id');
-        $user = $userId ? User::findById($userId) : null;
+        $user = $userId ? User::find($userId) : null;
         $this->cachedUser = $user;
 
         return $user;
@@ -199,7 +198,7 @@ final class ForgeAuthService implements ForgeAuthInterface
             return null;
         }
 
-        $user = User::findById($userId);
+        $user = User::find($userId);
         if (!$user) {
             return null;
         }
@@ -211,8 +210,8 @@ final class ForgeAuthService implements ForgeAuthInterface
     {
         try {
             $payload = $this->jwtService->decode($token);
-        } catch (JwtTokenInvalidException | JwtTokenExpiredException) {
-            return null;
+        } catch (JwtTokenInvalidException | JwtTokenExpiredException $e) {
+            throw $e;
         }
 
         $userId = $payload['user_id'] ?? null;
@@ -220,7 +219,7 @@ final class ForgeAuthService implements ForgeAuthInterface
             return null;
         }
 
-        $user = User::findById($userId);
+        $user = User::find($userId);
         if ($user) {
             $this->cachedUser = $user;
         }

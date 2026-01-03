@@ -12,6 +12,7 @@ use Forge\Core\Http\Attributes\ApiRoute;
 use Forge\Core\Http\Attributes\Middleware;
 use Forge\Core\Http\Request;
 use Forge\Core\Http\Response;
+use Forge\Exceptions\ValidationException;
 use Forge\Traits\ControllerHelper;
 use Forge\Traits\SecurityHelper;
 
@@ -30,18 +31,21 @@ final class ApiLoginController
     public function login(Request $request): Response
     {
         try {
-            ForgeAuthValidate::login($request->postData);
-            $loginCredentials = $this->sanitize($request->postData);
+            $data = $request->json() ?: $request->postData;
+            ForgeAuthValidate::login($data);
+            $loginCredentials = $this->sanitize($data);
 
             $user = $this->forgeAuthService->login($loginCredentials);
             $tokens = $this->forgeAuthService->issueToken($user);
 
-            $data = [
+            $responseData = [
                 'user' => $user,
                 'tokens' => $tokens,
             ];
 
-            return $this->apiResponse($data);
+            return $this->apiResponse($responseData);
+        } catch (ValidationException $e) {
+            return $this->apiError('Validation failed', 422, [], 'VALIDATION_ERROR');
         } catch (LoginException $e) {
             return $this->apiError('Invalid credentials', 401);
         } catch (\RuntimeException $e) {
@@ -52,7 +56,8 @@ final class ApiLoginController
     #[ApiRoute('/auth/refresh', 'POST')]
     public function refresh(Request $request): Response
     {
-        $refreshToken = $request->postData['refresh_token'] ?? null;
+        $data = $request->json() ?: $request->postData;
+        $refreshToken = $data['refresh_token'] ?? null;
 
         if (!$refreshToken) {
             return $this->apiError('Refresh token is required', 400);
