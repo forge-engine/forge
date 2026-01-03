@@ -247,10 +247,24 @@ final class QueryBuilder implements QueryBuilderInterface
         return new self($this->conn);
     }
 
+    public function raw(string $sql, array $params = []): array
+    {
+        $stmt = $this->conn->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
 
     public function whereRaw(string $sql, array $params = []): self
     {
-        return $this;
+        $newParams = $this->params;
+        foreach ($params as $key => $value) {
+            $paramKey = is_int($key) ? ':p' . count($newParams) : $key;
+            $newParams[$paramKey] = $value;
+        }
+        $where = [...$this->where, $sql];
+        return new self($this->conn, table: $this->table, select: $this->select,
+            where: $where, params: $newParams, order: $this->order,
+            limit: $this->limit, offset: $this->offset, forUpdate: $this->forUpdate);
     }
 
     public function leftJoin(string $t, string $a, string $op, string $b): self
