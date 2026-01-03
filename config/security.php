@@ -13,7 +13,10 @@ return [
         'reset_time' => env('CIRCUIT_BREAKER_RESET_TIME', 300),
     ],
     'jwt' => [
-        'secret' => 'your-very-secure-secret-key',
+        'enabled' => env('JWT_ENABLED', false),
+        'secret' => env('JWT_SECRET'),
+        'ttl' => env('JWT_TTL', 900),
+        'refresh_ttl' => env('JWT_REFRESH_TTL', 604800),
     ],
     'password' => [
         'password_cost' => 12,

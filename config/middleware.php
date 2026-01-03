@@ -12,5 +12,8 @@ return [
     'api' => [
         // Load your middlewares here
         //\Namespace\MiddlewareName::class
+    ],
+    'api-auth' => [
+        App\Modules\ForgeAuth\Middlewares\ApiJwtMiddleware::class,
     ]
 ];
