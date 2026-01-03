@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\ForgePackageManager\Services;
 
 use App\Modules\ForgePackageManager\Contracts\PackageManagerInterface;
+use App\Modules\ForgePackageManager\Sources\SourceFactory;
+use App\Modules\ForgePackageManager\Sources\SourceInterface;
 use Forge\CLI\Traits\OutputHelper;
 use Forge\Core\Config\Config;
 use Forge\Core\DI\Attributes\Service;
@@ -20,16 +22,13 @@ use ReflectionException;
 use ZipArchive;
 
 #[Service]
-#[Provides(interface: PackageManagerInterface::class, version: '0.1.6')]
+#[Provides(interface: PackageManagerInterface::class, version: '1.0.0')]
 #[Requires()]
 final class PackageManagerService implements PackageManagerInterface
 {
     use OutputHelper;
     use StringHelper;
 
-    private const string OFFICIAL_REGISTRY_NAME = 'forge-engine-modules';
-    private const string OFFICIAL_REGISTRY_BASE_URL = 'https://github.com/forge-engine/modules';
-    private const string OFFICIAL_REGISTRY_BRANCH = 'main';
     private const string FRAMEWORK_MODULE_NAME = 'forge-engine/framework';
     private const string PACKAGE_MANAGER_MODULE_NAME = 'forge-package-manager';
 
@@ -38,16 +37,21 @@ final class PackageManagerService implements PackageManagerInterface
     private string $modulesPath;
     private string $cachePath;
     private string $integrityHash;
+    private string $trustedSourcesPath;
+    private bool $debugEnabled = false;
 
     public function __construct(private readonly Config $config)
     {
-        $this->registries = $this->config->get('forge_package_manager.registry', []);
-        $this->cacheTtl = $this->config->get('forge_package_manager.cache_ttl', 3600);
+        $this->registries = $this->config->get('source_list.registry', []);
+        $cacheTtlValue = $this->config->get('source_list.cache_ttl', 3600);
+        $this->cacheTtl = is_array($cacheTtlValue) ? 3600 : (int)$cacheTtlValue;
         $this->modulesPath = BASE_PATH . '/modules/';
         $this->cachePath = BASE_PATH . '/storage/framework/cache/modules/';
+        $this->trustedSourcesPath = BASE_PATH . '/storage/framework/trusted_sources.json';
 
         $this->ensureCacheDirectoryExists();
         $this->ensureModulesDirectoryExists();
+        $this->ensureTrustedSourcesFileExists();
     }
 
     private function ensureCacheDirectoryExists(): void
@@ -64,9 +68,151 @@ final class PackageManagerService implements PackageManagerInterface
         }
     }
 
+    private function cleanExpiredCache(): void
+    {
+        if (!is_dir($this->cachePath)) {
+            return;
+        }
+
+        $files = glob($this->cachePath . '*.cache');
+        if ($files === false) {
+            return;
+        }
+
+        $now = time();
+        $cleaned = 0;
+
+        foreach ($files as $file) {
+            if (is_file($file)) {
+                $age = $now - filemtime($file);
+                if ($age >= $this->cacheTtl) {
+                    unlink($file);
+                    $cleaned++;
+                }
+            }
+        }
+
+        if ($cleaned > 0) {
+            $this->info("Cleaned {$cleaned} expired cache file(s).");
+        }
+    }
+
+    private function ensureTrustedSourcesFileExists(): void
+    {
+        $dir = dirname($this->trustedSourcesPath);
+        if (!is_dir($dir)) {
+            mkdir($dir, 0755, true);
+        }
+        if (!file_exists($this->trustedSourcesPath)) {
+            file_put_contents($this->trustedSourcesPath, json_encode(['sources' => []], JSON_PRETTY_PRINT));
+        }
+    }
+
+    private function readTrustedSources(): array
+    {
+        if (!file_exists($this->trustedSourcesPath)) {
+            return ['sources' => []];
+        }
+        $content = file_get_contents($this->trustedSourcesPath);
+        $data = json_decode($content, true);
+        return is_array($data) ? $data : ['sources' => []];
+    }
+
+    private function writeTrustedSources(array $data): void
+    {
+        file_put_contents($this->trustedSourcesPath, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+    }
+
+    private function isSourceTrusted(string $registryName): bool
+    {
+        $data = $this->readTrustedSources();
+        return isset($data['sources'][$registryName]['trusted']) && $data['sources'][$registryName]['trusted'] === true;
+    }
+
+    private function trustSource(string $registryName): void
+    {
+        $data = $this->readTrustedSources();
+        $data['sources'][$registryName] = [
+            'trusted' => true,
+            'trusted_at' => date('c')
+        ];
+        $this->writeTrustedSources($data);
+    }
+
+    private function promptUserInput(string $prompt, string $default = 'n'): string
+    {
+        echo $prompt;
+        $input = trim(fgets(STDIN) ?: '');
+        return $input ?: $default;
+    }
+
+    private function showPostInstallWarning(string $moduleName, string $registryName, int $commandCount): void
+    {
+        $this->line("");
+        $this->warning("⚠️  POST-INSTALL SCRIPT WARNING ⚠️");
+        $this->line("");
+        $this->error("Module '{$moduleName}' from registry '{$registryName}' has {$commandCount} post-install command(s).");
+        $this->error("These commands will execute with full system permissions.");
+        $this->line("");
+    }
+
+    private function confirmPostInstallCommand(string $command, string $moduleName, string $registryName, int $commandIndex, int $totalCommands): string
+    {
+        $this->line("");
+        $this->warning("⚠️  SECURITY WARNING ⚠️");
+        $this->line("");
+        $this->error("Module '{$moduleName}' from registry '{$registryName}' wants to execute:");
+        $this->line("  Command: {$command}");
+        $this->line("");
+        $this->warning("This command will run with the same permissions as this process.");
+        $this->warning("Only run commands from trusted sources.");
+        $this->line("");
+        $this->info("Options:");
+        $this->line("  [Y]es - Run this command");
+        $this->line("  [N]o - Skip this command");
+        $this->line("  [A]ll - Accept all remaining commands");
+        $this->line("  [R]eject All - Reject all remaining commands");
+        $this->line("");
+        
+        $prompt = "Your choice [N]: ";
+        $response = strtolower(trim($this->promptUserInput($prompt, 'n')));
+        
+        if (in_array($response, ['yes', 'y', '1', 'true'], true)) {
+            return 'yes';
+        } elseif (in_array($response, ['all', 'a'], true)) {
+            return 'all';
+        } elseif (in_array($response, ['reject', 'reject-all', 'r'], true)) {
+            return 'reject-all';
+        }
+        
+        return 'no';
+    }
+
+    private function promptTrustSource(string $registryName): bool
+    {
+        $this->line("");
+        $prompt = "Do you want to trust '{$registryName}' for future installations?\nThis will skip confirmation prompts for PostInstall commands from this source.\n[y]es/[n]o [n]: ";
+        $response = strtolower(trim($this->promptUserInput($prompt, 'n')));
+        return in_array($response, ['yes', 'y', '1', 'true'], true);
+    }
+
     public function getRegistries(): array
     {
         return $this->registries;
+    }
+
+    public function setDebugMode(bool $enabled): void
+    {
+        $this->debugEnabled = $enabled;
+    }
+
+    protected function debug(string $message, string $context = ''): void
+    {
+        if (!$this->debugEnabled) {
+            return;
+        }
+        $prefix = $context ? "[{$context}] " : '';
+        echo "\033[35m{$prefix}{$message}\033[0m\n";
     }
 
     public function installFromLock(): void
@@ -85,13 +231,13 @@ final class PackageManagerService implements PackageManagerInterface
 
         foreach ($modulesToInstall as $moduleName => $moduleLockInfo) {
             $versionToInstall = $moduleLockInfo['version'] ?? null;
-            $downloadUrl = $moduleLockInfo['url'] ?? null;
             $expectedIntegrity = $moduleLockInfo['integrity'] ?? null;
-            $registryName = $moduleLockInfo['registry'] ?? self::OFFICIAL_REGISTRY_NAME;
-            $registryDetails = $this->getRegistryByName($registryName);
-            $token = $registryDetails['personal_token'] ?? null;
+            $registryName = $moduleLockInfo['registry'] ?? null;
+            $sourceType = $moduleLockInfo['source_type'] ?? 'git';
+            $sourceConfig = $moduleLockInfo['source_config'] ?? [];
+            $modulePath = $moduleLockInfo['module_path'] ?? null;
 
-            if (!$versionToInstall || !$downloadUrl || !$expectedIntegrity) {
+            if (!$versionToInstall || !$expectedIntegrity || !$modulePath) {
                 $this->error("Incomplete lock information for module '{$moduleName}'. Skipping.");
                 $installErrors = true;
                 continue;
@@ -109,6 +255,17 @@ final class PackageManagerService implements PackageManagerInterface
                 continue;
             }
 
+            $registryDetails = $registryName ? $this->getRegistryByName($registryName) : null;
+            if (!$registryDetails) {
+                $this->error("Registry '{$registryName}' not found in configured registries for module '{$moduleName}'. Skipping.");
+                $installErrors = true;
+                continue;
+            }
+            $sourceConfig = array_merge($registryDetails, $sourceConfig);
+            $sourceConfig['type'] = $sourceType;
+            $sourceConfig['debug'] = $this->debugEnabled;
+            $source = SourceFactory::create($sourceConfig);
+
             $this->info("Verifying integrity of {$moduleName}...");
             if (file_exists($moduleCachePath)) {
                 $calculatedIntegrity = hash_file('sha256', $moduleCachePath);
@@ -121,16 +278,16 @@ final class PackageManagerService implements PackageManagerInterface
             }
 
             if (!file_exists($moduleCachePath)) {
-                $this->info("Downloading module {$moduleName} from {$downloadUrl}...");
-                $integrityHash = $this->downloadFile($downloadUrl, $moduleCachePath, $token);
+                $this->info("Downloading module {$moduleName}...");
+                $integrityHash = $source->downloadModule($modulePath, $moduleCachePath, $versionToInstall);
                 if (!$integrityHash) {
-                    $this->error("Failed to download module {$moduleName} from URL in lock file: {$downloadUrl}");
+                    $this->error("Failed to download module {$moduleName} from source.");
                     $installErrors = true;
                     continue;
                 }
 
                 if ($integrityHash !== $expectedIntegrity) {
-                    $this->error("Integrity verification failed after download for module {$moduleName} from {$downloadUrl}!");
+                    $this->error("Integrity verification failed after download for module {$moduleName}!");
                     $this->error("Expected integrity: {$expectedIntegrity}");
                     $this->error("Calculated integrity: {$integrityHash}");
                     unlink($moduleCachePath);
@@ -149,7 +306,78 @@ final class PackageManagerService implements PackageManagerInterface
             }
 
             $this->updateForgeJson($moduleName, $versionToInstall);
-            $this->runPostInstallAttributes($moduleInstallPath, $this->toPascalCase($moduleName));
+            $executedCommands = $this->runPostInstallAttributes($moduleInstallPath, $this->toPascalCase($moduleName), $registryName);
+
+            $moduleForgeJsonPath = $moduleInstallPath . '/forge.json';
+            if (file_exists($moduleForgeJsonPath)) {
+                $moduleForgeJsonContent = file_get_contents($moduleForgeJsonPath);
+                $moduleConfig = json_decode($moduleForgeJsonContent, true);
+
+                if (isset($moduleConfig['postInstall']['commands']) && is_array($moduleConfig['postInstall']['commands'])) {
+                    $commandCount = count($moduleConfig['postInstall']['commands']);
+                    $isTrusted = $this->isSourceTrusted($registryName);
+                    
+                    if (!$isTrusted) {
+                        $this->showPostInstallWarning($moduleName, $registryName, $commandCount);
+                    } else {
+                        $this->info("Source '{$registryName}' is trusted. Executing all PostInstall commands automatically.");
+                    }
+
+                    $acceptAll = false;
+                    $rejectAll = false;
+
+                    foreach ($moduleConfig['postInstall']['commands'] as $index => $command) {
+                        if ($rejectAll) {
+                            $this->info("Skipping command " . ($index + 1) . " of {$commandCount} (rejected all).");
+                            continue;
+                        }
+
+                        if ($isTrusted || $acceptAll) {
+                            $shouldExecute = true;
+                        } else {
+                            $response = $this->confirmPostInstallCommand($command, $moduleName, $registryName, $index + 1, $commandCount);
+                            
+                            if ($response === 'reject-all') {
+                                $rejectAll = true;
+                                $shouldExecute = false;
+                            } elseif ($response === 'all') {
+                                $acceptAll = true;
+                                $shouldExecute = true;
+                            } else {
+                                $shouldExecute = ($response === 'yes');
+                            }
+                        }
+
+                        if ($shouldExecute) {
+                            $this->info("Executing command: {$command}");
+                            exec($command, $output, $returnVar);
+
+                            if ($returnVar !== 0) {
+                                $this->error("Post-install command '{$command}' failed for module {$moduleName} with exit code: {$returnVar}");
+                                if (!empty($output)) {
+                                    $this->error("Command output:\n" . implode("\n", $output));
+                                }
+                                $this->warning("Post-install command failure - Module installation continues with warnings.");
+                            } else {
+                                $this->info("Post-install command '{$command}' executed successfully for module {$moduleName}.");
+                                if (!empty($output)) {
+                                    $this->info("Command output:\n" . implode("\n", $output));
+                                }
+                                $executedCommands[] = $command;
+                            }
+                        } else {
+                            $this->info("Skipping command: {$command}");
+                        }
+                    }
+                }
+            }
+
+            if (!empty($executedCommands) && !$this->isSourceTrusted($registryName)) {
+                if ($this->promptTrustSource($registryName)) {
+                    $this->trustSource($registryName);
+                    $this->success("Source '{$registryName}' has been trusted for future installations.");
+                }
+            }
 
             $this->success("Module {$moduleName} version {$versionToInstall} installed from lock file successfully.");
         }
@@ -173,23 +401,14 @@ final class PackageManagerService implements PackageManagerInterface
         return json_decode($content, true) ?? ['modules' => []];
     }
 
-    private function getRegistryByName(string $name): array
+    private function getRegistryByName(string $name): ?array
     {
         foreach ($this->registries as $registry) {
             if ($registry['name'] === $name) {
                 return $registry;
             }
         }
-        return $this->getDefaultRegistryDetails();
-    }
-
-    public function getDefaultRegistryDetails(): array
-    {
-        return [
-            'name' => self::OFFICIAL_REGISTRY_NAME,
-            'url' => self::OFFICIAL_REGISTRY_BASE_URL,
-            'branch' => self::OFFICIAL_REGISTRY_BRANCH
-        ];
+        return null;
     }
 
     private function generateModuleInstallFolderName(string $fullName): string
@@ -269,10 +488,6 @@ final class PackageManagerService implements PackageManagerInterface
         $forgeJsonPath = BASE_PATH . '/forge.json';
         $forgeConfig = $this->readForgeJson();
 
-        if (!isset($forgeConfig['modules']['forge-engine/framework'])) {
-            $forgeConfig['modules']['forge-engine/framework'] = 'latest';
-        }
-
         $forgeConfig['modules'][$moduleName] = $version;
         $this->writeForgeJson($forgeConfig);
     }
@@ -304,27 +519,6 @@ final class PackageManagerService implements PackageManagerInterface
         file_put_contents($forgeJsonPath, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
 
-    private function downloadFile(string $url, string $destination, ?string $token = null): bool|string
-    {
-        $context = null;
-        if ($token) {
-            $context = stream_context_create([
-                'http' => [
-                    'header' => "Authorization: token $token\r\n"
-                ]
-            ]);
-        }
-
-        $fileContent = @file_get_contents($url, false, $context);
-        if ($fileContent === false) {
-            return false;
-        }
-        if (file_put_contents($destination, $fileContent) !== false) {
-            $calculatedHash = hash_file('sha256', $destination);
-            return $calculatedHash;
-        }
-        return false;
-    }
 
     private function extractModule(string $zipPath, string $destinationPath, string $sourcePathInZip): bool
     {
@@ -360,12 +554,13 @@ final class PackageManagerService implements PackageManagerInterface
     /**
      * @throws ReflectionException
      */
-    private function runPostInstallAttributes(string $moduleInstallPath, string $moduleName): void
+    private function runPostInstallAttributes(string $moduleInstallPath, string $moduleName, string $registryName): array
     {
+        $executedCommands = [];
         $moduleSrc = glob($moduleInstallPath . '/**/*.php');
         if (!$moduleSrc) {
             $this->warning("No PHP files found in module {$moduleName}, skipping PostInstall scanning.");
-            return;
+            return $executedCommands;
         }
 
         foreach ($moduleSrc as $file) {
@@ -390,38 +585,76 @@ final class PackageManagerService implements PackageManagerInterface
 
                 if (empty($postInstallAttrs)) {
                     $this->info("Module {$moduleName} has no PostInstall attributes defined.");
-                    return;
+                    return $executedCommands;
                 }
 
-                $this->info("Executing PostInstall commands for module {$moduleName}...");
+                $commandCount = count($postInstallAttrs);
+                $isTrusted = $this->isSourceTrusted($registryName);
+                
+                if (!$isTrusted) {
+                    $this->showPostInstallWarning($moduleName, $registryName, $commandCount);
+                } else {
+                    $this->info("Source '{$registryName}' is trusted. Executing all PostInstall commands automatically.");
+                }
 
-                foreach ($postInstallAttrs as $attr) {
+                $acceptAll = false;
+                $rejectAll = false;
+
+                foreach ($postInstallAttrs as $index => $attr) {
+                    if ($rejectAll) {
+                        $this->info("Skipping command " . ($index + 1) . " of {$commandCount} (rejected all).");
+                        continue;
+                    }
+
                     /** @var PostInstall $instance */
                     $instance = $attr->newInstance();
                     $args = implode(' ', $instance->args);
                     $command = "php forge.php {$instance->command} {$args}";
-                    $this->info("Running: {$command}");
 
-                    exec($command, $output, $code);
-                    $this->line();
+                    if ($isTrusted || $acceptAll) {
+                        $shouldExecute = true;
+                    } else {
+                        $response = $this->confirmPostInstallCommand($command, $moduleName, $registryName, $index + 1, $commandCount);
+                        
+                        if ($response === 'reject-all') {
+                            $rejectAll = true;
+                            $shouldExecute = false;
+                        } elseif ($response === 'all') {
+                            $acceptAll = true;
+                            $shouldExecute = true;
+                        } else {
+                            $shouldExecute = ($response === 'yes');
+                        }
+                    }
 
-                    if ($code !== 0) {
-                        $this->error("Command '{$command}' failed for module {$moduleName} (exit code {$code})");
-                        if (!empty($output)) {
-                            $this->error("Output:\n" . implode("\n", $output));
+                    if ($shouldExecute) {
+                        $this->info("Running: {$command}");
+                        exec($command, $output, $code);
+                        $this->line();
+
+                        if ($code !== 0) {
+                            $this->error("Command '{$command}' failed for module {$moduleName} (exit code {$code})");
+                            if (!empty($output)) {
+                                $this->error("Output:\n" . implode("\n", $output));
+                            }
+                        } else {
+                            $this->success("Command '{$command}' executed successfully.");
+                            $executedCommands[] = $command;
                         }
                     } else {
-                        $this->success("Command '{$command}' executed successfully.");
+                        $this->info("Skipping command: {$command}");
                     }
                 }
 
-                return;
+                return $executedCommands;
             }
         }
 
         if (!$foundModuleClass) {
             $this->warning("No #[Module] class found for '{$moduleName}', skipping PostInstall execution.");
         }
+
+        return $executedCommands;
     }
 
     /**
@@ -452,21 +685,39 @@ final class PackageManagerService implements PackageManagerInterface
 
         $moduleDownloadPathInRepo = $versionDetails['url'];
         $registryDetails = $this->getRegistryDetailsForModule($moduleName);
-        $token = $registryDetails['personal_token'] ?? null;
-        $registryRawBaseUrl = $this->getRegistryRawBaseUrl($registryDetails);
+        if (!$registryDetails) {
+            $this->error("No registry found for module '{$moduleName}'. Please ensure registries are configured in config/source_list.php");
+            return;
+        }
+        $sourceType = $registryDetails['type'] ?? 'git';
+        $sourceConfig = $registryDetails;
+        $sourceConfig['type'] = $sourceType;
+        $sourceConfig['debug'] = $this->debugEnabled;
+        $source = SourceFactory::create($sourceConfig);
+        
         $moduleInstallFolderName = $this->generateModuleInstallFolderName($moduleName);
         $moduleCacheFileName = $moduleInstallFolderName . '-' . $versionToInstall . '.zip';
         $moduleCachePath = $this->getCachePath() . $moduleCacheFileName;
         $moduleInstallPath = $this->getModulesPath() . $moduleInstallFolderName;
 
-        $githubZipUrl = $this->generateGithubZipUrl($registryRawBaseUrl, $registryDetails['branch'], $moduleDownloadPathInRepo);
-
-        if ($forceCache === 'force' || !file_exists($moduleCachePath)) {
-            $this->info("Downloading module {$moduleName} version {$versionToInstall} from {$githubZipUrl}...");
-            $integrityHash = $this->downloadFile($githubZipUrl, $moduleCachePath, $token);
+        if ($forceCache === 'force') {
+            if (file_exists($moduleCachePath)) {
+                unlink($moduleCachePath);
+                $this->info("Cache bypassed, deleted cached module {$moduleName} version {$versionToInstall}.");
+            }
+            $this->info("Downloading module {$moduleName} version {$versionToInstall} from remote...");
+            $integrityHash = $source->downloadModule($moduleDownloadPathInRepo, $moduleCachePath, $versionToInstall);
             $this->integrityHash = $integrityHash;
             if (!$integrityHash) {
-                $this->error("Failed to download module {$moduleName} from GitHub.");
+                $this->error("Failed to download module {$moduleName}.");
+                return;
+            }
+        } elseif (!file_exists($moduleCachePath)) {
+            $this->info("Downloading module {$moduleName} version {$versionToInstall}...");
+            $integrityHash = $source->downloadModule($moduleDownloadPathInRepo, $moduleCachePath, $versionToInstall);
+            $this->integrityHash = $integrityHash;
+            if (!$integrityHash) {
+                $this->error("Failed to download module {$moduleName}.");
                 return;
             }
         } else {
@@ -485,8 +736,10 @@ final class PackageManagerService implements PackageManagerInterface
         }
 
         $this->updateForgeJson($moduleName, $versionToInstall);
-        $this->createForgeLockJson($moduleName, $versionToInstall, $registryDetails, $githubZipUrl, $integrityHash);
-        $this->runPostInstallAttributes($moduleInstallPath, $this->toPascalCase($moduleName));
+        $this->createForgeLockJson($moduleName, $versionToInstall, $registryDetails, $moduleDownloadPathInRepo, $integrityHash, $sourceType);
+        
+        $registryName = $registryDetails['name'] ?? 'unknown';
+        $executedCommands = $this->runPostInstallAttributes($moduleInstallPath, $this->toPascalCase($moduleName), $registryName);
 
         $moduleForgeJsonPath = $moduleInstallPath . '/forge.json';
         if (file_exists($moduleForgeJsonPath)) {
@@ -494,155 +747,198 @@ final class PackageManagerService implements PackageManagerInterface
             $moduleConfig = json_decode($moduleForgeJsonContent, true);
 
             if (isset($moduleConfig['postInstall']['commands']) && is_array($moduleConfig['postInstall']['commands'])) {
-                $this->info("Executing post-install commands for module {$moduleName}...");
-                foreach ($moduleConfig['postInstall']['commands'] as $command) {
-                    $this->info("Executing command: {$command}");
-                    exec($command, $output, $returnVar);
+                $commandCount = count($moduleConfig['postInstall']['commands']);
+                $isTrusted = $this->isSourceTrusted($registryName);
+                
+                if (!$isTrusted) {
+                    $this->showPostInstallWarning($moduleName, $registryName, $commandCount);
+                } else {
+                    $this->info("Source '{$registryName}' is trusted. Executing all PostInstall commands automatically.");
+                }
 
-                    if ($returnVar !== 0) {
-                        $this->error("Post-install command '{$command}' failed for module {$moduleName} with exit code: {$returnVar}");
-                        if (!empty($output)) {
-                            $this->error("Command output:\n" . implode("\n", $output));
-                        }
-                        $this->warning("Post-install command failure - Module installation continues with warnings.");
+                $acceptAll = false;
+                $rejectAll = false;
+
+                foreach ($moduleConfig['postInstall']['commands'] as $index => $command) {
+                    if ($rejectAll) {
+                        $this->info("Skipping command " . ($index + 1) . " of {$commandCount} (rejected all).");
+                        continue;
+                    }
+
+                    if ($isTrusted || $acceptAll) {
+                        $shouldExecute = true;
                     } else {
-                        $this->info("Post-install command '{$command}' executed successfully for module {$moduleName}.");
-                        if (!empty($output)) {
-                            $this->info("Command output:\n" . implode("\n", $output));
+                        $response = $this->confirmPostInstallCommand($command, $moduleName, $registryName, $index + 1, $commandCount);
+                        
+                        if ($response === 'reject-all') {
+                            $rejectAll = true;
+                            $shouldExecute = false;
+                        } elseif ($response === 'all') {
+                            $acceptAll = true;
+                            $shouldExecute = true;
+                        } else {
+                            $shouldExecute = ($response === 'yes');
                         }
+                    }
+
+                    if ($shouldExecute) {
+                        $this->info("Executing command: {$command}");
+                        exec($command, $output, $returnVar);
+
+                        if ($returnVar !== 0) {
+                            $this->error("Post-install command '{$command}' failed for module {$moduleName} with exit code: {$returnVar}");
+                            if (!empty($output)) {
+                                $this->error("Command output:\n" . implode("\n", $output));
+                            }
+                            $this->warning("Post-install command failure - Module installation continues with warnings.");
+                        } else {
+                            $this->info("Post-install command '{$command}' executed successfully for module {$moduleName}.");
+                            if (!empty($output)) {
+                                $this->info("Command output:\n" . implode("\n", $output));
+                            }
+                            $executedCommands[] = $command;
+                        }
+                    } else {
+                        $this->info("Skipping command: {$command}");
                     }
                 }
             }
         }
+
+        if (!empty($executedCommands) && !$this->isSourceTrusted($registryName)) {
+            if ($this->promptTrustSource($registryName)) {
+                $this->trustSource($registryName);
+                $this->success("Source '{$registryName}' has been trusted for future installations.");
+            }
+        }
+
+        // Only show success message if we reached this point without early returns
+        // This means: module info was found, download succeeded, extraction succeeded
         $this->success("Module {$moduleName} version {$versionToInstall} installed successfully.");
+    }
+
+    private function getModulesDataForRegistry(string $registryName, string $sourceType, array $registryConfig, SourceInterface $source): ?array
+    {
+        $debugConfig = $registryConfig;
+        if (isset($debugConfig['personal_token'])) {
+            $debugConfig['personal_token'] = '***hidden***';
+        }
+        if (isset($debugConfig['password'])) {
+            $debugConfig['password'] = '***hidden***';
+        }
+        
+        $this->debug("Checking registry: {$registryName}");
+        $this->debug("Registry config: " . json_encode($debugConfig, JSON_UNESCAPED_SLASHES));
+        $this->debug("Source type: {$sourceType}");
+        
+        $cacheKey = md5($registryName . $sourceType . serialize($registryConfig));
+        $cacheFile = $this->getCachePath() . $cacheKey . '.cache';
+        $this->debug("Cache file: {$cacheFile}");
+        $modulesData = null;
+
+        if (file_exists($cacheFile)) {
+            $age = time() - filemtime($cacheFile);
+            if ($age >= $this->cacheTtl) {
+                unlink($cacheFile);
+                $this->info("Cache expired, cleared cache file for {$registryName}.");
+            } else {
+                $this->info("Using cached module list from {$registryName}.");
+                $modulesData = json_decode(file_get_contents($cacheFile), true);
+            }
+        }
+
+        if (!is_array($modulesData)) {
+            $this->info("Fetching module list from {$registryName}...");
+            $modulesData = $source->fetchModulesJson();
+            
+            if ($modulesData === null || !is_array($modulesData)) {
+                $this->warning("Failed to fetch module list from registry: {$registryName}");
+                return null;
+            }
+
+            $written = @file_put_contents($cacheFile, json_encode($modulesData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+            if ($written === false) {
+                $this->warning("Failed to write cache file for registry: {$registryName}");
+            } else {
+                $this->debug("Cache file written successfully: {$cacheFile}");
+            }
+        }
+
+        return $modulesData;
     }
 
     public function getModuleInfo(?string $moduleName = null, ?string $version = null): ?array
     {
-        $registryDetails = $this->getRegistryDetailsForModule($moduleName);
-        $modulesJsonUrl = $this->getModulesJsonUrl($registryDetails);
-        $token = $registryDetails['personal_token'] ?? null;
-
-        $cacheKey = md5($modulesJsonUrl);
-        $cacheFile = $this->getCachePath() . $cacheKey . '.cache';
-        $modulesData = null;
-
-        if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < $this->cacheTtl)) {
-            $this->info("Using cached module list from " . (isset($registryDetails['name']) ? $registryDetails['name'] : $modulesJsonUrl) . ".");
-            $modulesData = json_decode(file_get_contents($cacheFile), true);
+        if (empty($this->registries)) {
+            $this->error("No package registries configured. Please configure registries in config/source_list.php");
+            return null;
         }
 
-        $context = null;
-        if ($token) {
-            $context = stream_context_create([
-                'http' => [
-                    'header' => "Authorization: token $token\r\n"
-                ]
-            ]);
+        if (!$moduleName) {
+            return null;
         }
 
-        if (!is_array($modulesData) || !isset($modulesData[$moduleName])) {
-            $this->info("Fetching module list from " . (isset($registryDetails['name']) ? $registryDetails['name'] : $modulesJsonUrl) . "...");
-            $modulesJsonContent = @file_get_contents($modulesJsonUrl, false, $context);
+        $this->debug("Searching for module: {$moduleName}");
+        $this->debug("Checking " . count($this->registries) . " registry(ies)");
 
-            if ($modulesJsonContent === false) {
-                $this->error("Failed to fetch module list from registry: {$modulesJsonUrl}");
-                return null;
+        foreach ($this->registries as $index => $registryConfig) {
+            $sourceType = $registryConfig['type'] ?? 'git';
+            $registryConfig['debug'] = $this->debugEnabled;
+            $source = SourceFactory::create($registryConfig);
+            $registryName = $registryConfig['name'] ?? 'unknown';
+            
+            $this->debug("Registry " . ($index + 1) . "/" . count($this->registries) . ": {$registryName}");
+            
+            $modulesData = $this->getModulesDataForRegistry($registryName, $sourceType, $registryConfig, $source);
+            
+            if ($modulesData && isset($modulesData[$moduleName])) {
+                $this->debug("Module '{$moduleName}' found in registry: {$registryName}");
+                return $modulesData[$moduleName];
+            } else {
+                $this->debug("Module '{$moduleName}' not found in registry: {$registryName}");
             }
+        }
 
-            $modulesData = json_decode($modulesJsonContent, true);
-            if (json_last_error() !== JSON_ERROR_NONE) {
-                $jsonError = json_last_error_msg();
-                $this->error("JSON decode error: " . $jsonError);
-                $this->error("Problematic JSON content (raw):");
-                $this->error($modulesJsonContent);
-                return null;
+        $this->error("Module '{$moduleName}' not found in any configured registry.");
+        return null;
+    }
+
+    private function getRegistryDetailsForModule(?string $moduleName): ?array
+    {
+        if (empty($this->registries)) {
+            return null;
+        }
+
+        if ($moduleName) {
+            foreach ($this->registries as $registry) {
+                $sourceType = $registry['type'] ?? 'git';
+                $registry['debug'] = $this->debugEnabled;
+                $source = SourceFactory::create($registry);
+                $registryName = $registry['name'] ?? 'unknown';
+                
+                $modulesData = $this->getModulesDataForRegistry($registryName, $sourceType, $registry, $source);
+                
+                if ($modulesData && isset($modulesData[$moduleName])) {
+                    return $registry;
+                }
             }
-
-            if (!is_array($modulesData)) {
-                $this->error("Invalid module list format from registry from " . (isset($registryDetails['name']) ? $registryDetails['name'] : $modulesJsonUrl) . ".");
-                return null;
-            }
-            file_put_contents($cacheFile, $modulesJsonContent);
         }
 
-        return $modulesData[$moduleName] ?? null;
+        return $this->registries[0] ?? null;
     }
 
-    private function getRegistryDetailsForModule(?string $moduleName): array
-    {
-        if ($moduleName === null) {
-            return [
-                'name' => self::OFFICIAL_REGISTRY_NAME,
-                'url' => self::OFFICIAL_REGISTRY_BASE_URL,
-                'branch' => self::OFFICIAL_REGISTRY_BRANCH,
-            ];
-        }
-
-        if (strpos($moduleName, 'forge-') === 0 && $moduleName !== self::FRAMEWORK_MODULE_NAME) {
-            return [
-                'name' => self::OFFICIAL_REGISTRY_NAME,
-                'url' => self::OFFICIAL_REGISTRY_BASE_URL,
-                'branch' => self::OFFICIAL_REGISTRY_BRANCH,
-            ];
-        }
-
-        foreach ($this->registries as $registry) {
-            return $registry;
-        }
-
-        return [
-            'name' => self::OFFICIAL_REGISTRY_NAME,
-            'url' => self::OFFICIAL_REGISTRY_BASE_URL,
-            'branch' => self::OFFICIAL_REGISTRY_BRANCH,
-        ];
-    }
-
-    private function getModulesJsonUrl(array $registryDetails): string
-    {
-        $registryRawBaseUrl = $this->getRegistryRawBaseUrl($registryDetails);
-        return rtrim($registryRawBaseUrl, '/') . '/modules.json';
-    }
-
-    private function getRegistryRawBaseUrl(array $registryDetails): string
-    {
-        $registryUrl = $registryDetails['url'];
-        $branch = $registryDetails['branch'] ?? 'main';
-
-        if (preg_match('/^git@github\.com:(?<user>[^\/]+)\/(?<repo>[^\.]+).git$/', $registryUrl, $matches)) {
-            return "https://raw.githubusercontent.com/{$matches['user']}/{$matches['repo']}/{$branch}";
-        }
-
-        if (preg_match('#^https?://github\.com/(?<user>[^/]+)/(?<repo>[^/]+)#i', $registryUrl, $matches)) {
-            return "https://raw.githubusercontent.com/{$matches['user']}/{$matches['repo']}/{$branch}";
-        }
-
-        return $registryUrl;
-    }
-
-    private function generateGithubZipUrl(string $registryRawBaseUrl, string $branch, string $modulePathInRepo): string
-    {
-        $repoBaseRawUrl = rtrim($registryRawBaseUrl, '/');
-        $zipPathInRepo = 'modules/' . $modulePathInRepo;
-
-        $versionFolderName = basename($modulePathInRepo);
-        $zipFileName = $versionFolderName . '.zip';
-
-        $githubZipUrl = $repoBaseRawUrl . '/' . $zipPathInRepo . '/' . $zipFileName;
-
-        return $githubZipUrl;
-    }
-
-    private function createForgeLockJson(string $moduleName, string $version, array $registryDetails, string $downloadUrl, string $integrityHash): void
+    private function createForgeLockJson(string $moduleName, string $version, array $registryDetails, string $modulePath, string $integrityHash, string $sourceType): void
     {
         $forgeLockJsonPath = BASE_PATH . '/forge-lock.json';
         $lockData = $this->readForgeLockJson();
 
         $lockData['modules'][$moduleName] = [
             'version' => $version,
-            'registry' => $registryDetails['name'] ?? self::OFFICIAL_REGISTRY_NAME,
-            'url' => $downloadUrl,
+            'registry' => $registryDetails['name'] ?? 'unknown',
+            'module_path' => $modulePath,
             'integrity' => $integrityHash,
+            'source_type' => $sourceType,
+            'source_config' => $registryDetails,
         ];
 
         $this->writeForgeLockJson($lockData);
@@ -656,12 +952,6 @@ final class PackageManagerService implements PackageManagerInterface
 
     public function removeModule(string $moduleName): void
     {
-        if ($moduleName === self::FRAMEWORK_MODULE_NAME) {
-            $this->warning("Uninstalling 'forge-engine/framework' may cause critical system errors.");
-            $this->warning("Only proceed if you understand the risks. Most functionality will be disabled.");
-            $this->warning("It's highly recommended to reinstall the framework afterwards to restore functionality.");
-        }
-
         if ($moduleName === self::PACKAGE_MANAGER_MODULE_NAME) {
             $this->warning("Uninstalling 'forge-package-manager' will disable automatic module management.");
             $this->warning("You will need to manually download and install modules until another package manager is installed.");
@@ -807,3 +1097,4 @@ final class PackageManagerService implements PackageManagerInterface
             is_dir(BASE_PATH . "/public/modules/{$module}");
     }
 }
+

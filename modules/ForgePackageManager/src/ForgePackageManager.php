@@ -13,14 +13,13 @@ use Forge\Core\Module\Attributes\ConfigDefaults;
 use Forge\Core\Module\Attributes\Module;
 use Forge\Core\Module\Attributes\Repository;
 
-#[Module(name: 'ForgePackageManager', version: '0.1.6', description: 'A Package Manager By Forge', order: 1, isCli: true)]
+#[Module(name: 'ForgePackageManager', version: '1.0.0', description: 'A Package Manager By Forge', order: 1, isCli: true)]
 #[Service]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
 #[ConfigDefaults(defaults: [
-    'forge_package_manager' => [
-        'registry' => [],
-        'cache_ttl' => 3600
+    'source_list' => [
+        'registry' => []
     ]
 ])]
 final class ForgePackageManager

@@ -38,6 +38,14 @@ final class RemoveModuleCommand extends Command
     )]
     private bool $force = false;
 
+    #[Arg(
+        name: 'debug',
+        description: 'Show debug information',
+        default: false,
+        required: false
+    )]
+    private bool $debug = false;
+
     public function __construct(private readonly PackageManagerService $packageManager)
     {
     }
@@ -45,6 +53,8 @@ final class RemoveModuleCommand extends Command
     public function execute(array $args): int
     {
         $this->wizard($args);
+
+        $this->packageManager->setDebugMode($this->debug);
 
         if (!$this->force && !$this->confirmDestructiveAction()) {
             $this->warning('Module removal aborted.');

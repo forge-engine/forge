@@ -40,6 +40,14 @@ final class InstallModuleCommand extends Command
     )]
     private bool $force;
 
+    #[Arg(
+        name: 'debug',
+        description: 'Show debug information',
+        default: false,
+        required: false
+    )]
+    private bool $debug = false;
+
     public function __construct(private readonly PackageManagerService $packageManagerService)
     {
     }
@@ -48,14 +56,13 @@ final class InstallModuleCommand extends Command
     {
         $this->wizard($args);
 
+        $this->packageManagerService->setDebugMode($this->debug);
+
         [$moduleName, $version] = explode('@', $this->moduleNameVersion) + [1 => null];
 
         try {
             $force = $this->force ? 'force' : '';
             $this->packageManagerService->installModule($moduleName, $version, $force);
-            $this->success(
-                "Module '{$moduleName}' installed successfully" . ($version ? " (v{$version})" : '')
-            );
             return 0;
         } catch (Throwable $e) {
             $this->error("Error installing module: " . $e->getMessage());
