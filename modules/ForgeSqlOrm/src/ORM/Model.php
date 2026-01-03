@@ -17,6 +17,7 @@ use App\Modules\ForgeSqlOrm\ORM\Attributes\Column;
 use App\Modules\ForgeSqlOrm\ORM\Attributes\ProtectedFields;
 use App\Modules\ForgeSqlOrm\ORM\Attributes\Table;
 use Forge\Core\DI\Attributes\Service;
+use Forge\Core\Dto\BaseDto;
 use JsonSerializable;
 use LogicException;
 use ReflectionClass;
@@ -177,7 +178,13 @@ abstract class Model implements JsonSerializable
                 if ($curr instanceof BackedEnum) {
                     $value = $curr->value;
                 } elseif ($col->cast === Cast::JSON) {
-                    $value = json_encode($curr, JSON_THROW_ON_ERROR);
+                    if ($curr instanceof BaseDto) {
+                        $value = json_encode($curr->toArray(), JSON_THROW_ON_ERROR);
+                    } elseif (is_string($curr)) {
+                        $value = $curr;
+                    } else {
+                        $value = json_encode($curr, JSON_THROW_ON_ERROR);
+                    }
                 } elseif ($curr instanceof DateTimeImmutable) {
                     $value = $curr->format('Y-m-d H:i:s');
                 } elseif ($col->cast === Cast::BOOL && is_bool($curr)) {

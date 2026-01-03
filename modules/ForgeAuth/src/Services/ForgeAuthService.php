@@ -54,7 +54,7 @@ final class ForgeAuthService implements ForgeAuthInterface
             $user->password = password_hash($credentials["password"], PASSWORD_BCRYPT);
             $user->email = $credentials["email"];
             $user->status = 'active';
-            $user->metadata = json_encode($credentials["metadata"] ?? []);
+            $user->metadata = $credentials["metadata"] ?? [];
             $user->save();
             return true;
         } catch (Exception $e) {
