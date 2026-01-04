@@ -1,9 +1,9 @@
 # Forge
 
-**Forge is a PHP framework for builders, not followers.**
+**Forge is an Application Hosted Kernel with pluggable capabilities.**
 
-It's not trying to be the next Symfony, CodeIgniter, Laravel, etc. It's not here to please everyone. It's here because I
-wanted a fast, simple, no-magic framework that puts *me* in control. That's what Forge is. If that works for you too,
+It's here because I
+wanted a fast, simple, no-magic kernel that puts *me* in control. That's what Forge is — a kernel, not a framework. If that works for you too,
 welcome.
 
 ---
@@ -11,7 +11,6 @@ welcome.
 ## Philosophy
 
 Forge is not here to be everything for everyone.  
-It’s not here to mimic other frameworks.  
 It’s here to give you a strong, minimal foundation you can **own**.
 
 You’re not a user. You’re a builder.
@@ -26,15 +25,18 @@ This isn’t a product. This is a toolbox.
 
 ---
 
-## What’s In The Box
+## What's In The Box
 
 - Simple, fast dependency injection container
 - Native PHP view engine with layouts and components
 - Modular structure (install only what you need)
 - Zero dependencies, zero magic
-- Built-in router, database, orm, configuration manager, and more
+- Built-in router, configuration manager, and core services
+- Pluggable capabilities system — capabilities are packed as modules
 - Module system with life cycle hooks
 - CLI for installing modules, project, scaffold commands etc.
+
+**Capabilities, not built-ins.** Database, ORM, authentication, storage — these aren't built into the kernel. They're capabilities you plug in via modules when you need them. The kernel stays lean. You stay in control.
 
 Everything is structured for clarity. No magic files. No guesswork.
 
@@ -61,28 +63,31 @@ php forge.php package:install-project
 
 ---
 
-## Modules
+## Capabilities as Modules
 
-Forge starts minimal (under 400KB), and you add modules as needed.
+Forge starts minimal (under 400KB), and you add capabilities as modules when you need them.
+
+Need a database? Install a database capability module. Need an ORM? Install an ORM capability module. Authentication, storage, testing — all capabilities, all optional, all pluggable.
 
 ```bash
-php forge.php package:install-module forge-auth
-php forge.php package:install-module forge-storage
+php forge.php package:install-module --module=forge-auth
+php forge.php package:install-module --module=forge-storage
+php forge.php package:install-module --module=forge-database-sql
 ```
 
 Or clone from [github.com/forge-engine/modules](https://github.com/forge-engine/modules) and drop them in `/modules`.
 
-I publish modules that help me build real-world projects. If something’s too specific, I won’t. Or I’ll release a
+I publish capability modules that help me build real-world projects. If something's too specific, I won't. Or I'll release a
 simplified version.
 
 ---
 
-## Want to Make Your Own Framework?
+## Want to Build Your Own Kernel?
 
-Do it. I’ll even show you how.  
+Do it. I'll even show you how.  
 See: [`FORGING-YOUR-OWN.md`](./docs/FORGING-YOUR-OWN.md)
 
-You can rename the CLI, change the bootstrap flow, use your own registry — everything is yours now. That’s the point.
+You can rename the CLI, change the bootstrap flow, use your own registry, build your own capabilities — everything is yours now. That's the point. This is a kernel, not a framework. You're the builder.
 
 ---
 
