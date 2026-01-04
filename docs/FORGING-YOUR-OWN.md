@@ -1,14 +1,14 @@
 # FORGING-YOUR-OWN.md
 
 So you want to build your own version of Forge?
-Awesome — this doc will walk you through exactly what to fork, what to change, and how to get your own system up and running.
+Awesome — this doc will walk you through exactly what to fork, what to change, and how to get your own kernel up and running.
 
 ---
 
 ## Overview
-Forge is modular and transparent by design, and everything lives in public repositories under the [forge-engine](https://github.com/forge-engine) GitHub org.
+Forge is an Application Hosted Kernel with pluggable capabilities. It's modular and transparent by design, and everything lives in public repositories under the [forge-engine](https://github.com/forge-engine) GitHub org.
 
-You can fork any part — just the modules, just the starter, or the whole system.
+You can fork any part — just the capabilities (modules), just the starter, or the whole system.
 
 If you're going all in, here's what to do.
 
@@ -18,8 +18,8 @@ If you're going all in, here's what to do.
 
 To fully own and rebrand your Forge stack, fork the following repositories:
 
-### Core Framework
-- [forge-engine/framework](https://github.com/forge-engine/framework) – the minimal core framework (DI, routing, bootstrapping, routing, view engine, database and orm)
+### Core Kernel
+- [forge-engine/framework](https://github.com/forge-engine/framework) – the minimal core kernel (DI, routing, bootstrapping, view engine, configuration manager, and core services)
 
 ### Registry
 - [forge-engine/framework-registry](https://github.com/forge-engine/framework-registry) – maps module names to GitHub URLs (used by the package manager)
@@ -27,8 +27,8 @@ To fully own and rebrand your Forge stack, fork the following repositories:
 ### Starter Template
 - [forge-engine/forge-starter](https://github.com/forge-engine/forge-starter) – a ready-to-go project template with minimal setup
 
-### Modules
-- [forge-engine/modules](https://github.com/forge-engine/modules) – all optional, official Forge modules live here (auth, storage, view engine, etc.)
+### Capabilities (Modules)
+- [forge-engine/modules](https://github.com/forge-engine/modules) – all optional, official Forge capability modules live here (database, ORM, auth, storage, etc.)
 
 ### Installer
 - [forge-engine/installer](https://github.com/forge-engine/installer) – bash script for bootstrapping a new project quickly
@@ -38,30 +38,69 @@ To fully own and rebrand your Forge stack, fork the following repositories:
 - [forge-engine/forge-schemas](https://github.com/forge-engine/forge-schemas) – schema definitions for module manifests, etc.
 
 ### Main Dev Repo
-- [forge-engine/forge](https://github.com/forge-engine/forge) – the full repo containing all modules, installer, and framework glued together. This is mostly for local dev.
+- [forge-engine/forge](https://github.com/forge-engine/forge) – the full repo containing all capability modules, installer, and kernel glued together. This is mostly for local dev.
 
 ---
 
 ## ⚙️ What to Change
 
-### 1. Package Manager Service
-In your fork of the framework, update the `PackageManagerService`:
+### 1. Configure Package Manager Sources
+The package manager doesn't enforce anything — you explicitly add your trusted sources, just like Linux package managers.
+
+In your project, configure `config/source_list.php`. The package manager supports multiple source types:
+
+- **Git** - GitHub, GitLab, Bitbucket, Azure DevOps, and self-hosted Git repositories
+- **SFTP** - Secure file transfer over SSH
+- **FTP/FTPS** - File transfer protocol with optional SSL/TLS
+- **HTTP/HTTPS** - Direct URL downloads with optional basic authentication
+- **Local** - Local filesystem paths
+- **Network** - Network-mounted drives and SMB/CIFS shares
+
+Example `config/source_list.php`:
 
 ```php
-#[Service]
-#[Provides(interface: PackageManagerInterface::class, version: '0.1.0')]
-#[Requires()]
-final class PackageManagerService implements PackageManagerInterface
-{
-	use OutputHelper;
+<?php
 
-	private const OFFICIAL_REGISTRY_NAME = 'your-org-modules';
-	private const OFFICIAL_REGISTRY_BASE_URL = 'https://github.com/your-org/modules';
-	private const OFFICIAL_REGISTRY_BRANCH = 'main';
-	private const FRAMEWORK_MODULE_NAME = 'your-org/framework';
-	private const PACKAGE_MANAGER_MODULE_NAME = 'forge-package-manager'; // Or rename it
-}
+return [
+    'registry' => [
+        [
+            'name' => 'your-org-modules',
+            'type' => 'git',
+            'url' => 'https://github.com/your-org/modules',
+            'branch' => 'main',
+            'private' => false,
+            'personal_token' => env('GITHUB_TOKEN')
+        ],
+        [
+            'name' => 'internal-sftp',
+            'type' => 'sftp',
+            'host' => 'modules.internal.com',
+            'port' => 22,
+            'username' => env('SFTP_USER'),
+            'key_path' => env('SFTP_KEY_PATH'),
+            'base_path' => '/modules'
+        ],
+        [
+            'name' => 'local-registry',
+            'type' => 'local',
+            'path' => '/var/modules-registry'
+        ],
+        // Add more registries as needed
+        // The package manager searches them in order
+    ],
+    'cache_ttl' => 3600
+];
 ```
+
+**Trusted Sources Philosophy**: Like `apt`, `yum`, or `pacman`, Forge's package manager requires you to explicitly trust sources. When installing modules, you'll be prompted to trust sources. Trusted sources are stored in `storage/framework/trusted_sources.json`. This gives you full control over what gets installed in your kernel.
+
+**Documentation**: For detailed configuration examples for each source type, see the [ForgePackageManager documentation](../modules/ForgePackageManager/docs/README.md):
+- [Configuration Guide](../modules/ForgePackageManager/docs/configuration.md) - Complete configuration reference
+- [Git Sources](../modules/ForgePackageManager/docs/git-sources.md) - Setup for Git-based registries
+- [SFTP Sources](../modules/ForgePackageManager/docs/sftp-sources.md) - SSH/SFTP configuration
+- [FTP Sources](../modules/ForgePackageManager/docs/ftp-sources.md) - FTP/FTPS setup
+- [HTTP Sources](../modules/ForgePackageManager/docs/http-sources.md) - HTTP/HTTPS URL configuration
+- [Local Sources](../modules/ForgePackageManager/docs/local-sources.md) - Local filesystem and network paths
 
 ### 2. Installer Script
 In your fork of the installer repo, edit `installer.sh`:
@@ -75,7 +114,7 @@ In both:
 - `forge/installer/install.php`
 - `forge-starter/install.php`
 
-Update the framework URL:
+Update the kernel registry URL:
 
 ```php
 const FRAMEWORK_REPO_URL = 'https://github.com/your-org/framework-registry';
@@ -83,10 +122,11 @@ const FRAMEWORK_REPO_URL = 'https://github.com/your-org/framework-registry';
 
 ### 4. Starter Updates
 In your `forge-starter` fork:
-- Replace the `forge-package-manager` module with your version (after modifying it)
+- Update `config/source_list.php` to point to your registries
 - Update `.env.example`, `composer.json`, and docs if needed
+- Configure your trusted sources as needed
 
-### 5. Optional Module Prefix Rename
+### 5. Optional Capability Module Prefix Rename
 If you want, you can rename all module prefixes from `Forge` to something else. This takes some work:
 - Rename namespaces and folder names in each module
 - Adjust module manifest files (`forge.json`)
@@ -97,7 +137,7 @@ I might release a script to help with this — or maybe not. Depends on time and
 ---
 
 ## ✅ Done
-After forking, updating URLs, and optionally renaming modules — you’ve got your own framework stack.
+After forking, updating URLs, configuring your trusted sources, and optionally renaming capability modules — you've got your own kernel stack.
 
 At this point, Forge becomes a base you control fully. Fork it, ship it, and evolve it how you want.
 
