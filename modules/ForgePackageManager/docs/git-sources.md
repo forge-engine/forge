@@ -11,7 +11,8 @@ Configure Git-based registries for GitHub, GitLab, Bitbucket, Azure DevOps, and 
     'name' => 'github-public',
     'type' => 'git',
     'url' => 'https://github.com/user/repo',
-    'branch' => 'main'
+    'branch' => 'main',
+    'private' => false
 ]
 ```
 
@@ -23,6 +24,7 @@ Configure Git-based registries for GitHub, GitLab, Bitbucket, Azure DevOps, and 
     'type' => 'git',
     'url' => 'https://github.com/user/repo',
     'branch' => 'main',
+    'private' => true
     'personal_token' => env('GITHUB_TOKEN')
 ]
 ```
@@ -35,6 +37,7 @@ Configure Git-based registries for GitHub, GitLab, Bitbucket, Azure DevOps, and 
     'type' => 'git',
     'url' => 'git@github.com:user/repo.git',
     'branch' => 'main',
+    'private' => true
     'personal_token' => env('GITHUB_TOKEN')
 ]
 ```
@@ -49,6 +52,7 @@ Configure Git-based registries for GitHub, GitLab, Bitbucket, Azure DevOps, and 
     'type' => 'git',
     'url' => 'https://gitlab.com/user/repo',
     'branch' => 'main'
+    'private' => false
 ]
 ```
 
@@ -60,6 +64,7 @@ Configure Git-based registries for GitHub, GitLab, Bitbucket, Azure DevOps, and 
     'type' => 'git',
     'url' => 'https://gitlab.com/user/repo',
     'branch' => 'main',
+    'private' => true
     'personal_token' => env('GITLAB_TOKEN')
 ]
 ```
@@ -72,6 +77,7 @@ Configure Git-based registries for GitHub, GitLab, Bitbucket, Azure DevOps, and 
     'type' => 'git',
     'url' => 'https://gitlab.company.com/user/repo',
     'branch' => 'main',
+    'private' => true
     'personal_token' => env('GITLAB_TOKEN')
 ]
 ```
@@ -84,6 +90,7 @@ Configure Git-based registries for GitHub, GitLab, Bitbucket, Azure DevOps, and 
     'type' => 'git',
     'url' => 'https://bitbucket.org/user/repo',
     'branch' => 'main',
+    'private' => false
     'personal_token' => env('BITBUCKET_TOKEN')
 ]
 ```
@@ -96,6 +103,7 @@ Configure Git-based registries for GitHub, GitLab, Bitbucket, Azure DevOps, and 
     'type' => 'git',
     'url' => 'https://dev.azure.com/organization/project/_git/repo',
     'branch' => 'main',
+    'private' => false
     'personal_token' => env('AZURE_DEVOPS_TOKEN')
 ]
 ```
@@ -108,6 +116,7 @@ Configure Git-based registries for GitHub, GitLab, Bitbucket, Azure DevOps, and 
     'type' => 'git',
     'url' => 'https://git.company.com/user/repo',
     'branch' => 'main',
+    'private' => false
     'personal_token' => env('GIT_TOKEN')
 ]
 ```
