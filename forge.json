@@ -6,12 +6,12 @@
     },
     "modules": {
         "forge-storage": "0.1.0",
-        "forge-package-manager": "0.1.0",
         "forge-logger": "0.1.0",
         "forge-error-handler": "0.1.0",
         "forge-auth": "0.1.0",
         "forge-testing": "0.1.0",
         "forge-wire": "1.0.1",
-        "forge-multi-tenant": "0.1.4"
+        "forge-multi-tenant": "0.1.4",
+        "forge-package-manager": "1.0.2"
     }
 }

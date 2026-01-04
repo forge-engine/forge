@@ -932,16 +932,60 @@ final class PackageManagerService implements PackageManagerInterface
         $forgeLockJsonPath = BASE_PATH . '/forge-lock.json';
         $lockData = $this->readForgeLockJson();
 
+        // Filter out sensitive credentials before storing in lock file
+        $sanitizedConfig = $this->filterSensitiveDataFromConfig($registryDetails);
+
         $lockData['modules'][$moduleName] = [
             'version' => $version,
             'registry' => $registryDetails['name'] ?? 'unknown',
             'module_path' => $modulePath,
             'integrity' => $integrityHash,
             'source_type' => $sourceType,
-            'source_config' => $registryDetails,
+            'source_config' => $sanitizedConfig,
         ];
 
         $this->writeForgeLockJson($lockData);
+    }
+
+    /**
+     * Filters out sensitive credentials and tokens from registry configuration
+     * to prevent them from being stored in forge-lock.json.
+     *
+     * @param array $config The registry configuration array
+     * @return array The sanitized configuration without sensitive fields
+     */
+    private function filterSensitiveDataFromConfig(array $config): array
+    {
+        // List of sensitive fields that should never be stored in lock file
+        $sensitiveFields = [
+            'personal_token',
+            'token',
+            'password',
+            'key_passphrase',
+            'api_key',
+            'secret',
+            'access_token',
+            'refresh_token',
+            'private_key',
+            'ssh_key',
+            'auth_token',
+        ];
+
+        $sanitized = $config;
+
+        // Remove sensitive fields from the config
+        foreach ($sensitiveFields as $field) {
+            unset($sanitized[$field]);
+        }
+
+        // Also filter nested sensitive data if source_config exists
+        if (isset($sanitized['source_config']) && is_array($sanitized['source_config'])) {
+            foreach ($sensitiveFields as $field) {
+                unset($sanitized['source_config'][$field]);
+            }
+        }
+
+        return $sanitized;
     }
 
     private function writeForgeLockJson(array $data): void
@@ -977,15 +1021,39 @@ final class PackageManagerService implements PackageManagerInterface
 
         $this->info("Removing module {$moduleName}...");
 
-        if (!$this->removeDirectory($moduleInstallPath)) {
+        $directoryRemoved = $this->removeDirectory($moduleInstallPath);
+        if (!$directoryRemoved) {
             $this->error("Failed to delete module directory: {$moduleInstallPath}");
-            return;
+        } else {
+            $this->info("Module directory removed successfully.");
         }
 
-        $this->updateForgeJsonOnModuleRemoval($moduleName);
-        $this->updateForgeLockJsonOnModuleRemoval($moduleName);
+        // Always update JSON files regardless of directory removal status
+        $jsonUpdateSuccess = true;
+        try {
+            $this->updateForgeJsonOnModuleRemoval($moduleName);
+        } catch (\Throwable $e) {
+            $this->error("Failed to update forge.json: " . $e->getMessage());
+            $jsonUpdateSuccess = false;
+        }
 
-        $this->success("Module {$moduleName} removed successfully.");
+        try {
+            $this->updateForgeLockJsonOnModuleRemoval($moduleName);
+        } catch (\Throwable $e) {
+            $this->error("Failed to update forge-lock.json: " . $e->getMessage());
+            $jsonUpdateSuccess = false;
+        }
+
+        // Report overall status
+        if ($directoryRemoved && $jsonUpdateSuccess) {
+            $this->success("Module {$moduleName} removed successfully.");
+        } elseif ($directoryRemoved && !$jsonUpdateSuccess) {
+            $this->warning("Module directory removed, but some JSON file updates failed. Please check forge.json and forge-lock.json manually.");
+        } elseif (!$directoryRemoved && $jsonUpdateSuccess) {
+            $this->warning("Module directory removal failed, but JSON files were updated. You may need to manually remove the directory.");
+        } else {
+            $this->error("Module removal partially failed. Directory removal and JSON updates both encountered issues.");
+        }
     }
 
     /**
