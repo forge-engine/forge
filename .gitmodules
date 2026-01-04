@@ -7,3 +7,12 @@
 [submodule "engine"]
 	path = engine
 	url = git@github.com:forge-engine/framework.git
+[submodule "installer"]
+	path = installer
+	url = git@github.com:forge-engine/installer.git
+[submodule "forge-documentation"]
+	path = forge-documentation
+	url = git@github.com:forge-engine/forge-engine.github.io.git
+[submodule "forge-starter"]
+	path = forge-starter
+	url = git@github.com:forge-engine/forge-starter.git
