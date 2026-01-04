@@ -1166,5 +1166,71 @@ final class PackageManagerService implements PackageManagerInterface
         return is_dir(BASE_PATH . "/modules/{$module}/src/Resources/assets") ||
             is_dir(BASE_PATH . "/public/modules/{$module}");
     }
+
+    /**
+     * Scaffolds the app folder structure with empty directories.
+     * Creates all necessary folders for organizing application code, resources, and tests.
+     */
+    public function scaffoldAppStructure(): void
+    {
+        $appPath = BASE_PATH . '/app';
+        
+        if (!is_dir($appPath)) {
+            mkdir($appPath, 0755, true);
+            $this->info("Created app directory.");
+        }
+
+        $this->info("Scaffolding app folder structure...");
+
+        $directories = [
+            'Commands',
+            'Controllers',
+            'Database/Migrations',
+            'Database/Seeders',
+            'Dto',
+            'Events',
+            'Models',
+            'Services',
+            'tests',
+            'Components/Ui',
+            'Components/Wire',
+            'resources/assets/css',
+            'resources/assets/js',
+            'resources/components/shared',
+            'resources/components/ui',
+            'resources/components/wire',
+            'resources/views/layouts',
+            'resources/views/pages',
+        ];
+
+        $createdCount = 0;
+        $skippedCount = 0;
+
+        foreach ($directories as $dir) {
+            $fullPath = $appPath . '/' . $dir;
+            
+            if (!is_dir($fullPath)) {
+                if (mkdir($fullPath, 0755, true)) {
+                    $createdCount++;
+                    $this->debug("Created: app/{$dir}", 'scaffold');
+                } else {
+                    $this->warning("Failed to create: app/{$dir}");
+                }
+            } else {
+                $skippedCount++;
+                $this->debug("Skipped (already exists): app/{$dir}", 'scaffold');
+            }
+        }
+
+        if ($createdCount > 0) {
+            $this->success("App structure scaffolded successfully. Created {$createdCount} director" . ($createdCount === 1 ? 'y' : 'ies') . ".");
+        } else {
+            $this->info("App structure already exists. All directories are in place.");
+        }
+
+        if ($skippedCount > 0 && $this->debugEnabled) {
+            $this->info("Skipped {$skippedCount} existing director" . ($skippedCount === 1 ? 'y' : 'ies') . ".");
+        }
+    }
 }
 

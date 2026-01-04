@@ -43,10 +43,10 @@
             "integrity": "e021e24f8b5ae6475a5c7bb01db2a87ae960fe66e8b5fcb8bb36e7913457a505"
         },
         "forge-package-manager": {
-            "version": "1.0.2",
+            "version": "1.1.0",
             "registry": "forge-engine-modules",
-            "module_path": "forge-package-manager/1.0.2",
-            "integrity": "04ac4eff61b34e980c25f508ea8ece638e04081a7aab6311dbed9d15cd16e5e0",
+            "module_path": "forge-package-manager/1.1.0",
+            "integrity": "baa219a9b7d127bb80a303bb13b6967459c2c3b8c0b2785c921c96798cd7ce4b",
             "source_type": "git",
             "source_config": {
                 "name": "forge-engine-modules",

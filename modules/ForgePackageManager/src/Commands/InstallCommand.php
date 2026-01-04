@@ -11,10 +11,10 @@ use Throwable;
 
 #[Cli(
     command: 'package:install-project',
-    description: 'Install modules from forge-lock.json',
+    description: 'Install modules from forge-lock.json and scaffold app folder structure',
     usage: 'package:install-project',
     examples: [
-        'package:install-project  # Install all modules from lock file'
+        'package:install-project  # Install all modules from lock file and scaffold app structure'
     ]
 )]
 final class InstallCommand extends Command
@@ -32,6 +32,10 @@ final class InstallCommand extends Command
         try {
             $this->packageManagerService->installFromLock();
             $this->success("Modules installed successfully");
+            
+            $this->line('');
+            $this->packageManagerService->scaffoldAppStructure();
+            
             return 0;
         } catch (Throwable $e) {
             $this->error("Error: " . $e->getMessage());
