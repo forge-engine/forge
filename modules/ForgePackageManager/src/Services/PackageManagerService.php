@@ -903,6 +903,16 @@ final class PackageManagerService implements PackageManagerInterface
         return null;
     }
 
+    public function getAllModulesFromRegistry(array $registryConfig): ?array
+    {
+        $sourceType = $registryConfig['type'] ?? 'git';
+        $registryConfig['debug'] = $this->debugEnabled;
+        $source = SourceFactory::create($registryConfig);
+        $registryName = $registryConfig['name'] ?? 'unknown';
+        
+        return $this->getModulesDataForRegistry($registryName, $sourceType, $registryConfig, $source);
+    }
+
     private function getRegistryDetailsForModule(?string $moduleName): ?array
     {
         if (empty($this->registries)) {
