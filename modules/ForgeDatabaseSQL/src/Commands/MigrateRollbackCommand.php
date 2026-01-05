@@ -35,7 +35,7 @@ final class MigrateRollbackCommand extends Command
         Arg(
             name: "type",
             description: "Migration type: app, engine, module",
-            required: false,
+            required: true,
             validate: "app|engine|module",
         ),
     ]

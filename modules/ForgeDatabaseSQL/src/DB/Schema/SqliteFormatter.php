@@ -66,6 +66,10 @@ class SqliteFormatter implements FormatterInterface
             return 'DEFAULT CURRENT_TIMESTAMP';
         }
 
+        if (is_bool($value)) {
+            return 'DEFAULT ' . ($value ? 1 : 0);
+        }
+
         if (is_string($value)) {
             return "DEFAULT '$value'";
         }

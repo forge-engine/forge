@@ -30,7 +30,7 @@ final class MigrateCommand extends Command
     use StringHelper;
     use Wizard;
 
-    #[Arg(name: 'type', description: 'Migration type: app, engine, module', required: false, validate: 'app|engine|module')]
+    #[Arg(name: 'type', description: 'Migration type: app, engine, module', required: true, validate: 'app|engine|module')]
     private ?string $type = null;
     #[Arg(name: 'module', description: 'Module name if type=module', required: false)]
     private ?string $module = null;

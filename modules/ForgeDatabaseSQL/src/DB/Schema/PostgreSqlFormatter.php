@@ -70,6 +70,10 @@ final class PostgreSqlFormatter implements FormatterInterface
             return 'DEFAULT CURRENT_TIMESTAMP';
         }
 
+        if (is_bool($value)) {
+            return 'DEFAULT ' . ($value ? 'TRUE' : 'FALSE');
+        }
+
         if (is_string($value)) {
             return "DEFAULT '$value'";
         }
