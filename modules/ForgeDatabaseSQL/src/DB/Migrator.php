@@ -10,6 +10,8 @@ use App\Modules\ForgeDatabaseSQL\DB\Schema\MySqlFormatter;
 use App\Modules\ForgeDatabaseSQL\DB\Schema\PostgreSqlFormatter;
 use App\Modules\ForgeDatabaseSQL\DB\Schema\SqliteFormatter;
 use Forge\Core\Contracts\Database\DatabaseConnectionInterface;
+use Forge\Core\DI\Attributes\Migration as MigrationAttribute;
+use Forge\Core\Services\AttributeDiscoveryService;
 use Forge\Traits\StringHelper;
 use PDO;
 use ReflectionException;
@@ -100,7 +102,6 @@ final class Migrator
             $migrationName = basename($path);
             $migrationNameNormalized = strtolower($migrationName);
             
-            // Check if migration has already been run (case-insensitive comparison)
             if (isset($ranLookup[$migrationNameNormalized])) {
                 continue;
             }
@@ -136,8 +137,9 @@ final class Migrator
      */
     private function discoverMigrationFiles(string $scope, ?string $module): array
     {
-        $paths = [];
+        $files = [];
 
+        $paths = [];
         switch ($scope) {
             case 'core':
                 $paths[] = self::CORE_MIGRATIONS_PATH;
@@ -157,15 +159,114 @@ final class Migrator
                 break;
         }
 
-        $files = [];
         foreach ($paths as $path) {
             if (is_dir($path)) {
                 $files = array_merge($files, glob($path . '/*.php'));
             }
         }
 
+        $attributeFiles = $this->discoverAttributeBasedMigrations($scope, $module);
+        $files = array_merge($files, $attributeFiles);
+
+        $files = array_unique($files);
         sort($files);
+
         return $files;
+    }
+
+    /**
+     * Discover migrations using #[Migration] attribute
+     * 
+     * @return array<string> List of full file paths
+     */
+    private function discoverAttributeBasedMigrations(string $scope, ?string $module): array
+    {
+        $discoveryService = new AttributeDiscoveryService();
+        $basePaths = $this->getBasePathsForMigrationDiscovery($scope, $module);
+        
+        $classMap = $discoveryService->discover($basePaths, [MigrationAttribute::class]);
+        
+        $files = [];
+        foreach ($classMap as $className => $metadata) {
+            if (class_exists($className)) {
+                try {
+                    $reflection = new ReflectionClass($className);
+                    if ($reflection->isSubclassOf(Migration::class)) {
+                        $filepath = $metadata['file'] ?? '';
+                        if ($filepath && file_exists($filepath)) {
+                            if ($this->matchesScopeAndModule($filepath, $scope, $module)) {
+                                $files[] = $filepath;
+                            }
+                        }
+                    }
+                } catch (ReflectionException $e) {
+                }
+            }
+        }
+
+        return $files;
+    }
+
+    /**
+     * Get base paths for migration discovery based on scope
+     * 
+     * @return array<string>
+     */
+    private function getBasePathsForMigrationDiscovery(string $scope, ?string $module): array
+    {
+        $basePaths = [];
+
+        switch ($scope) {
+            case 'core':
+                $basePaths[] = 'engine';
+                break;
+            case 'app':
+                $basePaths[] = 'app';
+                break;
+            case 'module':
+                if ($module) {
+                    $basePaths[] = "modules/$module/src";
+                }
+                break;
+            case 'all':
+                $basePaths[] = 'app';
+                $basePaths[] = 'engine';
+                if (is_dir(self::MODULES_PATH)) {
+                    $modules = array_filter(
+                        scandir(self::MODULES_PATH),
+                        fn($item) => is_dir(self::MODULES_PATH . '/' . $item) && !in_array($item, ['.', '..'])
+                    );
+                    foreach ($modules as $moduleName) {
+                        $basePaths[] = "modules/$moduleName/src";
+                    }
+                }
+                break;
+        }
+
+        return $basePaths;
+    }
+
+    /**
+     * Check if a migration file matches the requested scope and module
+     */
+    private function matchesScopeAndModule(string $filepath, string $scope, ?string $module): bool
+    {
+        $relativePath = str_replace(BASE_PATH . '/', '', $filepath);
+
+        if ($scope === 'core') {
+            return str_starts_with($relativePath, 'engine/');
+        }
+
+        if ($scope === 'app') {
+            return str_starts_with($relativePath, 'app/');
+        }
+
+        if ($scope === 'module' && $module) {
+            $modulePath = "modules/$module/";
+            return str_starts_with($relativePath, $modulePath);
+        }
+
+        return true;
     }
 
     /**

@@ -30,7 +30,7 @@ final class ProductSearch extends WireComponent
     }
 
     #[Action]
-    public function input(): void
+    public function input(...$keys): void
     {
         $this->notice = null;
         $q = trim($this->query);

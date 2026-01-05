@@ -12,7 +12,7 @@ use App\Modules\ForgeHub\Contracts\ForgeHubInterface;
 #[Service]
 #[Provides(interface: ForgeHubInterface::class, version: '0.1.0')]
 #[Requires]
-final class ForgeNexusService implements ForgeHubInterface
+final class ForgeHubService implements ForgeHubInterface
 {
     public function __construct(/** private AnotherServiceInterface $anotherService */)
     {
