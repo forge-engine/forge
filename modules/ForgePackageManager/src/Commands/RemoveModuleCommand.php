@@ -12,16 +12,17 @@ use Forge\Core\Services\TemplateGenerator;
 use Forge\Core\Helpers\Strings;
 use Throwable;
 
-#[Cli(
-    command: 'package:remove-module',
-    description: 'Remove an installed module',
-    usage: 'package:remove-module [--module=<module-name>] [--force]',
-    examples: [
-        'package:remove-module --module=my-module',
-        'package:remove-module --module=my-module --force',
-        'package:remove-module'
-    ]
-)]
+    #[Cli(
+        command: 'package:remove-module',
+        description: 'Remove an installed module',
+        usage: 'package:remove-module [--module=<module-name>] [module-name ...] [--force]',
+        examples: [
+            'package:remove-module --module=my-module',
+            'package:remove-module --module=my-module --force',
+            'package:remove-module module-one module-two',
+            'package:remove-module'
+        ]
+    )]
 final class RemoveModuleCommand extends Command
 {
     use Wizard;
@@ -61,24 +62,55 @@ final class RemoveModuleCommand extends Command
 
         $this->packageManager->setDebugMode($this->debug);
 
-        if ($this->moduleName === null) {
+        $moduleNames = $this->parseModuleNames($args);
+
+        if (empty($moduleNames)) {
             $this->runWizard();
             return 0;
         }
 
-        if (!$this->force && !$this->confirmDestructiveAction()) {
-            $this->warning('Module removal aborted.');
-            return 2;
+        $successCount = 0;
+        $errorCount = 0;
+
+        foreach ($moduleNames as $moduleName) {
+            if (!$this->force && !$this->confirmDestructiveActionForModule($moduleName)) {
+                $this->warning("Module removal aborted for '{$moduleName}'.");
+                $errorCount++;
+                continue;
+            }
+
+            try {
+                $this->packageManager->removeModule($moduleName);
+                $this->success("Module '{$moduleName}' removed successfully.");
+                $successCount++;
+            } catch (Throwable $e) {
+                $this->error("Error removing module '{$moduleName}': " . $e->getMessage());
+                $errorCount++;
+            }
         }
 
-        try {
-            $this->packageManager->removeModule($this->moduleName);
-            $this->success("Module '{$this->moduleName}' removed successfully.");
-            return 0;
-        } catch (Throwable $e) {
-            $this->error('Error removing module: ' . $e->getMessage());
+        if ($errorCount > 0) {
             return 1;
         }
+
+        return 0;
+    }
+
+    private function parseModuleNames(array $args): array
+    {
+        $moduleNames = [];
+
+        if ($this->moduleName !== null) {
+            $moduleNames[] = $this->moduleName;
+        }
+
+        foreach ($args as $arg) {
+            if (!str_starts_with($arg, '--') && !str_starts_with($arg, '-')) {
+                $moduleNames[] = $arg;
+            }
+        }
+
+        return array_unique($moduleNames);
     }
 
     private function runWizard(): void
@@ -90,6 +122,26 @@ final class RemoveModuleCommand extends Command
             return;
         }
 
+        $choice = $this->templateGenerator->selectFromList(
+            "How would you like to proceed?",
+            ['Select a single module', 'Select multiple modules'],
+            'Select a single module'
+        );
+
+        if ($choice === null) {
+            $this->info('Removal cancelled.');
+            return;
+        }
+
+        if ($choice === 'Select multiple modules') {
+            $this->handleMultiSelectRemoval($installedModules);
+        } else {
+            $this->handleSingleSelectRemoval($installedModules);
+        }
+    }
+
+    private function handleSingleSelectRemoval(array $installedModules): void
+    {
         $moduleOptions = [];
         foreach ($installedModules as $moduleName) {
             $description = $this->getModuleDescription($moduleName);
@@ -109,18 +161,83 @@ final class RemoveModuleCommand extends Command
         }
 
         $selectedIndex = array_search($selectedModuleDisplay, $moduleOptions, true);
-        $this->moduleName = $installedModules[$selectedIndex];
+        $moduleName = $installedModules[$selectedIndex];
 
-        if (!$this->force && !$this->confirmDestructiveAction()) {
+        if (!$this->force && !$this->confirmDestructiveActionForModule($moduleName)) {
             $this->warning('Module removal aborted.');
             return;
         }
 
         try {
-            $this->packageManager->removeModule($this->moduleName);
-            $this->success("Module '{$this->moduleName}' removed successfully.");
+            $this->packageManager->removeModule($moduleName);
+            $this->success("Module '{$moduleName}' removed successfully.");
         } catch (Throwable $e) {
             $this->error('Error removing module: ' . $e->getMessage());
+        }
+    }
+
+    private function handleMultiSelectRemoval(array $installedModules): void
+    {
+        $moduleOptions = [];
+        foreach ($installedModules as $moduleName) {
+            $description = $this->getModuleDescription($moduleName);
+            $displayName = $description ? "{$moduleName} ({$description})" : $moduleName;
+            $moduleOptions[] = $displayName;
+        }
+
+        $selectedModulesDisplay = $this->templateGenerator->selectMultipleFromList(
+            "Select modules to remove",
+            $moduleOptions
+        );
+
+        if ($selectedModulesDisplay === null || empty($selectedModulesDisplay)) {
+            $this->info('Removal cancelled.');
+            return;
+        }
+
+        $moduleNamesToRemove = [];
+        foreach ($selectedModulesDisplay as $selectedDisplay) {
+            $selectedIndex = array_search($selectedDisplay, $moduleOptions, true);
+            if ($selectedIndex !== false) {
+                $moduleNamesToRemove[] = $installedModules[$selectedIndex];
+            }
+        }
+
+        if (empty($moduleNamesToRemove)) {
+            $this->info('No modules selected.');
+            return;
+        }
+
+        $this->line('');
+        $this->info("Removing " . count($moduleNamesToRemove) . " module(s)...");
+        $this->line('');
+
+        $successCount = 0;
+        $errorCount = 0;
+
+        foreach ($moduleNamesToRemove as $moduleName) {
+            if (!$this->force && !$this->confirmDestructiveActionForModule($moduleName)) {
+                $this->warning("Skipping '{$moduleName}'.");
+                $errorCount++;
+                continue;
+            }
+
+            try {
+                $this->packageManager->removeModule($moduleName);
+                $this->success("Module '{$moduleName}' removed successfully.");
+                $successCount++;
+            } catch (Throwable $e) {
+                $this->error("Error removing module '{$moduleName}': " . $e->getMessage());
+                $errorCount++;
+            }
+        }
+
+        $this->line('');
+        if ($successCount > 0) {
+            $this->info("Successfully removed {$successCount} module(s).");
+        }
+        if ($errorCount > 0) {
+            $this->warning("Failed to remove {$errorCount} module(s).");
         }
     }
 
@@ -160,21 +277,21 @@ final class RemoveModuleCommand extends Command
         return $moduleConfig['description'];
     }
 
-    private function confirmDestructiveAction(): bool
+    private function confirmDestructiveActionForModule(string $moduleName): bool
     {
-        $hasMigrations = $this->packageManager->moduleHasMigrations($this->moduleName);
-        $hasSeeders = $this->packageManager->moduleHasSeeders($this->moduleName);
-        $hasAssets = $this->packageManager->moduleHasAssets($this->moduleName);
-
-        if (!$hasMigrations && !$hasSeeders && !$hasAssets) {
-            return true;
-        }
+        $hasMigrations = $this->packageManager->moduleHasMigrations($moduleName);
+        $hasSeeders = $this->packageManager->moduleHasSeeders($moduleName);
+        $hasAssets = $this->packageManager->moduleHasAssets($moduleName);
 
         $this->line('');
         $this->warning(str_repeat('▓', 70));
         $this->warning('  D A N G E R   Z O N E');
         $this->warning(str_repeat('▓', 70));
         $this->line('');
+        $this->warning("  Module: {$moduleName}");
+        $this->line('');
+
+        $this->line('  – Removing this module may BREAK functionality if your app uses it.');
 
         if ($hasMigrations) {
             $this->line('  – This will ROLLBACK all migrations provided by the module.');
