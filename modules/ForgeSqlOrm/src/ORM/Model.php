@@ -94,6 +94,11 @@ abstract class Model implements JsonSerializable
         return new ModelQuery(static::class);
     }
 
+    final public static function orderBy(string $column, string $direction = 'ASC'): ModelQuery
+    {
+        return static::query()->orderBy($column, $direction);
+    }
+
     final public static function table(): string
     {
         return self::$tables[static::class] ??= static::reflection()

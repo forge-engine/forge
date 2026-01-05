@@ -138,4 +138,10 @@ final class ModelQuery
         $this->withRelations = array_merge($this->withRelations, $relations);
         return $this;
     }
+
+    public function orderBy(string $column, string $direction = 'ASC'): self
+    {
+        $this->builder->orderBy($column, $direction);
+        return $this;
+    }
 }
