@@ -512,19 +512,13 @@ final class InstallModuleCommand extends Command
             return true;
         }
 
-        $this->line('');
-        $this->warning(str_repeat('▓', 70));
-        $this->warning('  D A N G E R   Z O N E');
-        $this->warning(str_repeat('▓', 70));
-        $this->line('');
-        $this->warning("  Module: {$moduleName}");
-        $this->warning("  Version: {$installedVersion}");
-        $this->line('');
-        $this->line('  – This module is already installed with version ' . $installedVersion . '.');
-        $this->line('  – If you have modified the module, you may LOSE any changes you made.');
-        $this->line('');
-        $this->comment('  There is NO UNDO. Are you absolutely sure?');
-        $this->line('');
+        $messages = [];
+        $messages[] = "Module: {$moduleName}";
+        $messages[] = "Version: {$installedVersion}";
+        $messages[] = "This module is already installed with version {$installedVersion}.";
+        $messages[] = "If you have modified the module, you may LOSE any changes you made.";
+
+        $this->showDangerBox('DANGER ZONE', $messages, 'There is NO UNDO. Are you absolutely sure?');
 
         return $this->askYesNo('Type yes in UPPER-CASE to proceed', 'YES');
     }

@@ -158,21 +158,18 @@ final class PackageManagerService implements PackageManagerInterface
 
     private function confirmPostInstallCommand(string $command, string $moduleName, string $registryName, int $commandIndex, int $totalCommands): string
     {
-        $this->line("");
-        $this->warning("⚠️  SECURITY WARNING ⚠️");
-        $this->line("");
-        $this->error("Module '{$moduleName}' from registry '{$registryName}' wants to execute:");
-        $this->line("  Command: {$command}");
-        $this->line("");
-        $this->warning("This command will run with the same permissions as this process.");
-        $this->warning("Only run commands from trusted sources.");
-        $this->line("");
-        $this->info("Options:");
-        $this->line("  [Y]es - Run this command");
-        $this->line("  [N]o - Skip this command");
-        $this->line("  [A]ll - Accept all remaining commands");
-        $this->line("  [R]eject All - Reject all remaining commands");
-        $this->line("");
+        $messages = [];
+        $messages[] = "Module '{$moduleName}' from registry '{$registryName}' wants to execute:";
+        $messages[] = "Command: {$command}";
+        $messages[] = "This command will run with the same permissions as this process.";
+        $messages[] = "Only run commands from trusted sources.";
+        $messages[] = "Options:";
+        $messages[] = "[Y]es - Run this command";
+        $messages[] = "[N]o - Skip this command";
+        $messages[] = "[A]ll - Accept all remaining commands";
+        $messages[] = "[R]eject All - Reject all remaining commands";
+        
+        $this->showWarningBox('SECURITY WARNING', $messages);
         
         $prompt = "Your choice [N]: ";
         $response = strtolower(trim($this->promptUserInput($prompt, 'n')));
@@ -190,8 +187,13 @@ final class PackageManagerService implements PackageManagerInterface
 
     private function promptTrustSource(string $registryName): bool
     {
-        $this->line("");
-        $prompt = "Do you want to trust '{$registryName}' for future installations?\nThis will skip confirmation prompts for PostInstall commands from this source.\n[y]es/[n]o [n]: ";
+        $messages = [];
+        $messages[] = "Do you want to trust '{$registryName}' for future installations?";
+        $messages[] = "This will skip confirmation prompts for PostInstall commands from this source.";
+        
+        $this->showInfoBox('TRUST SOURCE', $messages);
+        
+        $prompt = "[y]es/[n]o [n]: ";
         $response = strtolower(trim($this->promptUserInput($prompt, 'n')));
         return in_array($response, ['yes', 'y', '1', 'true'], true);
     }

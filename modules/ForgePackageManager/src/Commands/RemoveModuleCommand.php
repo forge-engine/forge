@@ -283,29 +283,21 @@ final class RemoveModuleCommand extends Command
         $hasSeeders = $this->packageManager->moduleHasSeeders($moduleName);
         $hasAssets = $this->packageManager->moduleHasAssets($moduleName);
 
-        $this->line('');
-        $this->warning(str_repeat('▓', 70));
-        $this->warning('  D A N G E R   Z O N E');
-        $this->warning(str_repeat('▓', 70));
-        $this->line('');
-        $this->warning("  Module: {$moduleName}");
-        $this->line('');
-
-        $this->line('  – Removing this module may BREAK functionality if your app uses it.');
+        $messages = [];
+        $messages[] = "Module: {$moduleName}";
+        $messages[] = "Removing this module may BREAK functionality if your app uses it.";
 
         if ($hasMigrations) {
-            $this->line('  – This will ROLLBACK all migrations provided by the module.');
+            $messages[] = "This will ROLLBACK all migrations provided by the module.";
         }
         if ($hasSeeders) {
-            $this->line('  – All seeded data will be LOST.');
+            $messages[] = "All seeded data will be LOST.";
         }
         if ($hasAssets) {
-            $this->line('  – Published assets will be UNLINKED.');
+            $messages[] = "Published assets will be UNLINKED.";
         }
 
-        $this->line('');
-        $this->comment('  There is NO UNDO. Are you absolutely sure?');
-        $this->line('');
+        $this->showDangerBox('DANGER ZONE', $messages, 'There is NO UNDO. Are you absolutely sure?');
 
         return $this->askYesNo('Type yes in UPPER-CASE to proceed', 'YES');
     }
