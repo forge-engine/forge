@@ -233,16 +233,14 @@ abstract class Model implements JsonSerializable
         }
 
         if (is_int($success) && $success > 0) {
+            if (!self::isUuidPrimaryKey($pk)) {
+                $this->{$pkName} = $success;
+            }
             $this->exists = true;
             $this->original = $data + [$pkName => $this->{$pkName}];
             return true;
-        } elseif (is_int($success) && self::isUuidPrimaryKey($pk) === false) {
-            $this->{$pkName} = $success;
-            $this->exists = true;
-            $this->original = $data + [$pkName => $success];
-            return true;
         }
-
+        
         if ($this->{$pkName} !== null) {
             $this->exists = true;
             $this->original = $data + [$pkName => $this->{$pkName}];

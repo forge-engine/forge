@@ -10,6 +10,7 @@ use App\Modules\ForgeAuth\Validation\ForgeAuthValidate;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Helpers\Redirect;
 use Forge\Core\Http\Attributes\Middleware;
+use App\Modules\ForgeAuth\Services\RedirectHandlerService;
 use Forge\Core\Http\Request;
 use Forge\Core\Http\Response;
 use Forge\Core\Routing\Route;
@@ -23,8 +24,10 @@ final class WebLoginController
     use ControllerHelper;
     use SecurityHelper;
 
-    public function __construct(private ForgeAuthService $forgeAuthService)
-    {
+    public function __construct(
+        private readonly ForgeAuthService $forgeAuthService,
+        private readonly RedirectHandlerService $redirectHandler
+    ) {
     }
 
     #[Route("/auth/login")]
@@ -42,7 +45,7 @@ final class WebLoginController
 
             $this->forgeAuthService->login($loginCredentials);
 
-            return Redirect::to("/dashboard");
+            return Redirect::to($this->redirectHandler::redirectAfterLogin());
         } catch (LoginException) {
             return Redirect::to('/auth/login');
         }
@@ -52,6 +55,6 @@ final class WebLoginController
     public function logout(): Response
     {
         $this->forgeAuthService->logout();
-        return Redirect::to("/");
+        return Redirect::to($this->redirectHandler::redirectAfterLogout());
     }
 }

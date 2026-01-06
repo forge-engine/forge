@@ -22,5 +22,11 @@ return [
         'password_cost' => 12,
         'max_login_attempts' => 3,
         'lockout_time' => 300
-    ]
+    ],
+    'auth' => [
+        'redirect' => [
+            'after_login' => '/dashboard',
+            'after_logout' => '/',
+        ],
+    ],
 ];

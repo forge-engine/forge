@@ -26,7 +26,8 @@ final class ForgeAuthValidate
     {
         $rules = [
             "identifier" => ["required", "min:3", "unique:users,identifier"],
-            "password" => ["required", "min:8"]
+            "email" => ["required", "email", "unique:users,email"],
+            "password" => ["required", "min:8", "same:confirm_password"]
         ];
 
         $customMessages = [
