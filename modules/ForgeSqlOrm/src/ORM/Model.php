@@ -56,7 +56,8 @@ abstract class Model implements JsonSerializable
 
         foreach (static::reflection()->getProperties() as $p) {
             $col = $p->getAttributes(Column::class)[0] ?? null;
-            if ($col === null) continue;
+            if ($col === null)
+                continue;
 
             $name = $p->getName();
 
@@ -65,8 +66,10 @@ abstract class Model implements JsonSerializable
                 continue;
             }
 
-            if (!array_key_exists($name, $row)) continue;
-            if (!property_exists($instance, $name)) continue;
+            if (!array_key_exists($name, $row))
+                continue;
+            if (!property_exists($instance, $name))
+                continue;
 
             $reflectionType = $p->getType();
 
@@ -103,8 +106,8 @@ abstract class Model implements JsonSerializable
     {
         return self::$tables[static::class] ??= static::reflection()
             ->getAttributes(Table::class)[0]
-            ?->newInstance()
-            ?->name ?? throw new LogicException('#[Table] missing on ' . static::class);
+                ?->newInstance()
+                ?->name ?? throw new LogicException('#[Table] missing on ' . static::class);
     }
 
     final public function save(): bool
@@ -178,7 +181,7 @@ abstract class Model implements JsonSerializable
                 } elseif ($curr instanceof DateTimeImmutable) {
                     $value = $curr->format('Y-m-d H:i:s');
                 } elseif ($col->cast === Cast::BOOL && is_bool($curr)) {
-                    $value = (int)$curr;
+                    $value = (int) $curr;
                 }
 
                 $dirty[$name] = $value;
@@ -240,7 +243,7 @@ abstract class Model implements JsonSerializable
             $this->original = $data + [$pkName => $this->{$pkName}];
             return true;
         }
-        
+
         if ($this->{$pkName} !== null) {
             $this->exists = true;
             $this->original = $data + [$pkName => $this->{$pkName}];
@@ -284,9 +287,12 @@ abstract class Model implements JsonSerializable
             return self::$softDeleteColumnCache[static::class];
         }
 
-        $col = self::reflection()->getProperty(self::SOFT_DELETE_COLUMN)->getName();
-        return self::$softDeleteColumnCache[static::class] =
-            self::reflection()->hasProperty(self::SOFT_DELETE_COLUMN) ? $col : null;
+        if (self::reflection()->hasProperty(self::SOFT_DELETE_COLUMN)) {
+            return self::$softDeleteColumnCache[static::class] =
+                self::reflection()->getProperty(self::SOFT_DELETE_COLUMN)->getName();
+        }
+
+        return self::$softDeleteColumnCache[static::class] = null;
     }
 
     public function __get(string $name): mixed
@@ -329,13 +335,14 @@ abstract class Model implements JsonSerializable
         $out = [];
         $protected = static::protectedFields();
         foreach (self::reflection()->getProperties(ReflectionProperty::IS_PUBLIC) as $p) {
-            if ($p->isStatic()) continue;
+            if ($p->isStatic())
+                continue;
             $name = $p->getName();
             if (in_array($name, $protected, true)) {
                 continue;
             }
             $value = $p->getValue($this);
-            
+
             if ($value instanceof BaseDto) {
                 $out[$name] = $value->toArray();
             } elseif ($value instanceof DateTimeImmutable) {

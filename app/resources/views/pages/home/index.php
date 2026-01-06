@@ -17,6 +17,7 @@ layout(name: "main");
         <li>Database Driver: <?= env("DB_DRIVER") ?></li>
     </ul>
     <h3>User information</h3>
+    <?= wire_name(name: 'counter', componentId: 'counter-1') ?>
     <pre>
         <?php print_r($user); ?>
     </pre>
@@ -27,14 +28,13 @@ layout(name: "main");
             <input class="form--input" type="text" name="identifier" placeholder="Username" required>
             <input class="form--input" type="password" name="password" placeholder="Password" required>
         </div>
-        <input class="form--input mb-sm" type="email" name="email" autocomplete="email" placeholder="Email"
-               required>
+        <input class="form--input mb-sm" type="email" name="email" autocomplete="email" placeholder="Email" required>
         <button class="button" type="submit">Create User</button>
         <?= form_close() ?>
         <?php if ($user): ?>
             <?= form_open("/{$user->id}", "PATCH", ["class" => "form"]) ?>
-            <input class="form--input" type="text" name="identifier" placeholder="Username"
-                   value="<?= $user->identifier ?>" required>
+            <input class="form--input" type="text" name="identifier" placeholder="Username" value="<?= $user->identifier ?>"
+                required>
             <input type="email" name="email" placeholder="Email" value="<?= $user->email ?>" required>
             <button class="button" type="submit">Update User</button>
             <?= form_close() ?>

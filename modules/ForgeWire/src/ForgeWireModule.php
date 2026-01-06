@@ -29,6 +29,7 @@ use const pcov\version;
     ),
 ]
 #[Service]
+#[Provides(ForgeWireModule::class, version: '0.1.9')]
 #[Compatibility(framework: ">=0.1.0", php: ">=8.3")]
 #[Repository(type: "git", url: "https://github.com/forge-engine/modules")]
 #[PostInstall(command: 'asset:link', args: ['--type=module', '--module=forge-wire'])]

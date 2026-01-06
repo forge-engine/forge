@@ -68,7 +68,7 @@ final class ModelQuery
 
     public function whereNull(string $column): self
     {
-        $this->builder->whereNull($column);
+        $this->builder = $this->builder->whereNull($column);
         return $this;
     }
 
@@ -81,7 +81,7 @@ final class ModelQuery
         if ($col === null) {
             throw new LogicException('Model is not soft-deletable');
         }
-        $this->builder->whereNotNull($col);
+        $this->builder = $this->builder->whereNotNull($col);
         return $this;
     }
 
@@ -141,7 +141,7 @@ final class ModelQuery
 
     public function orderBy(string $column, string $direction = 'ASC'): self
     {
-        $this->builder->orderBy($column, $direction);
+        $this->builder = $this->builder->orderBy($column, $direction);
         return $this;
     }
 }

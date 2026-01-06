@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeWire\Controllers;
 
+use App\Modules\ForgeLogger\Services\ForgeLoggerService;
 use App\Modules\ForgeWire\Core\WireKernel;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Http\Attributes\Middleware;
@@ -21,7 +22,8 @@ final class WireController
 
     public function __construct(
         private WireKernel $kernel,
-        private SessionInterface $session
+        private SessionInterface $session,
+        private ForgeLoggerService $logger
     ) {
     }
 
@@ -29,7 +31,9 @@ final class WireController
     public function handle(Request $request): Response
     {
         $payload = $request->json();
-        $result  = $this->kernel->process($payload, $this->session);
+        $result = $this->kernel->process($payload, $this->session);
+        $this->logger->debug('Payload', $payload);
+        $this->logger->debug('Result', $result);
         $this->gcEmptyComponents();
         return $this->jsonResponse($result);
     }
