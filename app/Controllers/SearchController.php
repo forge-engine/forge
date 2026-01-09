@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Modules\ForgeAuth\Models\User;
+use App\Modules\ForgeWire\Attributes\Computed;
 use App\Modules\ForgeWire\Attributes\Reactive;
 use App\Modules\ForgeWire\Attributes\Action;
 use App\Modules\ForgeWire\Attributes\State;
@@ -12,8 +14,10 @@ use Forge\Core\Http\Request;
 use Forge\Core\Http\Response;
 use Forge\Traits\ControllerHelper;
 use Forge\Core\Routing\Route;
+use Forge\Core\Http\Attributes\Middleware;
 
 #[Reactive]
+#[Middleware("web")]
 final class SearchController
 {
     use ControllerHelper;
@@ -22,17 +26,35 @@ final class SearchController
     #[State]
     public string $query = '';
 
+    #[Action]
+    public function calculate(): void
+    {
+        $this->total = $this->number1 + $this->number2;
+    }
+
+    #[State]
+    public int $number1 = 0;
+    #[State]
+    public int $number2 = 0;
+
+    public int $total = 0;
+
     #[Route("/search")]
     public function index(Request $request): Response
     {
+        $user = User::query()->first();
+
         $results = $this->search($this->query);
-
-        error_log("Query: " . $this->query);
-
-        return $this->view("pages/search/index", [
+        $data = [
             "results" => $results,
-            "query" => $this->query
-        ]);
+            "query" => $this->query,
+            "total" => $this->total,
+            "number1" => $this->number1,
+            "number2" => $this->number2,
+            "user" => $user
+        ];
+
+        return $this->view("pages/search/index", $data);
     }
 
     #[Action]
@@ -41,8 +63,6 @@ final class SearchController
         if ($query === '') {
             return [];
         }
-
-        error_log($this->query);
 
         return [
             (object) ['title' => "Result for: $query 1"],

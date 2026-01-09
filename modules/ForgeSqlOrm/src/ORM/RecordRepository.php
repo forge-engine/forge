@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeSqlOrm\ORM;
 
-use App\Modules\ForgeDebugbar\Collectors\DatabaseCollector;
 use App\Modules\ForgeSqlOrm\ORM\Cache\QueryCache;
 
 abstract class RecordRepository implements Repository
@@ -23,7 +22,6 @@ abstract class RecordRepository implements Repository
 
     public function create(mixed $data): Model
     {
-        $start = microtime(true);
         $record = new ($this->modelClass)();
 
         foreach ($data as $key => $value) {
@@ -33,12 +31,6 @@ abstract class RecordRepository implements Repository
         }
 
         $record->save();
-        $this->cache->invalidate($this->tableName);
-        $end = microtime(true);
-        $time = round(($end - $start), 2);
-        $collector = DatabaseCollector::instance();
-        $collector->addQuery('', $data, $time, 'sqlite', 'RecordRepository');
-
         return $record;
     }
 
@@ -86,7 +78,6 @@ abstract class RecordRepository implements Repository
 
     public function find(int $id): ?Model
     {
-        $start = microtime(true);
         $key = $this->cache->generateKey($this->tableName, 'find', $id);
         $cached = $this->cache->get($key);
 
@@ -99,12 +90,6 @@ abstract class RecordRepository implements Repository
         if ($record !== null) {
             $this->cache->set($key, $record);
         }
-
-        $end = microtime(true);
-        $time = round(($end - $start), 2);
-        $collector = DatabaseCollector::instance();
-        $collector->addQuery('', [], $time, 'sqlite', 'RecordRepository->find');
-
         return $record;
     }
 

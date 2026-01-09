@@ -18,13 +18,12 @@ use Forge\CLI\Traits\OutputHelper;
 use Forge\Core\Http\Request;
 use Forge\Core\Http\Response;
 use Forge\Traits\InjectsAssets;
-use const pcov\version;
 
 #[
     Module(
     name: "ForgeWire",
     version: "1.0.9",
-    description: "A lightway livewire like module for forge",
+    description: "A reactive controller rendering protocol for PHP",
     order: 99,
 ),
 ]

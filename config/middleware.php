@@ -6,8 +6,7 @@ return [
         //\Namespace\MiddlewareName::class
     ],
     'web' => [
-        // Load your middlewares here
-        //\Namespace\MiddlewareName::class
+        \App\Modules\ForgeWire\Middlewares\ForgeWireMiddleware::class,
     ],
     'api' => [
         // Load your middlewares here

@@ -62,11 +62,6 @@
 		return null;
 	}
 
-	function priorityFor(action) {
-		if (action === 'input' || action === null) return 1;
-		return 2;
-	}
-
 	function findModelByKey(root, key) {
 		const nodes = root.querySelectorAll('*');
 		for (const n of nodes) {
@@ -74,6 +69,17 @@
 			if (b && b.key === key) return n;
 		}
 		return null;
+	}
+
+	function collectParams(el) {
+		const params = {};
+		for (const name of el.getAttributeNames()) {
+			if (name.startsWith('fw:param-')) {
+				const key = name.slice('fw:param-'.length);
+				params[key] = el.getAttribute(name);
+			}
+		}
+		return params;
 	}
 
 	function parseAction(expr) {
@@ -123,11 +129,7 @@
 			if (s === 'false') return false;
 			if (s === 'null') return null;
 			if (/^-?\d+(\.\d+)?$/.test(s)) return Number(s);
-			try {
-				return JSON.parse(s);
-			} catch {
-				return s;
-			}
+			return null;
 		};
 		return { method, args: args.map(norm) };
 	}
@@ -136,6 +138,7 @@
 		for (const name of el.getAttributeNames()) {
 			if (name === 'fw:model') return { key: el.getAttribute(name), type: 'immediate', debounce: 0 };
 			if (name === 'fw:model.lazy') return { key: el.getAttribute(name), type: 'lazy', debounce: null };
+			if (name === 'fw:model.defer') return { key: el.getAttribute(name), type: 'defer', debounce: null };
 			if (name === 'fw:model.debounce') return {
 				key: el.getAttribute(name),
 				type: 'debounce',
@@ -184,6 +187,10 @@
 		if (csrf) headers['X-CSRF-TOKEN'] = csrf;
 
 		const res = await fetch('/__wire', { method: 'POST', headers, body: JSON.stringify(payload), signal });
+		if (!res.ok) {
+			const text = await res.text();
+			throw new Error(`Server error: ${res.status}. ${text.substring(0, 100)}`);
+		}
 		return res.json();
 	}
 
@@ -195,40 +202,29 @@
 		});
 	}
 
-	const inflight = new Map();
-
-	const queues = new Map();
-	const pending = new Map();
+	const queues = new Map(); // id -> Array of requests
 
 	async function trigger(root, action = null, args = [], dirtyOverride = null) {
 		const id = attr(root, 'fw:id');
+		const req = { action, args, dirty: dirtyOverride ?? collectDirty(root) };
 
-		if (queues.get(id)) {
-			if (action === 'input' || action === null) {
-				pending.set(id, { action, args, dirty: dirtyOverride ?? collectDirty(root) });
-			}
+		if (queues.has(id)) {
+			queues.get(id).push(req);
 			return;
 		}
 
-		queues.set(id, true);
+		const queue = [req];
+		queues.set(id, queue);
 
 		try {
-			let currentAction = action;
-			let currentArgs = args;
-			let currentDirty = dirtyOverride;
-
-			while (true) {
-				await performTrigger(root, currentAction, currentArgs, currentDirty);
-
-				const next = pending.get(id);
-				if (next) {
-					pending.delete(id);
-					currentAction = next.action;
-					currentArgs = next.args;
-					currentDirty = next.dirty;
-					continue;
+			let currentRoot = root;
+			while (queue.length > 0) {
+				const nextReq = queue[0];
+				const result = await performTrigger(currentRoot, nextReq.action, nextReq.args, nextReq.dirty);
+				if (result && result.root) {
+					currentRoot = result.root;
 				}
-				break;
+				queue.shift();
 			}
 		} finally {
 			queues.delete(id);
@@ -237,7 +233,6 @@
 
 	async function performTrigger(root, action = null, args = [], dirtyOverride = null) {
 		const id = attr(root, 'fw:id');
-		const thisPri = priorityFor(action);
 
 		let dirty = {};
 		try {
@@ -258,9 +253,6 @@
 		cancelDebounces(root);
 		root.setAttribute('fw:loading', '');
 
-		// Note: We no longer abort inflight requests here because we use the queue to sequence them.
-		// Aborting fetch doesn't stop the server from updating the session, which causes checksum mismatches.
-
 		let out;
 		try {
 			out = await send({
@@ -272,57 +264,89 @@
 				fingerprint: { path: location.pathname }
 			});
 		} catch (e) {
+			console.error('ForgeWire Request Failed:', e);
 			root.removeAttribute('fw:loading');
-			return;
+			return { root };
 		} finally {
 			root.removeAttribute('fw:loading');
 		}
 
-		const targetEl = root.querySelector('[fw\\:target]') || root;
+		if (out.ignored) {
+			return { root };
+		}
+
 		const parser = new DOMParser();
 		const doc = parser.parseFromString(out.html, 'text/html');
-		const newTargetContent = doc.querySelector('[fw\\:target]') || doc.querySelector(`[fw\\:id="${id}"]`);
 
-		const finalHtml = newTargetContent ? newTargetContent.innerHTML : out.html;
+		const domTargets = root.querySelectorAll('[fw\\:target]');
+		const docTargets = doc.querySelectorAll('[fw\\:target]');
 
-		if (targetEl === root) {
-			root.outerHTML = newTargetContent ? newTargetContent.outerHTML : out.html;
-			const newRoot = document.querySelector(`[fw\\:id="${id}"]`);
-			if (!newRoot) return;
-			newRoot.__fw_checksum = out.checksum || null;
-			newRoot.removeAttribute('fw:loading');
-			root = newRoot;
-		} else {
-			targetEl.innerHTML = finalHtml;
-			root.removeAttribute('fw:loading');
+		if (domTargets.length > 0 && docTargets.length === domTargets.length) {
+			domTargets.forEach((el, i) => {
+				el.innerHTML = docTargets[i].innerHTML;
+				for (const attr of docTargets[i].attributes) {
+					el.setAttribute(attr.name, attr.value);
+				}
+			});
 			root.__fw_checksum = out.checksum || null;
+			root.setAttribute('fw:checksum', out.checksum || '');
+		} else {
+			const newRoot = doc.querySelector(`[fw\\:id="${id}"]`) || doc.body.firstElementChild;
+			if (newRoot) {
+				root.outerHTML = newRoot.outerHTML;
+				const updatedRoot = document.querySelector(`[fw\\:id="${id}"]`);
+				if (updatedRoot) {
+					updatedRoot.__fw_checksum = out.checksum || null;
+					updatedRoot.setAttribute('fw:checksum', out.checksum || '');
+					root = updatedRoot;
+				}
+			} else {
+				root.innerHTML = out.html;
+				root.__fw_checksum = out.checksum || null;
+				root.setAttribute('fw:checksum', out.checksum || '');
+			}
 		}
+
+		// Sync server state back to ALL model-bound elements
+		Object.entries(out.state).forEach(([key, val]) => {
+			const el = findModelByKey(root, key);
+			if (el) {
+				const isFocused = (document.activeElement === el);
+				if (isFocused) {
+					// Only update focused element if server says it's DIFFERENT from what was sent OR what it is now
+					if (val !== undefined && val !== el.value && val !== dirty[key]) {
+						el.value = val;
+					}
+				} else {
+					if (el.type === 'checkbox') el.checked = !!val;
+					else if (el.type === 'radio') el.checked = (el.value == val);
+					else {
+						if (el.value !== val) el.value = val;
+					}
+				}
+			}
+		});
 
 		setupPolling(root);
 
 		if (out.redirect) {
 			window.location.assign(out.redirect);
-			return;
+			return { root };
 		}
 
 		if (focusInfo) {
 			const next = findModelByKey(root, focusInfo.key);
 			if (next) {
-				// Only restore value if it was an input-related trigger
-				if (dirty.hasOwnProperty(focusInfo.key)) {
-					next.value = dirty[focusInfo.key];
-				}
 				next.focus();
 				if (typeof focusInfo.start === 'number' && typeof next.setSelectionRange === 'function') {
-					requestAnimationFrame(() => {
-						try {
-							next.setSelectionRange(focusInfo.start, focusInfo.end ?? focusInfo.start);
-						} catch {
-						}
-					});
+					try {
+						next.setSelectionRange(focusInfo.start, focusInfo.end ?? focusInfo.start);
+					} catch { }
 				}
 			}
 		}
+
+		return { root };
 	}
 
 	const pollers = new Map();
@@ -426,7 +450,17 @@
 		setSuppressUntil(root, 120);
 
 		const parsed = parseAction(attr(el, 'fw:click'));
-		trigger(root, parsed.method, parsed.args);
+		const params = collectParams(el);
+		let combinedArgs = Array.isArray(parsed.args) ? [...parsed.args] : [];
+
+		if (Object.keys(params).length > 0) {
+			const obj = {};
+			combinedArgs.forEach((v, i) => obj[i] = v);
+			Object.assign(obj, params);
+			combinedArgs = obj;
+		}
+
+		trigger(root, parsed.method, combinedArgs);
 	});
 
 	document.addEventListener('submit', (e) => {
@@ -447,11 +481,17 @@
 		setSuppressUntil(root, 150);
 
 		const parsed = parseAction(attr(form, 'fw:submit'));
-		const dirtyNow = collectDirty(root);
+		const params = collectParams(form);
+		let combinedArgs = Array.isArray(parsed.args) ? [...parsed.args] : [];
 
-		setTimeout(() => {
-			trigger(root, parsed.method, parsed.args, dirtyNow);
-		}, 0);
+		if (Object.keys(params).length > 0) {
+			const obj = {};
+			combinedArgs.forEach((v, i) => obj[i] = v);
+			Object.assign(obj, params);
+			combinedArgs = obj;
+		}
+
+		trigger(root, parsed.method, combinedArgs);
 	});
 
 	document.addEventListener('input', (e) => {
@@ -469,14 +509,9 @@
 
 		if (bind.type === 'debounce') {
 			const wait = bind.debounce || DEFAULT_DEBOUNCE;
-			const key = bind.key;
 			const id = setTimeout(() => {
 				if (shouldSuppress(root)) return;
-				if (tabbing) {
-					setTimeout(() => trigger(root, 'input', [key]), 0);
-				} else {
-					trigger(root, 'input');
-				}
+				trigger(root, 'input');
 			}, wait);
 			const prev = Number(el.getAttribute('data-fw-timer-id'));
 			if (prev) clearTimeout(prev);
@@ -485,10 +520,8 @@
 		}
 
 		if (bind.type === 'immediate') {
-			if (tabbing || shouldSuppress(root)) {
-				setTimeout(() => trigger(root, 'input', [bind.key]), 0);
-			} else {
-				trigger(root, 'input', [bind.key]);
+			if (!tabbing) {
+				trigger(root, 'input');
 			}
 		}
 	});
@@ -516,13 +549,34 @@
 	});
 
 	document.addEventListener('keydown', (e) => {
-		if (e.key !== 'Enter') return;
 		const el = e.target;
-		const bind = getModelBinding(el);
-		if (!bind) return;
-		const form = el.closest('form');
-		if (form && !form.hasAttribute('fw:submit')) {
-			e.preventDefault();
+		const root = closestRoot(el);
+		if (!root) return;
+
+		const key = e.key.toLowerCase();
+		const attrs = el.getAttributeNames();
+
+		const keyMap = { 'enter': 'enter', 'esc': 'escape', 'escape': 'escape', 'backspace': 'backspace', 'delete': 'delete' };
+		const targetKey = keyMap[key] || key;
+
+		const match = attrs.find(a => a === `fw:keydown.${targetKey}`);
+		if (match) {
+			const expr = el.getAttribute(match);
+			if (expr) {
+				e.preventDefault();
+				const parsed = parseAction(expr);
+				const params = collectParams(el);
+				let combinedArgs = Array.isArray(parsed.args) ? [...parsed.args] : [];
+
+				if (Object.keys(params).length > 0) {
+					const obj = {};
+					combinedArgs.forEach((v, i) => obj[i] = v);
+					Object.assign(obj, params);
+					combinedArgs = obj;
+				}
+
+				trigger(root, parsed.method, combinedArgs);
+			}
 		}
 	});
 
@@ -530,5 +584,3 @@
 		document.querySelectorAll('[fw\\:id]').forEach(setupPolling);
 	});
 })();
-
-
