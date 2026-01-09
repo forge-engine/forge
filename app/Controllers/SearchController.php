@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
-use App\Modules\ForgeAuth\Models\User;
-use App\Modules\ForgeWire\Attributes\Computed;
 use App\Modules\ForgeWire\Attributes\Reactive;
 use App\Modules\ForgeWire\Attributes\Action;
 use App\Modules\ForgeWire\Attributes\State;
@@ -26,32 +24,13 @@ final class SearchController
     #[State]
     public string $query = '';
 
-    #[Action]
-    public function calculate(): void
-    {
-        $this->total = $this->number1 + $this->number2;
-    }
-
-    #[State]
-    public int $number1 = 0;
-    #[State]
-    public int $number2 = 0;
-
-    public int $total = 0;
-
     #[Route("/search")]
     public function index(Request $request): Response
     {
-        $user = User::query()->first();
-
         $results = $this->search($this->query);
         $data = [
             "results" => $results,
-            "query" => $this->query,
-            "total" => $this->total,
-            "number1" => $this->number1,
-            "number2" => $this->number2,
-            "user" => $user
+            "query" => $this->query
         ];
 
         return $this->view("pages/search/index", $data);
