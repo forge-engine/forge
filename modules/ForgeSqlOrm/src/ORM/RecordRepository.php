@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeSqlOrm\ORM;
 
+use App\Modules\ForgeDebugbar\Collectors\DatabaseCollector;
 use App\Modules\ForgeSqlOrm\ORM\Cache\QueryCache;
 
 abstract class RecordRepository implements Repository
@@ -22,17 +23,22 @@ abstract class RecordRepository implements Repository
 
     public function create(mixed $data): Model
     {
+        $start = microtime(true);
         $record = new ($this->modelClass)();
-        
+
         foreach ($data as $key => $value) {
             if (property_exists($record, $key)) {
                 $record->{$key} = $value;
             }
         }
-        
+
         $record->save();
         $this->cache->invalidate($this->tableName);
-        
+        $end = microtime(true);
+        $time = round(($end - $start), 2);
+        $collector = DatabaseCollector::instance();
+        $collector->addQuery('', $data, $time, 'sqlite', 'RecordRepository');
+
         return $record;
     }
 
@@ -43,16 +49,16 @@ abstract class RecordRepository implements Repository
                 $record->{$key} = $value;
             }
         }
-        
+
         $result = $record->save();
-        
+
         if ($result) {
             $pk = $this->modelClass::primaryProperty()->getName();
             $id = $record->{$pk};
             $this->cache->forget($this->cache->generateKey($this->tableName, 'find', $id));
             $this->cache->invalidate($this->tableName);
         }
-        
+
         return $result;
     }
 
@@ -64,35 +70,41 @@ abstract class RecordRepository implements Repository
                 return false;
             }
         }
-        
+
         $pk = $this->modelClass::primaryProperty()->getName();
         $id = $record->{$pk};
-        
+
         $result = $record->delete() > 0;
-        
+
         if ($result) {
             $this->cache->forget($this->cache->generateKey($this->tableName, 'find', $id));
             $this->cache->invalidate($this->tableName);
         }
-        
+
         return $result;
     }
 
     public function find(int $id): ?Model
     {
+        $start = microtime(true);
         $key = $this->cache->generateKey($this->tableName, 'find', $id);
         $cached = $this->cache->get($key);
-        
+
         if ($cached !== null) {
             return $cached;
         }
-        
+
         $record = $this->modelClass::query()->id($id)->first();
-        
+
         if ($record !== null) {
             $this->cache->set($key, $record);
         }
-        
+
+        $end = microtime(true);
+        $time = round(($end - $start), 2);
+        $collector = DatabaseCollector::instance();
+        $collector->addQuery('', [], $time, 'sqlite', 'RecordRepository->find');
+
         return $record;
     }
 
@@ -100,17 +112,17 @@ abstract class RecordRepository implements Repository
     {
         $key = $this->cache->generateKey($this->tableName, 'findBy', $field, $value);
         $cached = $this->cache->get($key);
-        
+
         if ($cached !== null) {
             return $cached;
         }
-        
+
         $record = $this->modelClass::query()->where($field, '=', $value)->first();
-        
+
         if ($record !== null) {
             $this->cache->set($key, $record);
         }
-        
+
         return $record;
     }
 
@@ -118,14 +130,14 @@ abstract class RecordRepository implements Repository
     {
         $key = $this->cache->generateKey($this->tableName, 'findAll');
         $cached = $this->cache->get($key);
-        
+
         if ($cached !== null) {
             return $cached;
         }
-        
+
         $records = $this->modelClass::query()->get();
         $this->cache->set($key, $records, 300);
-        
+
         return $records;
     }
 
@@ -138,7 +150,7 @@ abstract class RecordRepository implements Repository
     {
         $records = [];
         $pk = $this->modelClass::primaryProperty()->getName();
-        
+
         foreach ($data as $row) {
             $record = new ($this->modelClass)();
             foreach ($row as $key => $value) {
@@ -149,35 +161,35 @@ abstract class RecordRepository implements Repository
             $record->save();
             $records[] = $record;
         }
-        
+
         $this->cache->invalidate($this->tableName);
-        
+
         return $records;
     }
 
     public function updateMany(array $records, array $data): int
     {
         $count = 0;
-        
+
         foreach ($records as $record) {
             if ($this->update($record, $data)) {
                 $count++;
             }
         }
-        
+
         return $count;
     }
 
     public function deleteMany(array $ids): int
     {
         $count = 0;
-        
+
         foreach ($ids as $id) {
             if ($this->delete($id)) {
                 $count++;
             }
         }
-        
+
         return $count;
     }
 }

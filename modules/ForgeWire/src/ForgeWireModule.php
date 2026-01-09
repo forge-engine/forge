@@ -22,11 +22,11 @@ use const pcov\version;
 
 #[
     Module(
-        name: "ForgeWire",
-        version: "1.0.9",
-        description: "A lightway livewire like module for forge",
-        order: 99,
-    ),
+    name: "ForgeWire",
+    version: "1.0.9",
+    description: "A lightway livewire like module for forge",
+    order: 99,
+),
 ]
 #[Service]
 #[Provides(ForgeWireModule::class, version: '0.1.9')]
@@ -52,7 +52,9 @@ final class ForgeWireModule
 
     private function registerWireAssets(): void
     {
+        $css = '<style>[fw\:id] [fw\:loading] { display: none; } [fw\:id][fw\:loading] [fw\:loading], [fw\:id].fw-loading [fw\:loading] { display: block !important; }</style>';
         $assetHtml = '<script src="/assets/modules/forge-wire/js/forgewire.js" async></script>';
+        $this->registerAsset(assetHtml: $css, beforeTag: '</head>');
         $this->registerAsset(assetHtml: $assetHtml, beforeTag: '</body>');
     }
 }

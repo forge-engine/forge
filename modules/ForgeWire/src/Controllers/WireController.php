@@ -31,7 +31,7 @@ final class WireController
     public function handle(Request $request): Response
     {
         $payload = $request->json();
-        $result = $this->kernel->process($payload, $this->session);
+        $result = $this->kernel->process($payload, $request, $this->session);
         $this->logger->debug('Payload', $payload);
         $this->logger->debug('Result', $result);
         $this->gcEmptyComponents();

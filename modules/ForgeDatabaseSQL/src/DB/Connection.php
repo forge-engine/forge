@@ -34,7 +34,7 @@ class Connection implements DatabaseConnectionInterface
                     PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
                     PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
                 ],
-                $config->getOptions()
+                $config->getOptions(),
             );
         }
 
@@ -43,16 +43,16 @@ class Connection implements DatabaseConnectionInterface
                 $dsn,
                 $config->username,
                 $config->password,
-                $pdoOptionsToUse
+                $pdoOptionsToUse,
             );
 
-            if ($config->driver === 'sqlite') {
-                $this->pdo->exec('PRAGMA foreign_keys = ON;');
-                $this->pdo->exec('PRAGMA busy_timeout = 2000;');
+            if ($config->driver === "sqlite") {
+                $this->pdo->exec("PRAGMA foreign_keys = ON;");
+                $this->pdo->exec("PRAGMA busy_timeout = 2000;");
             }
         } catch (PDOException $exception) {
             throw new RuntimeException(
-                "Database connection failed: " . $exception->getMessage()
+                "Database connection failed: " . $exception->getMessage(),
             );
         }
     }

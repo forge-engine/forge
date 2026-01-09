@@ -8,7 +8,7 @@ use Forge\Core\Session\SessionInterface;
 final class Checksum
 {
     private const K_SIG = ':sig';
-    private const K_FP  = ':fp';
+    private const K_FP = ':fp';
 
     private string $appKey;
 
@@ -46,19 +46,19 @@ final class Checksum
 
     private function compute(SessionInterface $session, string $sessionKey, array $ctx): string
     {
-        $state  = (array) $session->get($sessionKey, []);
+        $state = (array) $session->get($sessionKey, []);
         $models = (array) $session->get($sessionKey . ':models', []);
-        $dtos   = (array) $session->get($sessionKey . ':dtos', []);
+        $dtos = (array) $session->get($sessionKey . ':dtos', []);
 
         $payload = [
             'class' => (string) ($ctx['class'] ?? ''),
-            'path'  => (string) ($ctx['path']  ?? ''),
-            'sid'   => (string) $session->getId(),
-            'v'     => 1,
-            'bags'  => [
-                'state'  => $state,
+            'path' => (string) ($ctx['path'] ?? ''),
+            'sid' => (string) $session->getId(),
+            'v' => 1,
+            'bags' => [
+                'state' => $state,
                 'models' => $models,
-                'dtos'   => $dtos,
+                'dtos' => $dtos,
             ],
         ];
 
@@ -71,7 +71,7 @@ final class Checksum
         $sig = $this->compute($session, $sessionKey, $ctx);
         $session->set($sessionKey . self::K_FP, [
             'class' => (string) ($ctx['class'] ?? ''),
-            'path'  => (string) ($ctx['path']  ?? ''),
+            'path' => (string) ($ctx['path'] ?? ''),
         ]);
         $session->set($sessionKey . self::K_SIG, $sig);
         return $sig;
@@ -88,15 +88,15 @@ final class Checksum
         if (empty($fp)) {
             $session->set($sessionKey . self::K_FP, [
                 'class' => (string) ($ctx['class'] ?? ''),
-                'path'  => (string) ($ctx['path']  ?? ''),
+                'path' => (string) ($ctx['path'] ?? ''),
             ]);
             return;
         }
 
         $expClass = (string) ($fp['class'] ?? '');
-        $expPath  = (string) ($fp['path']  ?? '');
+        $expPath = (string) ($fp['path'] ?? '');
         $curClass = (string) ($ctx['class'] ?? '');
-        $curPath  = (string) ($ctx['path']  ?? '');
+        $curPath = (string) ($ctx['path'] ?? '');
         if (!hash_equals($expClass, $curClass) || !hash_equals($expPath, $curPath)) {
             throw new \RuntimeException('Fingerprint mismatch.');
         }

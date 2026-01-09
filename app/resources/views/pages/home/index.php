@@ -17,7 +17,6 @@ layout(name: "main");
         <li>Database Driver: <?= env("DB_DRIVER") ?></li>
     </ul>
     <h3>User information</h3>
-    <?= wire_name(name: 'counter', componentId: 'counter-1') ?>
     <pre>
         <?php print_r($user); ?>
     </pre>

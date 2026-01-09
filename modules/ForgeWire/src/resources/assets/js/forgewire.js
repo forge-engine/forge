@@ -1,6 +1,6 @@
 (() => {
 	const DEFAULT_DEBOUNCE = 600;
-	const rootSel = '[wire\\:id]';
+	const rootSel = '[fw\\:id]';
 	const attr = (el, n) => el.getAttribute(n);
 	const closestRoot = el => el.closest(rootSel);
 	let composing = false;
@@ -17,7 +17,7 @@
 		io = new IntersectionObserver((entries) => {
 			entries.forEach((entry) => {
 				const root = entry.target;
-				const id = root.getAttribute('wire:id');
+				const id = root.getAttribute('fw:id');
 				if (!id) return;
 				const rec = pollers.get(id);
 				if (!rec) return;
@@ -33,7 +33,7 @@
 					}
 				}
 			});
-		}, {root: null, threshold: 0});
+		}, { root: null, threshold: 0 });
 		return io;
 	}
 
@@ -47,17 +47,17 @@
 
 	function findPollTarget(root) {
 		const names = root.getAttributeNames();
-		if (names.includes('wire:poll')) return {el: root, everyMs: 2000};
-		const param = names.find(n => n.startsWith('wire:poll.'));
-		if (param) return {el: root, everyMs: parsePollInterval(param)};
+		if (names.includes('fw:poll')) return { el: root, everyMs: 2000 };
+		const param = names.find(n => n.startsWith('fw:poll.'));
+		if (param) return { el: root, everyMs: parsePollInterval(param) };
 
 		const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
 		while (walker.nextNode()) {
 			const node = /** @type {Element} */(walker.currentNode);
 			const ns = node.getAttributeNames();
-			if (ns.includes('wire:poll')) return {el: node, everyMs: 2000};
-			const p = ns.find(n => n.startsWith('wire:poll.'));
-			if (p) return {el: node, everyMs: parsePollInterval(p)};
+			if (ns.includes('fw:poll')) return { el: node, everyMs: 2000 };
+			const p = ns.find(n => n.startsWith('fw:poll.'));
+			if (p) return { el: node, everyMs: parsePollInterval(p) };
 		}
 		return null;
 	}
@@ -77,13 +77,13 @@
 	}
 
 	function parseAction(expr) {
-		if (!expr) return {method: null, args: []};
+		if (!expr) return { method: null, args: [] };
 		const t = expr.trim();
 		const open = t.indexOf('(');
-		if (open === -1) return {method: t, args: []};
+		if (open === -1) return { method: t, args: [] };
 		const method = t.slice(0, open).trim();
 		const inner = t.slice(open + 1, t.lastIndexOf(')')).trim();
-		if (!inner) return {method, args: []};
+		if (!inner) return { method, args: [] };
 
 		const args = [];
 		let cur = '', inS = false, inD = false, esc = false;
@@ -129,20 +129,22 @@
 				return s;
 			}
 		};
-		return {method, args: args.map(norm)};
+		return { method, args: args.map(norm) };
 	}
 
 	function getModelBinding(el) {
 		for (const name of el.getAttributeNames()) {
-			if (name === 'wire:model') return {key: el.getAttribute(name), type: 'immediate', debounce: 0};
-			if (name === 'wire:model.lazy') return {key: el.getAttribute(name), type: 'lazy', debounce: null};
-			if (name === 'wire:model.debounce') return {
+			if (name === 'fw:model') return { key: el.getAttribute(name), type: 'immediate', debounce: 0 };
+			if (name === 'fw:model.lazy') return { key: el.getAttribute(name), type: 'lazy', debounce: null };
+			if (name === 'fw:model.debounce') return {
 				key: el.getAttribute(name),
 				type: 'debounce',
 				debounce: DEFAULT_DEBOUNCE
 			};
-			if (name.startsWith('wire:model.debounce.')) {
-				const ms = parseInt(name.slice('wire:model.debounce.'.length), 10);
+			if (name.startsWith('fw:model.debounce.')) {
+				const parts = name.split('.');
+				const msStr = parts[parts.length - 1];
+				const ms = parseInt(msStr, 10);
 				return {
 					key: el.getAttribute(name),
 					type: 'debounce',
@@ -174,9 +176,14 @@
 	}
 
 	async function send(payload, signal) {
-		const headers = {'Content-Type': 'application/json'};
-		if (window.csrfToken) headers['X-CSRF-TOKEN'] = window.csrfToken;
-		const res = await fetch('/__wire', {method: 'POST', headers, body: JSON.stringify(payload), signal});
+		const headers = {
+			'Content-Type': 'application/json',
+			'X-ForgeWire': 'true'
+		};
+		const csrf = window.csrfToken || document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+		if (csrf) headers['X-CSRF-TOKEN'] = csrf;
+
+		const res = await fetch('/__wire', { method: 'POST', headers, body: JSON.stringify(payload), signal });
 		return res.json();
 	}
 
@@ -190,8 +197,46 @@
 
 	const inflight = new Map();
 
+	const queues = new Map();
+	const pending = new Map();
+
 	async function trigger(root, action = null, args = [], dirtyOverride = null) {
-		const id = attr(root, 'wire:id');
+		const id = attr(root, 'fw:id');
+
+		if (queues.get(id)) {
+			if (action === 'input' || action === null) {
+				pending.set(id, { action, args, dirty: dirtyOverride ?? collectDirty(root) });
+			}
+			return;
+		}
+
+		queues.set(id, true);
+
+		try {
+			let currentAction = action;
+			let currentArgs = args;
+			let currentDirty = dirtyOverride;
+
+			while (true) {
+				await performTrigger(root, currentAction, currentArgs, currentDirty);
+
+				const next = pending.get(id);
+				if (next) {
+					pending.delete(id);
+					currentAction = next.action;
+					currentArgs = next.args;
+					currentDirty = next.dirty;
+					continue;
+				}
+				break;
+			}
+		} finally {
+			queues.delete(id);
+		}
+	}
+
+	async function performTrigger(root, action = null, args = [], dirtyOverride = null) {
+		const id = attr(root, 'fw:id');
 		const thisPri = priorityFor(action);
 
 		let dirty = {};
@@ -206,53 +251,54 @@
 		if (active && root.contains(active)) {
 			const bind = getModelBinding(active);
 			if (bind) {
-				focusInfo = {key: bind.key, start: active.selectionStart ?? null, end: active.selectionEnd ?? null};
+				focusInfo = { key: bind.key, start: active.selectionStart ?? null, end: active.selectionEnd ?? null };
 			}
 		}
 
 		cancelDebounces(root);
-		root.setAttribute('wire:loading', '');
+		root.setAttribute('fw:loading', '');
 
-		const prev = inflight.get(id);
-		if (prev) {
-			if (prev.priority > thisPri) {
-				root.removeAttribute('wire:loading');
-				return;
-			}
-			try {
-				prev.controller.abort();
-			} catch {
-			}
-		}
-
-		const controller = new AbortController();
-		inflight.set(id, {controller, priority: thisPri});
+		// Note: We no longer abort inflight requests here because we use the queue to sequence them.
+		// Aborting fetch doesn't stop the server from updating the session, which causes checksum mismatches.
 
 		let out;
 		try {
 			out = await send({
 				id,
-				component: attr(root, 'wire:component'),
+				controller: attr(root, 'fw:controller'),
 				action, args,
 				dirty,
-				checksum: root.__fw_checksum || null,
-				fingerprint: {path: location.pathname}
-			}, controller.signal);
+				checksum: root.__fw_checksum || root.getAttribute('fw:checksum') || null,
+				fingerprint: { path: location.pathname }
+			});
 		} catch (e) {
-			root.removeAttribute('wire:loading');
+			root.removeAttribute('fw:loading');
 			return;
 		} finally {
-			const cur = inflight.get(id);
-			if (cur && cur.controller === controller) inflight.delete(id);
+			root.removeAttribute('fw:loading');
 		}
 
-		root.outerHTML = out.html;
-		const newRoot = document.querySelector(`[wire\\:id="${id}"]`);
-		if (!newRoot) return;
-		newRoot.__fw_checksum = out.checksum || null;
-		newRoot.removeAttribute('wire:loading');
+		const targetEl = root.querySelector('[fw\\:target]') || root;
+		const parser = new DOMParser();
+		const doc = parser.parseFromString(out.html, 'text/html');
+		const newTargetContent = doc.querySelector('[fw\\:target]') || doc.querySelector(`[fw\\:id="${id}"]`);
 
-		setupPolling(newRoot);
+		const finalHtml = newTargetContent ? newTargetContent.innerHTML : out.html;
+
+		if (targetEl === root) {
+			root.outerHTML = newTargetContent ? newTargetContent.outerHTML : out.html;
+			const newRoot = document.querySelector(`[fw\\:id="${id}"]`);
+			if (!newRoot) return;
+			newRoot.__fw_checksum = out.checksum || null;
+			newRoot.removeAttribute('fw:loading');
+			root = newRoot;
+		} else {
+			targetEl.innerHTML = finalHtml;
+			root.removeAttribute('fw:loading');
+			root.__fw_checksum = out.checksum || null;
+		}
+
+		setupPolling(root);
 
 		if (out.redirect) {
 			window.location.assign(out.redirect);
@@ -260,8 +306,9 @@
 		}
 
 		if (focusInfo) {
-			const next = findModelByKey(newRoot, focusInfo.key);
+			const next = findModelByKey(root, focusInfo.key);
 			if (next) {
+				// Only restore value if it was an input-related trigger
 				if (dirty.hasOwnProperty(focusInfo.key)) {
 					next.value = dirty[focusInfo.key];
 				}
@@ -281,8 +328,7 @@
 	const pollers = new Map();
 
 	function parsePollInterval(attrName) {
-		// attrName is like 'wire:poll.5s' or 'wire:poll.300ms'
-		const s = attrName.slice('wire:poll.'.length);
+		const s = attrName.slice('fw:poll.'.length);
 		if (s.endsWith('ms')) return Math.max(250, parseInt(s, 10) || 2000);
 		if (s.endsWith('s')) return Math.max(250, (parseFloat(s) || 2) * 1000);
 		return 2000;
@@ -294,7 +340,7 @@
 	}
 
 	function setupPolling(root) {
-		const id = root.getAttribute('wire:id');
+		const id = root.getAttribute('fw:id');
 		if (!id) return;
 
 		const prev = pollers.get(id);
@@ -311,7 +357,7 @@
 		if (!target) return;
 
 		const every = target.everyMs | 0;
-		pollers.set(id, {el: root, timer: null, everyMs: every, visible: false});
+		pollers.set(id, { el: root, timer: null, everyMs: every, visible: false });
 
 		const obs = ensureObserver();
 		obs.observe(root);
@@ -333,7 +379,7 @@
 	}
 
 	function schedulePoll(root) {
-		const id = root.getAttribute('wire:id');
+		const id = root.getAttribute('fw:id');
 		const rec = pollers.get(id);
 		if (!rec) return;
 
@@ -371,7 +417,7 @@
 	// -- events ----------------------------------------------------------------
 
 	document.addEventListener('click', (e) => {
-		const el = e.target.closest('[wire\\:click]');
+		const el = e.target.closest('[fw\\:click]');
 		if (!el) return;
 		const root = closestRoot(el);
 		if (!root) return;
@@ -379,28 +425,28 @@
 
 		setSuppressUntil(root, 120);
 
-		const parsed = parseAction(attr(el, 'wire:click'));
+		const parsed = parseAction(attr(el, 'fw:click'));
 		trigger(root, parsed.method, parsed.args);
 	});
 
 	document.addEventListener('submit', (e) => {
-		const form = e.target.closest('[wire\\:submit]');
+		const form = e.target.closest('[fw\\:submit]');
 		if (!form) return;
 		const root = closestRoot(form);
 		if (!root) return;
 		e.preventDefault();
 
-		const lazyInputs = form.querySelectorAll('[wire\\:model\\.lazy]');
+		const lazyInputs = form.querySelectorAll('[fw\\:model\\.lazy]');
 		lazyInputs.forEach(input => {
 			if (document.activeElement === input) {
-				const event = new Event('change', {bubbles: true});
+				const event = new Event('change', { bubbles: true });
 				input.dispatchEvent(event);
 			}
 		});
 
 		setSuppressUntil(root, 150);
 
-		const parsed = parseAction(attr(form, 'wire:submit'));
+		const parsed = parseAction(attr(form, 'fw:submit'));
 		const dirtyNow = collectDirty(root);
 
 		setTimeout(() => {
@@ -475,13 +521,13 @@
 		const bind = getModelBinding(el);
 		if (!bind) return;
 		const form = el.closest('form');
-		if (form && !form.hasAttribute('wire:submit')) {
+		if (form && !form.hasAttribute('fw:submit')) {
 			e.preventDefault();
 		}
 	});
 
 	document.addEventListener('DOMContentLoaded', () => {
-		document.querySelectorAll('[wire\\:id]').forEach(setupPolling);
+		document.querySelectorAll('[fw\\:id]').forEach(setupPolling);
 	});
 })();
 

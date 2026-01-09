@@ -76,7 +76,7 @@ final class Hydrator
                 if (isset($modelBag[$propName])) {
                     [$modelClass, $idField, $id] = $modelBag[$propName];
 
-                    /** @var \Forge\Core\Database\Model $model */
+                    /** @var \App\Modules\ForgeSqlOrm\ORM\Model $model */
                     $model = null;
 
                     if ($idField === $modelClass::getPrimaryKey()) {
@@ -173,8 +173,8 @@ final class Hydrator
             $hasInit = $prop->isInitialized(new $class());
             $prop->setAccessible(true);
 
-            $reader = fn (object $o) => $prop->getValue($o);
-            $writer = fn (object $o, $v) => $prop->setValue($o, $v);
+            $reader = fn(object $o) => $prop->getValue($o);
+            $writer = fn(object $o, $v) => $prop->setValue($o, $v);
 
             foreach ($prop->getAttributes() as $attr) {
                 $type = $attr->getName();
@@ -258,94 +258,5 @@ final class Hydrator
             }
         }
         return $obj;
-    }
-
-    /**
-     * @throws RandomException
-     * @throws MissingServiceException
-     */
-    public static function wire(
-        string $componentClass,
-        mixed $a = null,
-        mixed $b = null,
-    ): string {
-        [$id, $props] = (static function ($a, $b) {
-            if (is_array($a)) {
-                return [null, $a];
-            }
-            if (is_string($a)) {
-                return [is_array($b) ? $a : $a, is_array($b) ? $b : []];
-            }
-            if (is_array($b)) {
-                return [null, $b];
-            }
-            return [null, []];
-        })($a, $b);
-
-        $id = $id ?? "fw-" . bin2hex(random_bytes(6));
-
-        $container = Container::getInstance();
-        $instance = $container->make($componentClass);
-
-        (static function (
-            object $instance,
-            Container $c,
-        ): void {
-            static $serviceMap = [];
-            $cls = $instance::class;
-            if (!isset($serviceMap[$cls])) {
-                $map = [];
-                $ref = new \ReflectionClass($instance);
-                foreach ($ref->getProperties() as $prop) {
-                    foreach ($prop->getAttributes() as $attr) {
-                        if (
-                                $attr->getName() ===
-                                "App\\Modules\\ForgeWire\\Attributes\\Service"
-                            ) {
-                            $args = $attr->getArguments();
-                            $class =
-                                    $args["class"] ??
-                                    ($args[0] ?? $prop->getType()?->getName());
-                            if ($class) {
-                                $map[$prop->getName()] = $class;
-                            }
-                        }
-                    }
-                }
-                $serviceMap[$cls] = $map;
-            }
-            if ($serviceMap[$cls]) {
-                $ref = new \ReflectionClass($instance);
-                foreach ($serviceMap[$cls] as $propName => $svcClass) {
-                    $p = $ref->getProperty($propName);
-                    $p->setAccessible(true);
-                    $p->setValue($instance, $c->make($svcClass));
-                }
-            }
-        })($instance, $container);
-
-        if (method_exists($instance, "mount")) {
-            $instance->mount($props ?? []);
-        }
-
-        /** @var Renderer $renderer */
-        $renderer = $container->make(
-            Renderer::class,
-        );
-        $html = $renderer->render($instance, $id, $componentClass);
-
-        /** @var SessionInterface $session */
-        $session = $container->make(
-            SessionInterface::class,
-        );
-        $hydrator = $container->make(
-            Hydrator::class,
-        );
-        $sessionKey = "forgewire:{$id}";
-
-        $hydrator->dehydrate($instance, $session, $sessionKey);
-        // $checksum = $container->make(\App\Modules\ForgeWire\Support\Checksum::class)->sign($sessionKey, $session);
-
-        return $html;
     }
 }
