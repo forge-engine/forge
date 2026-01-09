@@ -8,11 +8,11 @@ $flashMessages = Flash::flat() ?? [];
     <div>
         <?php foreach ($flashMessages as $msg): ?>
             <?=
-            component(name: "ForgeUi:Ui/Alert", props: [
-                "type" => $msg["type"],
-                "children" => $msg["message"]
-            ], fromModule: true)
-            ?>
+                component(name: "ForgeUi:/alert", props: [
+                    "type" => $msg["type"],
+                    "children" => $msg["message"]
+                ], fromModule: true)
+                ?>
         <?php endforeach; ?>
     </div>
 <?php endif; ?>

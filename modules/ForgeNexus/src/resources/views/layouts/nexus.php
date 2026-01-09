@@ -19,9 +19,9 @@ use Forge\Core\View\Component;
 
 <body>
     <div class="dashboard-container">
-        <?= Component::render(name: 'nexus:sidebar', loadFromModule: true) ?>
+        <?= component(name: 'ForgeNexus:sidebar/sidebar', fromModule: true) ?>
         <main class="main-content">
-            <?= Component::render(name: 'nexus:header', loadFromModule: true) ?>
+            <?= component(name: 'ForgeNexus:layout/header', fromModule: true) ?>
             <div class="dashboard-grid">
                 <?= $content ?>
             </div>
