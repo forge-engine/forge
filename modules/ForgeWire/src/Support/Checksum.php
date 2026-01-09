@@ -15,8 +15,17 @@ final class Checksum
     public function __construct(private Config $config)
     {
         $this->appKey = (string) $config->get('security.app_key', '');
+
         if ($this->appKey === '') {
-            throw new \RuntimeException('App key required for ForgeWire checksum.');
+            $this->appKey = (string) $config->get('app.key', '');
+        }
+
+        if ($this->appKey === '') {
+            $this->appKey = (string) env('APP_KEY', '');
+        }
+
+        if ($this->appKey === '') {
+            throw new \RuntimeException('App key required for ForgeWire checksum. Please set APP_KEY in your .env file or config/security.php as "app_key".');
         }
     }
 

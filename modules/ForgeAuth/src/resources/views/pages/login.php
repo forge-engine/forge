@@ -13,7 +13,7 @@ layout(name: "main");
 <section class="container">
     <h2>Login Administration</h2>
 
-    <?= component(name: "ForgeUi:Ui/FlashMessage", fromModule: true) ?>
+    <?= component(name: "ForgeUi:flash-message", fromModule: true) ?>
     <section>
         <form action="" method="POST" class="form">
             <?= csrf_input() ?>

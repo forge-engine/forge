@@ -163,11 +163,12 @@ final class Hydrator
     private static function buildRecipe(string $class): array
     {
         $refl = new \ReflectionClass($class);
+        $dummy = $refl->newInstanceWithoutConstructor();
         $recipe = [];
 
         foreach ($refl->getProperties() as $prop) {
             $name = $prop->getName();
-            $hasInit = $prop->isInitialized(new $class());
+            $hasInit = $prop->isInitialized($dummy);
             $prop->setAccessible(true);
 
             $reader = fn(object $o) => $prop->getValue($o);

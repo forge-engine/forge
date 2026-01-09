@@ -15,7 +15,7 @@
     <input type="search" fw:model.debounce="query" value="<?= e($query) ?>" placeholder="Type to search...">
 
     <div fw:target>
-        <?= component(name: 'ui/query', props: ['query' => $query], type: 'ui') ?>
+        <?= component(name: 'ui/query', props: ['query' => $query]) ?>
         <?php if (empty($results)) { ?>
             <p>No results yet.</p>
         <?php } else { ?>
