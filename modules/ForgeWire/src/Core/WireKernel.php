@@ -64,12 +64,14 @@ final class WireKernel
 
         $instance = $this->container->make($class);
 
-        $dirty = $this->filterDirty($dirty, $session, $sessionKey);
-
         $isSubmit =
             $action !== null
             && $action !== 'input'
             && $this->isSubmitAction($class, $action);
+
+        if (!$isSubmit) {
+            $dirty = $this->filterDirty($dirty, $session, $sessionKey);
+        }
 
         $shouldValidateState =
             $action === 'input'
@@ -307,6 +309,7 @@ final class WireKernel
 
         foreach ($dirty as $key => $value) {
             if (!array_key_exists($key, $stateBag)) {
+                $filtered[$key] = $value;
                 continue;
             }
 
