@@ -48,7 +48,6 @@ final class SettingsController
     #[Action]
     public function save(): void
     {
-        // Simulate a save operation
         if (strlen($this->username) < 3) {
             $this->message = 'Error: Username must be at least 3 characters.';
             return;

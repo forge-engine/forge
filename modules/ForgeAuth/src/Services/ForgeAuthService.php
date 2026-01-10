@@ -33,12 +33,11 @@ final class ForgeAuthService implements ForgeAuthInterface
     private ?int $jwtRefreshTtl = null;
 
     public function __construct(
-        private readonly Config           $config,
+        private readonly Config $config,
         private readonly SessionInterface $session,
-        private readonly JwtService      $jwtService,
-        private readonly UserRepository  $users
-    )
-    {
+        private readonly JwtService $jwtService,
+        private readonly UserRepository $users
+    ) {
     }
 
     public static function addCustomClaimsCallback(callable $callback): void
@@ -52,6 +51,9 @@ final class ForgeAuthService implements ForgeAuthInterface
     public function register(array $credentials): bool
     {
         try {
+
+            $this->assertPasswordLength($credentials['password']);
+
             $data = new CreateUserData(
                 identifier: $credentials["identifier"],
                 email: $credentials["email"],
@@ -73,6 +75,8 @@ final class ForgeAuthService implements ForgeAuthInterface
     public function login(array $credentials): User
     {
         $this->validateLoginAttempt();
+
+        $this->assertPasswordLength($credentials['password']);
 
         $user = $this->users->findByIdentifier($credentials['identifier']);
 
@@ -96,11 +100,11 @@ final class ForgeAuthService implements ForgeAuthInterface
      */
     private function validateLoginAttempt(): void
     {
-        $attempts = (int)$this->session->get('login_attempts', 0);
-        $lastAttempt = (int)$this->session->get('last_login_attempt', 0);
+        $attempts = (int) $this->session->get('login_attempts', 0);
+        $lastAttempt = (int) $this->session->get('last_login_attempt', 0);
 
-        $maxAttempts = (int)$this->config->get('security.password.max_login_attempts', 5);
-        $lockoutTime = (int)$this->config->get('security.password.lockout_time', 300);
+        $maxAttempts = (int) $this->config->get('security.password.max_login_attempts', 5);
+        $lockoutTime = (int) $this->config->get('security.password.lockout_time', 300);
 
         if ($attempts >= $maxAttempts && time() - $lastAttempt < $lockoutTime) {
             Flash::set("error", "Too many login attempts. Please try again later");
@@ -110,9 +114,23 @@ final class ForgeAuthService implements ForgeAuthInterface
 
     private function handleFailedLogin(): void
     {
-        $attempts = (int)$this->session->get('login_attempts', 0) + 1;
+        $attempts = (int) $this->session->get('login_attempts', 0) + 1;
         $this->session->set('login_attempts', $attempts);
         $this->session->set('last_login_attempt', time());
+    }
+
+    private function assertPasswordLength(string $password): void
+    {
+        $max = (int) $this->config->get('security.password.max_password_length', 128);
+        $min = (int) $this->config->get('security.password.min_password_length', 6);
+
+        if (strlen($password) > $max) {
+            throw new LoginException();
+        }
+
+        if (strlen($password) < $min) {
+            throw new LoginException();
+        }
     }
 
     private function resetLoginAttempts(): void
@@ -137,7 +155,7 @@ final class ForgeAuthService implements ForgeAuthInterface
         }
 
         $userId = $this->session->get('user_id');
-        $user = $userId ? $this->users->findById((int)$userId) : null;
+        $user = $userId ? $this->users->findById((int) $userId) : null;
         $this->cachedUser = $user;
 
         return $user;
@@ -203,7 +221,7 @@ final class ForgeAuthService implements ForgeAuthInterface
             return null;
         }
 
-        $user = $this->users->findById((int)$userId);
+        $user = $this->users->findById((int) $userId);
         if (!$user) {
             return null;
         }
@@ -224,7 +242,7 @@ final class ForgeAuthService implements ForgeAuthInterface
             return null;
         }
 
-        $user = $this->users->findById((int)$userId);
+        $user = $this->users->findById((int) $userId);
         if ($user) {
             $this->cachedUser = $user;
         }
@@ -257,7 +275,7 @@ final class ForgeAuthService implements ForgeAuthInterface
     private function isJwtEnabled(): bool
     {
         if ($this->jwtEnabled === null) {
-            $this->jwtEnabled = (bool)$this->config->get('security.jwt.enabled', false);
+            $this->jwtEnabled = (bool) $this->config->get('security.jwt.enabled', false);
         }
 
         return $this->jwtEnabled;
@@ -266,7 +284,7 @@ final class ForgeAuthService implements ForgeAuthInterface
     private function getJwtTtl(): int
     {
         if ($this->jwtTtl === null) {
-            $this->jwtTtl = (int)$this->config->get('security.jwt.ttl', 900);
+            $this->jwtTtl = (int) $this->config->get('security.jwt.ttl', 900);
         }
 
         return $this->jwtTtl;
@@ -275,7 +293,7 @@ final class ForgeAuthService implements ForgeAuthInterface
     private function getJwtRefreshTtl(): int
     {
         if ($this->jwtRefreshTtl === null) {
-            $this->jwtRefreshTtl = (int)$this->config->get('security.jwt.refresh_ttl', 604800);
+            $this->jwtRefreshTtl = (int) $this->config->get('security.jwt.refresh_ttl', 604800);
         }
 
         return $this->jwtRefreshTtl;

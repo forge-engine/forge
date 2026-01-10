@@ -8,7 +8,13 @@ use App\Modules\ForgeWire\Support\Checksum;
 use Forge\Core\DI\Container;
 use Forge\Core\Http\Request;
 use Forge\Core\Http\Response;
+use Forge\Exceptions\ValidationException;
 use Forge\Core\Session\SessionInterface;
+use Forge\Core\Validation\Validator;
+use ReflectionClass;
+use ReflectionMethod;
+use RuntimeException;
+use ReflectionNamedType;
 
 final class WireKernel
 {
@@ -41,7 +47,7 @@ final class WireKernel
         }
 
         if (!isset(self::$reflCache[$class])) {
-            $refl = new \ReflectionClass($class);
+            $refl = new ReflectionClass($class);
             self::$reflCache[$class] = !empty($refl->getAttributes(Reactive::class));
         }
 
@@ -57,6 +63,38 @@ final class WireKernel
         );
 
         $instance = $this->container->make($class);
+
+        $dirty = $this->filterDirty($dirty, $session, $sessionKey);
+
+        $isSubmit =
+            $action !== null
+            && $action !== 'input'
+            && $this->isSubmitAction($class, $action);
+
+        $shouldValidateState =
+            $action === 'input'
+            || $isSubmit;
+
+        if ($shouldValidateState) {
+            $errors = $this->validateReactiveState(
+                $instance,
+                $dirty,
+                $class,
+                $isSubmit
+            );
+
+            if ($errors !== []) {
+                return [
+                    "html" => "",
+                    "state" => null,
+                    "checksum" => $this->checksum->sign($sessionKey, $session, $ctx),
+                    "events" => [],
+                    "redirect" => null,
+                    "flash" => [],
+                    "errors" => $errors,
+                ];
+            }
+        }
 
         $this->hydrator->hydrate($instance, $dirty, $session, $sessionKey);
 
@@ -105,9 +143,9 @@ final class WireKernel
                 return "";
             }
 
-            $rm = new \ReflectionMethod($instance, $action);
+            $rm = new ReflectionMethod($instance, $action);
             if (!$rm->isPublic()) {
-                throw new \RuntimeException("Action method must be public: {$action}");
+                throw new RuntimeException("Action method must be public: {$action}");
             }
 
             $isAction = !empty($rm->getAttributes(Action::class));
@@ -116,7 +154,7 @@ final class WireKernel
                 $typeName = null;
                 if ($param->hasType()) {
                     $type = $param->getType();
-                    if ($type instanceof \ReflectionNamedType) {
+                    if ($type instanceof ReflectionNamedType) {
                         $typeName = ltrim($type->getName(), '\\');
                     }
                 }
@@ -138,13 +176,13 @@ final class WireKernel
             return "";
         }
 
-        /** @var \ReflectionMethod $rm */
+        /** @var ReflectionMethod $rm */
         $rm = $meta['rm'];
 
         if ($isExplicitAction) {
             $originalAction = $session->get("forgewire:{$id}:action") ?? "index";
             if ($action !== $originalAction && !$meta['isAction']) {
-                throw new \RuntimeException("Action not allowed: {$action}. Must be marked with #[Action].");
+                throw new RuntimeException("Action not allowed: {$action}. Must be marked with #[Action].");
             }
         }
 
@@ -180,5 +218,127 @@ final class WireKernel
             return $res->getContent();
         }
         return (string) $res;
+    }
+
+    private function isSubmitAction(string $class, string $action): bool
+    {
+        $rm = new ReflectionMethod($class, $action);
+
+        foreach ($rm->getAttributes(Action::class) as $attr) {
+            $instance = $attr->newInstance();
+            return $instance->submit ?? false;
+        }
+
+        return false;
+    }
+
+    private function validateReactiveState(
+        object $instance,
+        array $dirty,
+        string $class,
+        bool $isSubmit
+    ): array {
+        $recipe = Hydrator::getRecipe($class);
+
+        $data = [];
+        $rules = [];
+        $messages = [];
+
+        foreach ($recipe as $prop => $cfg) {
+            if (
+                ($cfg['kind'] ?? null) !== 'state'
+                || !isset($cfg['validate'])
+            ) {
+                continue;
+            }
+
+            if (
+                !array_key_exists($prop, $dirty)
+                && !$isSubmit
+            ) {
+                continue;
+            }
+
+            $value = array_key_exists($prop, $dirty)
+                ? $dirty[$prop]
+                : $cfg['reader']($instance);
+
+            $data[$prop] = $value;
+            $rules[$prop] = $cfg['validate']['rules'];
+
+            if (!empty($cfg['validate']['messages'])) {
+                $messages[$prop] = $cfg['validate']['messages'];
+            }
+        }
+
+        if ($data === []) {
+            return [];
+        }
+
+        $flatMessages = [];
+
+        foreach ($messages as $field => $fieldMessages) {
+            foreach ($fieldMessages as $rule => $message) {
+                $flatMessages["{$field}.{$rule}"] = $message;
+            }
+        }
+
+        try {
+            (new Validator(
+                data: $data,
+                rules: $rules,
+                messages: $flatMessages,
+                onlyPresent: !$isSubmit
+            ))->validate();
+
+            return [];
+        } catch (ValidationException $e) {
+            return $e->errors();
+        }
+    }
+
+    private function filterDirty(
+        array $dirty,
+        SessionInterface $session,
+        string $sessionKey
+    ): array {
+        $stateBag = $session->get($sessionKey, []);
+        $filtered = [];
+
+        foreach ($dirty as $key => $value) {
+            if (!array_key_exists($key, $stateBag)) {
+                continue;
+            }
+
+            if ($stateBag[$key] !== $value) {
+                $filtered[$key] = $value;
+            }
+        }
+
+        return $filtered;
+    }
+
+    private function actionTouchesValidatedState(
+        string $class,
+        ?string $action,
+        array $dirty
+    ): bool {
+        if ($action === null) {
+            return false;
+        }
+
+        $recipe = Hydrator::getRecipe($class);
+
+        foreach ($dirty as $prop => $_) {
+            if (
+                isset($recipe[$prop]) &&
+                ($recipe[$prop]['kind'] ?? null) === 'state' &&
+                isset($recipe[$prop]['validate'])
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

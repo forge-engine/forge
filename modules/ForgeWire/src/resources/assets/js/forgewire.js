@@ -275,6 +275,41 @@
 			return { root };
 		}
 
+		if (out.errors && Object.keys(out.errors).length > 0) {
+			root.__fw_checksum = out.checksum || null;
+			root.setAttribute('fw:checksum', out.checksum || '');
+
+			const errorEls = root.querySelectorAll('[fw\\:validation-error]');
+			errorEls.forEach(el => {
+				const key = el.getAttribute('fw:validation-error');
+				const messages = out.errors[key] || [];
+				el.textContent = messages[0] || '';
+				el.style.display = messages.length ? '' : 'none';
+			});
+
+			const inputs = root.querySelectorAll('[fw\\:model], [fw\\:model\\.defer]');
+			inputs.forEach(input => {
+				const key = input.getAttribute('fw:model')
+					|| input.getAttribute('fw:model.defer');
+
+				if (out.errors[key]) {
+					input.setAttribute('aria-invalid', 'true');
+					input.classList.add('fw-invalid');
+				} else {
+					input.removeAttribute('aria-invalid');
+					input.classList.remove('fw-invalid');
+				}
+			});
+
+			return;
+		}
+
+		const errorEls = root.querySelectorAll('[fw\\:validation-error]');
+		errorEls.forEach(el => {
+			el.textContent = '';
+			el.style.display = 'none';
+		});
+
 		const parser = new DOMParser();
 		const doc = parser.parseFromString(out.html, 'text/html');
 
@@ -284,17 +319,23 @@
 		if (domTargets.length > 0 && docTargets.length === domTargets.length) {
 			domTargets.forEach((el, i) => {
 				el.innerHTML = docTargets[i].innerHTML;
+				el.getAttributeNames().forEach(name => el.removeAttribute(name));
 				for (const attr of docTargets[i].attributes) {
 					el.setAttribute(attr.name, attr.value);
 				}
 			});
+
 			root.__fw_checksum = out.checksum || null;
 			root.setAttribute('fw:checksum', out.checksum || '');
 		} else {
-			const newRoot = doc.querySelector(`[fw\\:id="${id}"]`) || doc.body.firstElementChild;
+			const newRoot =
+				doc.querySelector(`[fw\\:id="${id}"]`) ||
+				doc.body.firstElementChild;
+
 			if (newRoot) {
-				root.outerHTML = newRoot.outerHTML;
+				root.replaceWith(newRoot);
 				const updatedRoot = document.querySelector(`[fw\\:id="${id}"]`);
+
 				if (updatedRoot) {
 					updatedRoot.__fw_checksum = out.checksum || null;
 					updatedRoot.setAttribute('fw:checksum', out.checksum || '');
@@ -341,7 +382,8 @@
 				if (typeof focusInfo.start === 'number' && typeof next.setSelectionRange === 'function') {
 					try {
 						next.setSelectionRange(focusInfo.start, focusInfo.end ?? focusInfo.start);
-					} catch { }
+					} catch {
+					}
 				}
 			}
 		}
@@ -556,7 +598,13 @@
 		const key = e.key.toLowerCase();
 		const attrs = el.getAttributeNames();
 
-		const keyMap = { 'enter': 'enter', 'esc': 'escape', 'escape': 'escape', 'backspace': 'backspace', 'delete': 'delete' };
+		const keyMap = {
+			'enter': 'enter',
+			'esc': 'escape',
+			'escape': 'escape',
+			'backspace': 'backspace',
+			'delete': 'delete'
+		};
 		const targetKey = keyMap[key] || key;
 
 		const match = attrs.find(a => a === `fw:keydown.${targetKey}`);

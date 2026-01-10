@@ -7,6 +7,7 @@ namespace App\Controllers;
 use App\Modules\ForgeWire\Attributes\Action;
 use App\Modules\ForgeWire\Attributes\Reactive;
 use App\Modules\ForgeWire\Attributes\State;
+use App\Modules\ForgeWire\Attributes\Validate;
 use Forge\Core\Http\Attributes\Middleware;
 use Forge\Traits\ControllerHelper;
 use Forge\Core\Routing\Route;
@@ -18,7 +19,6 @@ use Forge\Core\Http\Response;
 final class TodoListController
 {
     use ControllerHelper;
-    use \App\Modules\ForgeWire\Traits\ReactiveControllerHelper;
 
     #[State]
     public array $todos = [
@@ -27,22 +27,19 @@ final class TodoListController
     ];
 
     #[State]
+    #[Validate('required|min:3|max:6')]
     public string $newTask = '';
 
     #[Route("/examples/todo")]
     public function index(Request $request): Response
     {
-        if ($this->isWireRequest($request)) {
-            error_log("Todo accessed via ForgeWire");
-        }
-
         return $this->view("pages/examples/todo", [
             'todos' => $this->todos,
-            'newTask' => $this->newTask
+            'newTask' => $this->newTask,
         ]);
     }
 
-    #[Action]
+    #[Action(submit: true)]
     public function addTodo(): void
     {
         if (trim($this->newTask) === '')

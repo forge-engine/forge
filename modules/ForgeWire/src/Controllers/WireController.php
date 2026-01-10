@@ -32,8 +32,6 @@ final class WireController
     {
         $payload = $request->json();
         $result = $this->kernel->process($payload, $request, $this->session);
-        $this->logger->debug('Payload', $payload);
-        $this->logger->debug('Result', $result);
         $this->gcEmptyComponents();
         return $this->jsonResponse($result);
     }
@@ -52,8 +50,6 @@ final class WireController
             $state = $this->session->get($base, []);
             if ($state === []) {
                 $this->session->remove($base);
-                $this->session->remove($base . ':models');
-                $this->session->remove($base . ':dtos');
                 $this->session->remove($base . ':fp');
                 $this->session->remove($base . ':sig');
             }

@@ -8,6 +8,7 @@ use App\Modules\ForgeAuth\Exceptions\LoginException;
 use App\Modules\ForgeAuth\Services\ForgeAuthService;
 use App\Modules\ForgeAuth\Validation\ForgeAuthValidate;
 use Forge\Core\DI\Attributes\Service;
+use Forge\Core\Helpers\Flash;
 use Forge\Core\Helpers\Redirect;
 use Forge\Core\Http\Attributes\Middleware;
 use App\Modules\ForgeAuth\Services\RedirectHandlerService;
@@ -46,7 +47,8 @@ final class WebLoginController
             $this->forgeAuthService->login($loginCredentials);
 
             return Redirect::to($this->redirectHandler::redirectAfterLogin());
-        } catch (LoginException) {
+        } catch (LoginException $e) {
+            Flash::set("error", $e->getMessage());
             return Redirect::to('/auth/login');
         }
     }
