@@ -99,35 +99,7 @@ final class WireKernel
             }
         }
 
-        $sharedBefore = $session->get($sharedKey, []);
         $this->hydrator->hydrate($instance, $dirty, $session, $sessionKey, $sharedKey);
-        $sharedAfter = $session->get($sharedKey, []);
-
-        $changedShared = [];
-
-        foreach ($sharedAfter as $key => $value) {
-            if (!array_key_exists($key, $sharedBefore) || $sharedBefore[$key] !== $value) {
-                $changedShared[] = $key;
-            }
-        }
-
-        $fanOutHtml = [];
-        $depsKey = "forgewire:deps:{$class}";
-        $deps = $session->get($depsKey, []);
-
-        $fanOutIds = [];
-
-        foreach ($changedShared as $sharedKeyName) {
-            if (!isset($deps[$sharedKeyName])) {
-                continue;
-            }
-
-            foreach ($deps[$sharedKeyName] as $componentId => $_) {
-                if ($componentId !== $id) {
-                    $fanOutIds[$componentId] = true;
-                }
-            }
-        }
 
         $html = "";
 

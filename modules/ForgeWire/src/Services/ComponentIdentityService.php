@@ -43,15 +43,6 @@ final class ComponentIdentityService
         $this->session->set("forgewire:{$id}:class", $controllerClass);
         $this->session->set("forgewire:{$id}:action", $method ?? 'index');
 
-        if ($uses !== []) {
-            \App\Modules\ForgeWire\Core\Hydrator::registerDependency(
-                session: $this->session,
-                class: $controllerClass,
-                componentId: $id,
-                states: $uses
-            );
-        }
-
         $sig = $this->checksum->sign("forgewire:{$id}", $this->session, [
             'class' => $controllerClass,
             'path' => parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH),

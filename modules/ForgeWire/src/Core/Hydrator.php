@@ -190,24 +190,4 @@ final class Hydrator
         return $recipe;
     }
 
-    public static function registerDependency(
-        SessionInterface $session,
-        string $class,
-        string $componentId,
-        array $states
-    ): void {
-        if ($states === []) {
-            return;
-        }
-
-        $key = "forgewire:deps:{$class}";
-        $deps = $session->get($key, []);
-
-        foreach ($states as $state) {
-            $deps[$state][$componentId] = true;
-        }
-
-        $session->set($key, $deps);
-    }
-
 }
