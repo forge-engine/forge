@@ -8,7 +8,6 @@ use App\Modules\ForgeWire\Attributes\State;
 use App\Modules\ForgeWire\Attributes\Validate;
 use Forge\Core\DI\Container;
 use Forge\Core\Session\SessionInterface;
-use Forge\Core\Validation\Validator;
 
 final class Hydrator
 {
@@ -33,7 +32,7 @@ final class Hydrator
         array $dirty,
         SessionInterface $session,
         string $sessionKey,
-        ?bool $isMemorySession = null,
+        string $sharedKey,
     ): void {
         $class = $instance::class;
 
@@ -50,14 +49,29 @@ final class Hydrator
             }
         }
 
-        $stateBag = $session->get($sessionKey, []);
+        $sharedBag = $session->get($sharedKey, []);
+        $localBag = $session->get($sessionKey, []);
 
         foreach ($recipe as $propName => $cfg) {
             $value = null;
 
-            if ($cfg["kind"] === "state") {
-                $value = $dirty[$propName] ?? ($stateBag[$propName] ?? null);
-                $stateBag[$propName] = $value;
+            if ($cfg['kind'] === 'state') {
+                if ($cfg['shared']) {
+                    $value = $dirty[$propName]
+                        ?? $sharedBag[$propName]
+                        ?? $localBag[$propName]
+                        ?? null;
+
+                    if (array_key_exists($propName, $dirty)) {
+                        $sharedBag[$propName] = $value;
+                    }
+                } else {
+                    $value = $dirty[$propName]
+                        ?? $localBag[$propName]
+                        ?? null;
+
+                    $localBag[$propName] = $value;
+                }
             }
 
             if ($value !== null || array_key_exists($propName, $dirty)) {
@@ -65,40 +79,57 @@ final class Hydrator
             }
         }
 
-        $session->set($sessionKey, $stateBag);
+        $session->set($sharedKey, $sharedBag);
+        $session->set($sessionKey, $localBag);
     }
 
     public function dehydrate(
         object $instance,
         SessionInterface $session,
         string $sessionKey,
+        string $sharedKey,
     ): array {
         $class = $instance::class;
+
         if (!isset(self::$recipe[$class])) {
             self::$recipe[$class] = self::buildRecipe($class);
         }
+
         $recipe = self::$recipe[$class];
+
+        $localBag = $session->get($sessionKey, []);
+        $sharedBag = $session->get($sharedKey, []);
 
         $state = [];
 
         foreach ($recipe as $propName => $cfg) {
-            $value = $cfg["reader"]($instance);
-
-            if ($cfg["kind"] === "state") {
-                if (
-                    !is_scalar($value) &&
-                    !is_array($value) &&
-                    $value !== null
-                ) {
-                    throw new \RuntimeException(
-                        "Only scalar/array allowed for #[State] {$propName}",
-                    );
-                }
-                $state[$propName] = $value;
+            if ($cfg['kind'] !== 'state') {
+                continue;
             }
+
+            $value = $cfg['reader']($instance);
+
+            if (
+                !is_scalar($value) &&
+                !is_array($value) &&
+                $value !== null
+            ) {
+                throw new \RuntimeException(
+                    "Only scalar/array allowed for #[State] {$propName}",
+                );
+            }
+
+            if ($cfg['shared']) {
+                $sharedBag[$propName] = $value;
+            } else {
+                $localBag[$propName] = $value;
+            }
+
+            $state[$propName] = $value;
         }
 
-        $session->set($sessionKey, $state);
+        $session->set($sessionKey, $localBag);
+        $session->set($sharedKey, $sharedBag);
 
         return $state;
     }
@@ -119,11 +150,14 @@ final class Hydrator
             $hasState = false;
             $validate = null;
 
+            $stateAttr = null;
+
             foreach ($prop->getAttributes() as $attr) {
                 $type = $attr->getName();
 
                 if ($type === State::class) {
                     $hasState = true;
+                    $stateAttr = $attr->newInstance();
                 }
 
                 if ($type === Validate::class) {
@@ -137,6 +171,7 @@ final class Hydrator
 
             $recipe[$name] = [
                 'kind' => 'state',
+                'shared' => $stateAttr?->shared ?? false,
                 'reader' => $reader,
                 'accessor' => $writer,
             ];
@@ -153,6 +188,26 @@ final class Hydrator
             }
         }
         return $recipe;
+    }
+
+    public static function registerDependency(
+        SessionInterface $session,
+        string $class,
+        string $componentId,
+        array $states
+    ): void {
+        if ($states === []) {
+            return;
+        }
+
+        $key = "forgewire:deps:{$class}";
+        $deps = $session->get($key, []);
+
+        foreach ($states as $state) {
+            $deps[$state][$componentId] = true;
+        }
+
+        $session->set($key, $deps);
     }
 
 }

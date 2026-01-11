@@ -26,7 +26,7 @@ final class TodoListController
         ['id' => 2, 'text' => 'Master ForgeWire', 'done' => false],
     ];
 
-    #[State]
+    #[State(shared: true)]
     #[Validate('required|min:3|max:6')]
     public string $newTask = '';
 

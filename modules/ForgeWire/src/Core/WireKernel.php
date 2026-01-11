@@ -37,6 +37,7 @@ final class WireKernel
         $dirty = (array) ($p["dirty"] ?? []);
 
         $sessionKey = "forgewire:{$id}";
+        $sharedKey = "forgewire:shared:{$class}";
         $ctx = [
             "class" => $class,
             "path" => (string) ($p["fingerprint"]["path"] ?? "/"),
@@ -98,7 +99,35 @@ final class WireKernel
             }
         }
 
-        $this->hydrator->hydrate($instance, $dirty, $session, $sessionKey);
+        $sharedBefore = $session->get($sharedKey, []);
+        $this->hydrator->hydrate($instance, $dirty, $session, $sessionKey, $sharedKey);
+        $sharedAfter = $session->get($sharedKey, []);
+
+        $changedShared = [];
+
+        foreach ($sharedAfter as $key => $value) {
+            if (!array_key_exists($key, $sharedBefore) || $sharedBefore[$key] !== $value) {
+                $changedShared[] = $key;
+            }
+        }
+
+        $fanOutHtml = [];
+        $depsKey = "forgewire:deps:{$class}";
+        $deps = $session->get($depsKey, []);
+
+        $fanOutIds = [];
+
+        foreach ($changedShared as $sharedKeyName) {
+            if (!isset($deps[$sharedKeyName])) {
+                continue;
+            }
+
+            foreach ($deps[$sharedKeyName] as $componentId => $_) {
+                if ($componentId !== $id) {
+                    $fanOutIds[$componentId] = true;
+                }
+            }
+        }
 
         $html = "";
 
@@ -121,7 +150,7 @@ final class WireKernel
             $html = (string) $instance->render();
         }
 
-        $state = $this->hydrator->dehydrate($instance, $session, $sessionKey);
+        $state = $this->hydrator->dehydrate($instance, $session, $sessionKey, $sharedKey);
         $sig = $this->checksum->sign($sessionKey, $session, $ctx);
 
         return [

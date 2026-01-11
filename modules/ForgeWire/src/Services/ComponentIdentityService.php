@@ -26,8 +26,12 @@ final class ComponentIdentityService
     /**
      * Generates the ForgeWire checksum and signs the component identity in session.
      */
-    public function getFingerprint(string $id, string $controllerClass, ?string $method = 'index'): string
-    {
+    public function getFingerprint(
+        string $id,
+        string $controllerClass,
+        ?string $method = 'index',
+        array $uses = []
+    ): string {
         if (!$this->isReactive($controllerClass)) {
             return '';
         }
@@ -38,6 +42,15 @@ final class ComponentIdentityService
 
         $this->session->set("forgewire:{$id}:class", $controllerClass);
         $this->session->set("forgewire:{$id}:action", $method ?? 'index');
+
+        if ($uses !== []) {
+            \App\Modules\ForgeWire\Core\Hydrator::registerDependency(
+                session: $this->session,
+                class: $controllerClass,
+                componentId: $id,
+                states: $uses
+            );
+        }
 
         $sig = $this->checksum->sign("forgewire:{$id}", $this->session, [
             'class' => $controllerClass,
