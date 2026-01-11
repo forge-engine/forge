@@ -1,9 +1,8 @@
 <?php
-
-use App\Components\Ui\AlertPropsDto;
-
-/** @var AlertPropsDto $props */
+/** @var string $type
+ * @var string $children 
+ */
 ?>
-<div class="font-bold  <?= htmlspecialchars($props->type ?: 'info') ?>">
-    <?= htmlspecialchars($props->children ?: 'info') ?? 'info' ?>
+<div class="font-bold  <?= htmlspecialchars($type ?: 'info') ?>">
+    <?= htmlspecialchars($children ?: 'info') ?? 'info' ?>
 </div>

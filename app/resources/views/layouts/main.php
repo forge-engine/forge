@@ -6,6 +6,16 @@ use Forge\Core\Helpers\ModuleResources;
  * @var string $title
  * @var string $content
  */
+
+$footerSlots = [
+    'footer_copy' => [
+        'name' => 'ui/alert',
+        'props' => [
+            'type' => 'info',
+            'children' => 'All rights reserved &copy; ' . date('Y')
+        ]
+    ]
+];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -31,6 +41,7 @@ use Forge\Core\Helpers\ModuleResources;
     <div>
         <?= $content ?>
     </div>
+    <?= component(name: 'ui/footer', slots: $footerSlots) ?>
     <?= ModuleResources::loadScripts("forge-ui") ?>
 </body>
 
