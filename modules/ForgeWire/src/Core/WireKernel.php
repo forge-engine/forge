@@ -125,7 +125,11 @@ final class WireKernel
             $html = (string) $instance->render();
         }
 
-        $this->parseAndStoreUsesForAllComponents($html, $session);
+        $this->parseSharedGroupsFromHtml($html, $session, $class);
+        $this->discoverSharedGroupFromRegisteredComponents($session, $class);
+        $this->initializeSharedGroupIfNeeded($id, $class, $session, $request, $sharedKey, $html);
+        $this->parseAndStoreUsesForAllComponents($html, $session, $class);
+        $this->discoverAndStoreUsesForRegisteredComponents($html, $session, $class);
 
         $componentHtml = $this->extractComponentHtml($html, $id);
         if ($componentHtml === null) {
@@ -325,32 +329,59 @@ final class WireKernel
             }
 
             $componentId = $matches[1];
+            
+            if ($componentId === $triggeringId) {
+                continue;
+            }
+
             $componentClass = $session->get("forgewire:{$componentId}:class");
 
             // Only consider components with the same controller class
             if ($componentClass === $controllerClass) {
-                $componentUses = $session->get("forgewire:{$componentId}:uses", []);
-                
-                if (empty($componentUses)) {
-                    if ($componentId !== $triggeringId) {
-                        $affectedComponents[] = [
-                            'id' => $componentId,
-                            'class' => $controllerClass,
-                        ];
-                    }
-                    continue;
-                }
-                
-                $componentUsesSet = array_flip($componentUses);
-                
-                foreach ($sharedStateChanges as $stateName => $newValue) {
-                    if (isset($componentUsesSet[$stateName])) {
-                        $affectedComponents[] = [
-                            'id' => $componentId,
-                            'class' => $controllerClass,
-                        ];
+                $affectedComponents[] = [
+                    'id' => $componentId,
+                    'class' => $controllerClass,
+                ];
+            }
+        }
+
+        // Also check components that might only have :class key (not yet made a request)
+        foreach ($allSessionKeys as $sessionKey) {
+            if (!str_starts_with($sessionKey, 'forgewire:')) {
+                continue;
+            }
+
+            if (!str_ends_with($sessionKey, ':class')) {
+                continue;
+            }
+
+            if (!preg_match('/^forgewire:(.+):class$/', $sessionKey, $matches)) {
+                continue;
+            }
+
+            $componentId = $matches[1];
+            
+            if ($componentId === $triggeringId) {
+                continue;
+            }
+
+            $componentClass = $session->get($sessionKey);
+
+            if ($componentClass === $controllerClass) {
+                // Check if we already added this component
+                $alreadyAdded = false;
+                foreach ($affectedComponents as $existing) {
+                    if ($existing['id'] === $componentId) {
+                        $alreadyAdded = true;
                         break;
                     }
+                }
+                
+                if (!$alreadyAdded) {
+                    $affectedComponents[] = [
+                        'id' => $componentId,
+                        'class' => $controllerClass,
+                    ];
                 }
             }
         }
@@ -546,16 +577,79 @@ final class WireKernel
         $session->set("forgewire:{$componentId}:uses", array_keys($uses));
     }
 
-    private function parseAndStoreUsesForAllComponents(string $html, SessionInterface $session): void
+    private function parseAndStoreUsesForAllComponents(string $html, SessionInterface $session, ?string $controllerClass = null): void
     {
         if (preg_match_all('/fw:id=["\']([^"\']+)["\']/', $html, $idMatches)) {
             foreach ($idMatches[1] as $componentId) {
+                $componentClass = $session->get("forgewire:{$componentId}:class");
+                
+                if ($componentClass === null) {
+                    if ($controllerClass !== null) {
+                        $session->set("forgewire:{$componentId}:class", $controllerClass);
+                        $session->set("forgewire:{$componentId}:action", "index");
+                        $componentClass = $controllerClass;
+                    } else {
+                        continue;
+                    }
+                }
+                
+                if ($controllerClass !== null && $componentClass !== $controllerClass) {
+                    continue;
+                }
+                
                 $componentHtml = $this->extractComponentHtml($html, $componentId);
                 if ($componentHtml !== null) {
                     $this->parseAndStoreUses($componentHtml, $componentId, $session);
                 } else {
                     $this->parseAndStoreUses($html, $componentId, $session);
                 }
+            }
+        }
+    }
+
+    private function discoverAndStoreUsesForRegisteredComponents(string $html, SessionInterface $session, string $controllerClass): void
+    {
+        $allSessionKeys = array_keys($session->all());
+        $foundInHtml = [];
+
+        
+        if (preg_match_all('/fw:id=["\']([^"\']+)["\']/', $html, $idMatches)) {
+            $foundInHtml = array_flip($idMatches[1]);
+        }
+        
+        foreach ($allSessionKeys as $sessionKey) {
+            if (!str_starts_with($sessionKey, 'forgewire:')) {
+                continue;
+            }
+            
+            if (str_contains($sessionKey, ':shared:') || str_contains($sessionKey, ':class') || str_contains($sessionKey, ':action') || str_contains($sessionKey, ':fp') || str_contains($sessionKey, ':sig') || str_contains($sessionKey, ':uses')) {
+                continue;
+            }
+            
+            if (!preg_match('/^forgewire:(.+)$/', $sessionKey, $matches)) {
+                continue;
+            }
+            
+            $componentId = $matches[1];
+            $componentClass = $session->get("forgewire:{$componentId}:class");
+            
+            if ($componentClass !== $controllerClass) {
+                continue;
+            }
+            
+            if (isset($foundInHtml[$componentId])) {
+                continue;
+            }
+            
+            if ($session->has("forgewire:{$componentId}:uses")) {
+                continue;
+            }
+            
+            $componentHtml = $this->extractComponentHtml($html, $componentId);
+            if ($componentHtml !== null) {
+                $this->parseAndStoreUses($componentHtml, $componentId, $session);
+            } else {
+                $this->parseAndStoreUses($html, $componentId, $session);
             }
         }
     }
@@ -641,5 +735,277 @@ final class WireKernel
         }
         
         return empty($stack) ? $result : null;
+    }
+
+    private function parseSharedGroupsFromHtml(string $html, SessionInterface $session, ?string $controllerClass = null): void
+    {
+        if (!preg_match_all('/<([^\s>]+)[^>]*\s*fw:shared[^>]*(?:\/>|>)/i', $html, $sharedMatches, PREG_OFFSET_CAPTURE)) {
+            return;
+        }
+
+        foreach ($sharedMatches[0] as $index => $match) {
+            $tagName = strtolower($sharedMatches[1][$index][0]);
+            $startPos = $match[1];
+            $tagContent = $match[0];
+
+            if (substr(trim($tagContent), -2) === '/>') {
+                continue;
+            }
+
+            $containerHtml = $this->extractContainerHtml($html, $tagName, $startPos);
+            if ($containerHtml === null) {
+                continue;
+            }
+
+            if (preg_match_all('/fw:id=["\']([^"\']+)["\']/', $containerHtml, $idMatches)) {
+                $componentIds = $idMatches[1];
+                $groupedByClass = [];
+
+                foreach ($componentIds as $componentId) {
+                    $componentClass = $session->get("forgewire:{$componentId}:class");
+                    
+                    if ($componentClass === null && $controllerClass !== null) {
+                        $session->set("forgewire:{$componentId}:class", $controllerClass);
+                        $session->set("forgewire:{$componentId}:action", "index");
+                        $componentClass = $controllerClass;
+                    }
+                    
+                    if ($componentClass !== null) {
+                        if ($controllerClass !== null && $componentClass !== $controllerClass) {
+                            continue;
+                        }
+                        
+                        if (!isset($groupedByClass[$componentClass])) {
+                            $groupedByClass[$componentClass] = [];
+                        }
+                        if (!in_array($componentId, $groupedByClass[$componentClass], true)) {
+                            $groupedByClass[$componentClass][] = $componentId;
+                        }
+                    }
+                }
+
+                foreach ($groupedByClass as $controllerClassKey => $components) {
+                    $groupKey = "forgewire:shared-group:{$controllerClassKey}:components";
+                    $existing = $session->get($groupKey, []);
+                    $merged = array_unique(array_merge($existing, $components));
+                    $session->set($groupKey, array_values($merged));
+                }
+            }
+        }
+    }
+
+    private function discoverSharedGroupFromRegisteredComponents(SessionInterface $session, string $controllerClass): void
+    {
+        $groupKey = "forgewire:shared-group:{$controllerClass}:components";
+        
+        $allSessionKeys = array_keys($session->all());
+        $componentIds = [];
+        $foundComponentIds = [];
+
+        foreach ($allSessionKeys as $sessionKey) {
+            if (!str_starts_with($sessionKey, 'forgewire:')) {
+                continue;
+            }
+
+            if (str_contains($sessionKey, ':shared:') || str_contains($sessionKey, ':action') || str_contains($sessionKey, ':fp') || str_contains($sessionKey, ':sig') || str_contains($sessionKey, ':uses')) {
+                continue;
+            }
+
+            if (str_contains($sessionKey, ':class')) {
+                if (preg_match('/^forgewire:(.+):class$/', $sessionKey, $matches)) {
+                    $componentId = $matches[1];
+                    $componentClass = $session->get($sessionKey);
+                    if ($componentClass === $controllerClass) {
+                        $foundComponentIds[$componentId] = true;
+                    }
+                }
+                continue;
+            }
+
+            if (!preg_match('/^forgewire:(.+)$/', $sessionKey, $matches)) {
+                continue;
+            }
+
+            $componentId = $matches[1];
+            $componentClass = $session->get("forgewire:{$componentId}:class");
+
+            if ($componentClass === $controllerClass) {
+                $foundComponentIds[$componentId] = true;
+            }
+        }
+
+        $componentIds = array_keys($foundComponentIds);
+        if (!empty($componentIds)) {
+            $existing = $session->get($groupKey, []);
+            $merged = array_unique(array_merge($existing, $componentIds));
+            $session->set($groupKey, array_values($merged));
+        }
+    }
+
+    private function extractContainerHtml(string $fullHtml, string $tagName, int $startPos): ?string
+    {
+        $tagPattern = '/<' . preg_quote($tagName, '/') . '[^>]*>/i';
+        if (!preg_match($tagPattern, $fullHtml, $tagMatch, 0, $startPos)) {
+            return null;
+        }
+
+        $tagContent = $tagMatch[0];
+        $pos = $startPos + strlen($tagContent);
+        $len = strlen($fullHtml);
+        $stack = [$tagName];
+        $result = $tagContent;
+
+        $selfClosingTags = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'];
+
+        while ($pos < $len && !empty($stack)) {
+            $nextTag = strpos($fullHtml, '<', $pos);
+            if ($nextTag === false) {
+                $result .= substr($fullHtml, $pos);
+                break;
+            }
+
+            $result .= substr($fullHtml, $pos, $nextTag - $pos);
+            $pos = $nextTag;
+
+            if ($pos + 1 < $len && $fullHtml[$pos + 1] === '/') {
+                $closeEnd = strpos($fullHtml, '>', $pos);
+                if ($closeEnd === false) {
+                    break;
+                }
+
+                $closeTag = substr($fullHtml, $pos, $closeEnd - $pos + 1);
+                if (preg_match('/<\/([^\s>]+)/i', $closeTag, $closeMatch)) {
+                    $closeTagName = strtolower($closeMatch[1]);
+                    if (!empty($stack) && $closeTagName === $stack[count($stack) - 1]) {
+                        array_pop($stack);
+                        $result .= $closeTag;
+                        $pos = $closeEnd + 1;
+                        if (empty($stack)) {
+                            break;
+                        }
+                    } else {
+                        $result .= $closeTag;
+                        $pos = $closeEnd + 1;
+                    }
+                } else {
+                    $result .= $closeTag;
+                    $pos = $closeEnd + 1;
+                }
+            } else {
+                $openEnd = strpos($fullHtml, '>', $pos);
+                if ($openEnd === false) {
+                    break;
+                }
+
+                $openTag = substr($fullHtml, $pos, $openEnd - $pos + 1);
+                $isSelfClosing = substr(trim($openTag), -2) === '/>';
+
+                if (!$isSelfClosing && preg_match('/<([^\s>\/]+)/i', $openTag, $openMatch)) {
+                    $openTagName = strtolower($openMatch[1]);
+                    if (!in_array($openTagName, $selfClosingTags, true)) {
+                        $stack[] = $openTagName;
+                    }
+                }
+
+                $result .= $openTag;
+                $pos = $openEnd + 1;
+            }
+        }
+
+        return empty($stack) ? $result : null;
+    }
+
+    private function initializeSharedGroupIfNeeded(
+        string $componentId,
+        string $controllerClass,
+        SessionInterface $session,
+        Request $request,
+        string $sharedKey,
+        string $currentHtml = ""
+    ): void {
+        $groupKey = "forgewire:shared-group:{$controllerClass}:components";
+
+        if (!$session->has($groupKey)) {
+            return;
+        }
+
+        $componentIds = $session->get($groupKey, []);
+        if (empty($componentIds)) {
+            return;
+        }
+
+        $hasUninitialized = false;
+        foreach ($componentIds as $id) {
+            if (!$session->has("forgewire:{$id}:class")) {
+                continue;
+            }
+
+            $idClass = $session->get("forgewire:{$id}:class");
+            if ($idClass !== $controllerClass) {
+                continue;
+            }
+
+            if (!$session->has("forgewire:{$id}:uses")) {
+                $hasUninitialized = true;
+                break;
+            }
+        }
+
+        if (!$hasUninitialized) {
+            $initializedKey = "forgewire:shared-group:{$controllerClass}:initialized";
+            $session->set($initializedKey, true);
+            return;
+        }
+
+        foreach ($componentIds as $id) {
+            if (!$session->has("forgewire:{$id}:class")) {
+                continue;
+            }
+
+            $idClass = $session->get("forgewire:{$id}:class");
+            if ($idClass !== $controllerClass) {
+                continue;
+            }
+
+            if ($session->has("forgewire:{$id}:uses")) {
+                continue;
+            }
+
+            $componentHtml = null;
+            if ($currentHtml !== "") {
+                $componentHtml = $this->extractComponentHtml($currentHtml, $id);
+            }
+
+            if ($componentHtml === null) {
+                $instance = $this->container->make($controllerClass);
+                $sessionKey = "forgewire:{$id}";
+                $this->hydrator->hydrate($instance, [], $session, $sessionKey, $sharedKey);
+
+                $action = $session->get("forgewire:{$id}:action") ?? "index";
+                $html = "";
+
+                if (method_exists($instance, $action)) {
+                    $html = $this->callAction($instance, $action, $request, $session, [], [], false, $id);
+                }
+
+                if ($html === "" && method_exists($instance, 'render')) {
+                    $html = (string) $instance->render();
+                }
+
+                if ($html !== "") {
+                    $componentHtml = $this->extractComponentHtml($html, $id);
+                    if ($componentHtml === null) {
+                        $componentHtml = $html;
+                    }
+                }
+            }
+
+            if ($componentHtml !== null) {
+                $this->parseAndStoreUses($componentHtml, $id, $session);
+            }
+        }
+
+        $initializedKey = "forgewire:shared-group:{$controllerClass}:initialized";
+        $session->set($initializedKey, true);
     }
 }
