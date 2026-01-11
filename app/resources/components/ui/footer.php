@@ -1,8 +1,8 @@
 <?php
 /**
  * Footer component view.
- * @package app\views\components\Footer
- * @var array $props
+ * @file resources/components/ui/footer.php
+ * 
  */
 ?>
 <footer class="footer">
