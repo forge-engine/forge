@@ -41,7 +41,8 @@ final class WireController
         $allKeys = $this->session->all();
         $components = [];
         foreach ($allKeys as $key => $_) {
-            if (preg_match('/^forgewire:fw-[a-f0-9]+$/', $key)) {
+            // Match base component session keys (not special keys like :class, :action, etc.)
+            if (preg_match('/^forgewire:[^:]+$/', $key)) {
                 $components[] = $key;
             }
         }

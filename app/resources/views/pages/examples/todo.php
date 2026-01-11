@@ -1,7 +1,7 @@
 <?php layout('main') ?>
 
 <div <?= fw_id('todo-app') ?> class="container my-5">
-    <h1 class="text-3xl">Reactive Todo List</h1>
+    <h1 class="text-3xl" fw:uses="counter">Reactive Todo List counter: <?= $counter ?></h1>
 
     <div class="card p-4 shadow-sm">
         <div class="input-group mb-3">
@@ -44,5 +44,14 @@
         <div fw:loading class="text-info mt-2">
             Saving...
         </div>
+    </div>
+</div>
+
+<div <?= fw_id('counter-app') ?>>
+    <h1 class="text-3xl">Counter</h1>
+            <button fw:click="increment">Increment</button>
+            <button fw:click="decrement">Decrement</button>
+    <div fw:target fw:uses="counter">
+        <?= $counter ?>
     </div>
 </div>

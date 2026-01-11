@@ -231,6 +231,70 @@
 		}
 	}
 
+	function applyComponentUpdate(root, html, state, checksum, dirty = {}) {
+		const id = attr(root, 'fw:id');
+
+		const parser = new DOMParser();
+		const doc = parser.parseFromString(html, 'text/html');
+
+		const newRoot = doc.querySelector(`[fw\\:id="${id}"]`) || doc.body.firstElementChild;
+
+		if (newRoot && newRoot.getAttribute('fw:id') === id) {
+			root.replaceWith(newRoot);
+			const updatedRoot = document.querySelector(`[fw\\:id="${id}"]`);
+
+			if (updatedRoot) {
+				updatedRoot.__fw_checksum = checksum || null;
+				updatedRoot.setAttribute('fw:checksum', checksum || '');
+				root = updatedRoot;
+			}
+		} else {
+			const domTargets = root.querySelectorAll('[fw\\:target]');
+			const docTargets = doc.querySelectorAll('[fw\\:target]');
+
+			if (domTargets.length > 0 && docTargets.length === domTargets.length) {
+				domTargets.forEach((el, i) => {
+					el.innerHTML = docTargets[i].innerHTML;
+					el.getAttributeNames().forEach(name => el.removeAttribute(name));
+					for (const attr of docTargets[i].attributes) {
+						el.setAttribute(attr.name, attr.value);
+					}
+				});
+
+				root.__fw_checksum = checksum || null;
+				root.setAttribute('fw:checksum', checksum || '');
+			} else {
+				root.innerHTML = html;
+				root.__fw_checksum = checksum || null;
+				root.setAttribute('fw:checksum', checksum || '');
+			}
+		}
+
+		// Sync server state back to ALL model-bound elements
+		if (state) {
+			Object.entries(state).forEach(([key, val]) => {
+				const el = findModelByKey(root, key);
+				if (el) {
+					const isFocused = (document.activeElement === el);
+					if (isFocused) {
+						// Only update focused element if server says it's DIFFERENT from what was sent OR what it is now
+						if (val !== undefined && val !== el.value && val !== dirty[key]) {
+							el.value = val;
+						}
+					} else {
+						if (el.type === 'checkbox') el.checked = !!val;
+						else if (el.type === 'radio') el.checked = (el.value == val);
+						else {
+							if (el.value !== val) el.value = val;
+						}
+					}
+				}
+			});
+		}
+
+		return root;
+	}
+
 	async function performTrigger(root, action = null, args = [], dirtyOverride = null) {
 		const id = attr(root, 'fw:id');
 
@@ -310,65 +374,20 @@
 			el.style.display = 'none';
 		});
 
-		const parser = new DOMParser();
-		const doc = parser.parseFromString(out.html, 'text/html');
-
-		const domTargets = root.querySelectorAll('[fw\\:target]');
-		const docTargets = doc.querySelectorAll('[fw\\:target]');
-
-		if (domTargets.length > 0 && docTargets.length === domTargets.length) {
-			domTargets.forEach((el, i) => {
-				el.innerHTML = docTargets[i].innerHTML;
-				el.getAttributeNames().forEach(name => el.removeAttribute(name));
-				for (const attr of docTargets[i].attributes) {
-					el.setAttribute(attr.name, attr.value);
-				}
-			});
-
-			root.__fw_checksum = out.checksum || null;
-			root.setAttribute('fw:checksum', out.checksum || '');
-		} else {
-			const newRoot =
-				doc.querySelector(`[fw\\:id="${id}"]`) ||
-				doc.body.firstElementChild;
-
-			if (newRoot) {
-				root.replaceWith(newRoot);
-				const updatedRoot = document.querySelector(`[fw\\:id="${id}"]`);
-
-				if (updatedRoot) {
-					updatedRoot.__fw_checksum = out.checksum || null;
-					updatedRoot.setAttribute('fw:checksum', out.checksum || '');
-					root = updatedRoot;
-				}
-			} else {
-				root.innerHTML = out.html;
-				root.__fw_checksum = out.checksum || null;
-				root.setAttribute('fw:checksum', out.checksum || '');
-			}
-		}
-
-		// Sync server state back to ALL model-bound elements
-		Object.entries(out.state).forEach(([key, val]) => {
-			const el = findModelByKey(root, key);
-			if (el) {
-				const isFocused = (document.activeElement === el);
-				if (isFocused) {
-					// Only update focused element if server says it's DIFFERENT from what was sent OR what it is now
-					if (val !== undefined && val !== el.value && val !== dirty[key]) {
-						el.value = val;
-					}
-				} else {
-					if (el.type === 'checkbox') el.checked = !!val;
-					else if (el.type === 'radio') el.checked = (el.value == val);
-					else {
-						if (el.value !== val) el.value = val;
-					}
-				}
-			}
-		});
+		root = applyComponentUpdate(root, out.html, out.state, out.checksum, dirty);
 
 		setupPolling(root);
+
+		// Process updates for affected components (shared state changes)
+		if (out.updates && Array.isArray(out.updates)) {
+			out.updates.forEach(update => {
+				const affectedRoot = document.querySelector(`[fw\\:id="${update.id}"]`);
+				if (affectedRoot) {
+					applyComponentUpdate(affectedRoot, update.html, update.state, update.checksum, {});
+					setupPolling(affectedRoot);
+				}
+			});
+		}
 
 		if (out.redirect) {
 			window.location.assign(out.redirect);

@@ -20,13 +20,28 @@ final class TodoListController
 {
     use ControllerHelper;
 
+    #[State(shared: true)]
+    public int $counter = 0;
+
+    #[Action]
+    public function increment(): void
+    {
+        $this->counter++;
+    }
+
+    #[Action]
+    public function decrement(): void
+    {
+        $this->counter--;
+    }
+
     #[State]
     public array $todos = [
         ['id' => 1, 'text' => 'Learn Forge Framework', 'done' => true],
         ['id' => 2, 'text' => 'Master ForgeWire', 'done' => false],
     ];
 
-    #[State(shared: true)]
+    #[State]
     #[Validate('required|min:3|max:6')]
     public string $newTask = '';
 
@@ -36,6 +51,7 @@ final class TodoListController
         return $this->view("pages/examples/todo", [
             'todos' => $this->todos,
             'newTask' => $this->newTask,
+            'counter' => $this->counter,
         ]);
     }
 
