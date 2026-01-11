@@ -36,6 +36,17 @@ final class ComponentIdentityService
             return '';
         }
 
+        $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
+        $sharedKey = "forgewire:shared:{$controllerClass}";
+        $pathKey = "forgewire:shared:{$controllerClass}:path";
+
+        $storedPath = $this->session->get($pathKey);
+        
+        if ($storedPath !== $currentPath) {
+            $this->session->remove($sharedKey);
+            $this->session->set($pathKey, $currentPath);
+        }
+
         $this->session->remove("forgewire:{$id}");
         $this->session->remove("forgewire:{$id}:models");
         $this->session->remove("forgewire:{$id}:dtos");
@@ -45,7 +56,7 @@ final class ComponentIdentityService
 
         $sig = $this->checksum->sign("forgewire:{$id}", $this->session, [
             'class' => $controllerClass,
-            'path' => parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH),
+            'path' => $currentPath,
         ]);
 
         return ' fw:checksum="' . htmlspecialchars($sig) . '"';
