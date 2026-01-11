@@ -1,4 +1,10 @@
-<?php layout('main') ?>
+<?php
+/**
+ * @var string $query
+ * @var array $results
+ */
+layout('main')
+?>
 <div <?= fw_id('search-id') ?>>
     <h1>Search Demo</h1>
     <input type="search" fw:model.debounce="query" value="<?= e($query) ?>" placeholder="Type to search...">

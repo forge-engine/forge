@@ -5,6 +5,7 @@ use Forge\Core\Helpers\ModuleResources;
 /**
  * @var string $title
  * @var string $content
+ * @var int $counter
  */
 
 $footerSlots = [
