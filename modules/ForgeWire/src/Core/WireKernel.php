@@ -20,7 +20,7 @@ final class WireKernel
 {
     private static array $reflCache = [];
     private static array $actionCache = [];
-    private static array $sharedStateComponents = []; // Track which components use shared states
+    private static array $sharedStateComponents = [];
 
     public function __construct(
         private Container $container,
@@ -142,16 +142,14 @@ final class WireKernel
         $sharedStatesAfter = $this->getSharedStates($instance, $class);
         $sharedStateChanges = $this->getSharedStateChanges($sharedStatesBefore, $sharedStatesAfter);
 
-        // Find all components that use the changed shared states
         $affectedComponents = [];
         $updates = [];
         if (!empty($sharedStateChanges)) {
             $affectedComponents = $this->findAffectedComponents($sharedStateChanges, $session, $class, $id);
             
-            // Render HTML for each affected component (excluding the triggering component)
             foreach ($affectedComponents as $component) {
                 if ($component['id'] === $id) {
-                    continue; // Skip the triggering component
+                    continue;
                 }
                 
                 $update = $this->renderAffectedComponent(
@@ -311,19 +309,15 @@ final class WireKernel
         $affectedComponents = [];
         $allSessionKeys = array_keys($session->all());
 
-        // Find all component sessions that use the same controller class
         foreach ($allSessionKeys as $sessionKey) {
             if (!str_starts_with($sessionKey, 'forgewire:')) {
                 continue;
             }
 
-            // Skip shared state keys and special keys
             if (str_contains($sessionKey, ':shared:') || str_contains($sessionKey, ':class') || str_contains($sessionKey, ':action') || str_contains($sessionKey, ':fp') || str_contains($sessionKey, ':sig') || str_contains($sessionKey, ':uses')) {
                 continue;
             }
 
-            // Extract component ID from session key
-            // Match any component ID (custom or auto-generated)
             if (!preg_match('/^forgewire:(.+)$/', $sessionKey, $matches)) {
                 continue;
             }
@@ -336,7 +330,6 @@ final class WireKernel
 
             $componentClass = $session->get("forgewire:{$componentId}:class");
 
-            // Only consider components with the same controller class
             if ($componentClass === $controllerClass) {
                 $affectedComponents[] = [
                     'id' => $componentId,
@@ -345,7 +338,6 @@ final class WireKernel
             }
         }
 
-        // Also check components that might only have :class key (not yet made a request)
         foreach ($allSessionKeys as $sessionKey) {
             if (!str_starts_with($sessionKey, 'forgewire:')) {
                 continue;
@@ -368,7 +360,6 @@ final class WireKernel
             $componentClass = $session->get($sessionKey);
 
             if ($componentClass === $controllerClass) {
-                // Check if we already added this component
                 $alreadyAdded = false;
                 foreach ($affectedComponents as $existing) {
                     if ($existing['id'] === $componentId) {
@@ -397,24 +388,24 @@ final class WireKernel
         string $sharedKey
     ): ?array {
         $sessionKey = "forgewire:{$componentId}";
+        
+        $fp = (array) $session->get($sessionKey . ':fp', []);
+        $storedPath = (string) ($fp['path'] ?? $request->getPath());
+        
         $ctx = [
             "class" => $controllerClass,
-            "path" => $request->getPath(),
+            "path" => $storedPath,
         ];
 
-        // Check if component session exists
         if (!$session->has($sessionKey) && !$session->has("forgewire:{$componentId}:class")) {
             return null;
         }
 
-        // Create new instance and hydrate with current state
         $instance = $this->container->make($controllerClass);
         $this->hydrator->hydrate($instance, [], $session, $sessionKey, $sharedKey);
 
-        // Get the action method from session
         $action = $session->get("forgewire:{$componentId}:action") ?? "index";
         
-        // Render HTML
         $html = "";
         if (method_exists($instance, $action)) {
             $html = $this->callAction($instance, $action, $request, $session, [], [], false, $componentId);
@@ -436,7 +427,6 @@ final class WireKernel
 
         $this->parseAndStoreUses($componentHtml, $componentId, $session);
 
-        // Dehydrate to get current state
         $state = $this->hydrator->dehydrate($instance, $session, $sessionKey, $sharedKey);
         $checksum = $this->checksum->sign($sessionKey, $session, $ctx);
 
