@@ -22,12 +22,8 @@ final class ForgeWireBrowserActionsController
 
     #[Route("/forge-wire-browser-actions")]
     #[Action]
-    public function index(Request $request): Response|string
+    public function index(): Response|string
     {
-        if ($request->hasHeader('x-forgewire')) {
-            return $this->view("pages/examples/browser-actions", [])->getContent();
-        }
-
         return $this->view("pages/examples/browser-actions", []);
     }
 

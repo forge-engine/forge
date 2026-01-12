@@ -6,6 +6,7 @@ namespace App\Modules\ForgeWire\Traits;
 
 use App\Modules\ForgeWire\Support\ForgeWireResponse;
 use Forge\Core\Http\Request;
+use Forge\Core\Http\Response;
 
 trait ReactiveControllerHelper
 {

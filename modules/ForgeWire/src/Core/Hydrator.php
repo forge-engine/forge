@@ -56,13 +56,22 @@ final class Hydrator
             $value = null;
 
             if ($cfg['kind'] === 'state') {
+                $isDirty = array_key_exists($propName, $dirty);
+                
+                if (!$cfg['public'] && $isDirty) {
+                    throw new \RuntimeException(
+                        "Cannot mutate private property '{$propName}' with #[State] attribute. " .
+                        "Private properties are read-only and cannot be modified from the client."
+                    );
+                }
+
                 if ($cfg['shared']) {
                     $value = $dirty[$propName]
                         ?? $sharedBag[$propName]
                         ?? $localBag[$propName]
                         ?? null;
 
-                    if (array_key_exists($propName, $dirty)) {
+                    if ($isDirty) {
                         $sharedBag[$propName] = $value;
                     }
                 } else {
@@ -144,6 +153,7 @@ final class Hydrator
             $name = $prop->getName();
             $prop->setAccessible(true);
 
+            $isPublic = $prop->isPublic();
             $reader = fn(object $o) => $prop->getValue($o);
             $writer = fn(object $o, $v) => $prop->setValue($o, $v);
 
@@ -172,6 +182,7 @@ final class Hydrator
             $recipe[$name] = [
                 'kind' => 'state',
                 'shared' => $stateAttr?->shared ?? false,
+                'public' => $isPublic,
                 'reader' => $reader,
                 'accessor' => $writer,
             ];

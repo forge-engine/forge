@@ -94,7 +94,7 @@ final class WireKernel
             && $this->isSubmitAction($class, $action);
 
         if (!$isSubmit) {
-            $dirty = $this->filterDirty($dirty, $session, $sessionKey);
+            $dirty = $this->filterDirty($dirty, $session, $sessionKey, $class);
         }
 
         $shouldValidateState =
@@ -602,6 +602,10 @@ final class WireKernel
                 continue;
             }
 
+            if (!$cfg['public']) {
+                continue;
+            }
+
             $value = $dirty[$prop];
 
             $data[$prop] = $value;
@@ -641,12 +645,19 @@ final class WireKernel
     private function filterDirty(
         array $dirty,
         SessionInterface $session,
-        string $sessionKey
+        string $sessionKey,
+        string $class
     ): array {
         $stateBag = $session->get($sessionKey, []);
         $filtered = [];
 
+        $recipe = Hydrator::getRecipe($class);
+
         foreach ($dirty as $key => $value) {
+            if (isset($recipe[$key]) && !$recipe[$key]['public']) {
+                continue;
+            }
+
             if (!array_key_exists($key, $stateBag)) {
                 $filtered[$key] = $value;
                 continue;
