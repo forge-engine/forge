@@ -15,13 +15,14 @@
         <form fw:submit="saveForm" class="space-y-4">
             <div>
                 <label class="block mb-2">Name (required, min 3 chars):</label>
-                <input type="text" fw:model="formName" value="<?= e($formName) ?>" class="form-control" />
+                <input type="text" fw:model.debounce="formName" value="<?= e($formName) ?>" class="form-control" />
                 <p class="text-red-600 text-sm" fw:validation-error="formName"></p>
+                <p class="text-red-600 text-xs mt-1" fw:validation-error="formName" fw:validation-error.all></p>
             </div>
             
             <div>
                 <label class="block mb-2">Email (required, valid email):</label>
-                <input type="email" fw:model="formEmail" value="<?= e($formEmail) ?>" class="form-control" />
+                <input type="email" fw:model.debounce="formEmail" value="<?= e($formEmail) ?>" class="form-control" />
                 <p class="text-red-600 text-sm" fw:validation-error="formEmail"></p>
             </div>
             

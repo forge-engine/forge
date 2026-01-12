@@ -362,7 +362,13 @@
 			errorEls.forEach(el => {
 				const key = el.getAttribute('fw:validation-error');
 				const messages = out.errors[key] || [];
-				el.textContent = messages[0] || '';
+				const showAll = el.hasAttribute('fw:validation-error.all');
+				
+				if (showAll && messages.length > 0) {
+					el.textContent = messages.join(', ');
+				} else {
+					el.textContent = messages[0] || '';
+				}
 				el.style.display = messages.length ? '' : 'none';
 			});
 
@@ -404,8 +410,18 @@
 			});
 		}
 
+		if (out.events && Array.isArray(out.events) && out.events.length > 0) {
+			handleEvents(out.events);
+		}
+
+		if (out.flash && Array.isArray(out.flash) && out.flash.length > 0) {
+			handleFlashMessages(out.flash);
+		}
+
 		if (out.redirect) {
-			window.location.assign(out.redirect);
+			if (isValidRedirect(out.redirect)) {
+				window.location.assign(out.redirect);
+			}
 			return { root };
 		}
 
@@ -678,5 +694,90 @@
 		document.addEventListener('DOMContentLoaded', initializePolling);
 	} else {
 		initializePolling();
+	}
+
+	function handleFlashMessages(flashes) {
+		let container = document.getElementById('fw-flash-container');
+		if (!container) {
+			container = document.createElement('div');
+			container.id = 'fw-flash-container';
+			container.className = 'fw-flash-container';
+			document.body.appendChild(container);
+		}
+
+		flashes.forEach(flash => {
+			const messageEl = document.createElement('div');
+			messageEl.className = 'fw-flash-message';
+			messageEl.setAttribute('data-flash-type', flash.type || 'info');
+			messageEl.setAttribute('role', 'alert');
+			
+			const textEl = document.createElement('div');
+			textEl.className = 'fw-flash-message-text';
+			textEl.textContent = flash.message || '';
+			messageEl.appendChild(textEl);
+
+			container.appendChild(messageEl);
+
+			setTimeout(() => {
+				messageEl.classList.add('fw-flash-message-dismissing');
+				setTimeout(() => {
+					if (messageEl.parentNode) {
+						messageEl.parentNode.removeChild(messageEl);
+					}
+				}, 300);
+			}, 5000);
+		});
+	}
+
+	function handleEvents(events) {
+		events.forEach(event => {
+			if (!event.name || typeof event.name !== 'string') {
+				return;
+			}
+
+			if (!/^[a-zA-Z0-9_-]+$/.test(event.name)) {
+				console.warn('Invalid event name:', event.name);
+				return;
+			}
+
+			const eventName = `fw:event:${event.name}`;
+			const eventData = event.data || {};
+
+			const customEvent = new CustomEvent(eventName, {
+				detail: eventData,
+				bubbles: true,
+				cancelable: true,
+			});
+
+			document.dispatchEvent(customEvent);
+
+			if (event.name === 'animateElement' && eventData.selector && eventData.animation) {
+				const elements = document.querySelectorAll(eventData.selector);
+				const duration = eventData.duration || 500;
+				elements.forEach(el => {
+					el.classList.add('fw-animate', `fw-animate-${eventData.animation}`);
+					setTimeout(() => {
+						el.classList.remove('fw-animate', `fw-animate-${eventData.animation}`);
+					}, duration);
+				});
+			}
+		});
+	}
+
+	function isValidRedirect(url) {
+		if (typeof url !== 'string') {
+			return false;
+		}
+
+		if (url.startsWith('/')) {
+			return true;
+		}
+
+		try {
+			const parsed = new URL(url, window.location.origin);
+			return parsed.origin === window.location.origin;
+		} catch {
+			return false;
+		}
 	}
 })();

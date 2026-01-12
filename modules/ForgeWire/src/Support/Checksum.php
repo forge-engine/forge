@@ -71,6 +71,14 @@ final class Checksum
             ],
         ];
 
+        if (isset($ctx['action']) && $ctx['action'] !== null) {
+            $payload['action'] = (string) $ctx['action'];
+        }
+
+        if (isset($ctx['args']) && is_array($ctx['args'])) {
+            $payload['args'] = $ctx['args'];
+        }
+
         $json = $this->canonicalJson($payload);
         return hash_hmac('sha256', $json, $this->appKey);
     }
@@ -115,11 +123,56 @@ final class Checksum
             return;
         }
 
-        if ($provided === null || !hash_equals($stored, (string) $provided)) {
-            $re = $this->compute($session, $sessionKey, $ctx);
-            if (!hash_equals($re, (string) $provided)) {
+        $hasAction = isset($ctx['action']) && $ctx['action'] !== null;
+        
+        if ($hasAction) {
+            $stateCtx = $ctx;
+            unset($stateCtx['action'], $stateCtx['args']);
+            $stateChecksum = $this->compute($session, $sessionKey, $stateCtx);
+            
+            if ($provided === null || !hash_equals($stateChecksum, (string) $provided)) {
+                throw new \RuntimeException('ForgeWire checksum mismatch. Component state may have been tampered with.');
+            }
+        } else {
+            $computed = $this->compute($session, $sessionKey, $ctx);
+            
+            if ($provided === null || !hash_equals($computed, (string) $provided)) {
                 throw new \RuntimeException('ForgeWire checksum mismatch.');
             }
         }
+    }
+
+    public function computeActionSignature(string $action, array $args): string
+    {
+        $normalized = $this->normalizeArgs($args);
+        $payload = [
+            'action' => $action,
+            'args' => $normalized,
+        ];
+        $json = $this->canonicalJson($payload);
+        return hash_hmac('sha256', $json, $this->appKey);
+    }
+
+    public function storeExpectedAction(string $sessionKey, SessionInterface $session, string $action, array $args): void
+    {
+        $signature = $this->computeActionSignature($action, $args);
+        $session->set($sessionKey . ':actions:' . $signature, true);
+    }
+
+    public function isExpectedAction(string $sessionKey, SessionInterface $session, string $action, array $args): bool
+    {
+        $signature = $this->computeActionSignature($action, $args);
+        return $session->get($sessionKey . ':actions:' . $signature) === true;
+    }
+
+    private function normalizeArgs(array $args): array
+    {
+        $normalized = [];
+        foreach ($args as $key => $value) {
+            $normalizedKey = is_string($key) ? strtolower($key) : $key;
+            $normalized[$normalizedKey] = $value;
+        }
+        ksort($normalized);
+        return $normalized;
     }
 }

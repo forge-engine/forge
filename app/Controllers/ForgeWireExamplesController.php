@@ -48,11 +48,11 @@ final class ForgeWireExamplesController
     public string $customDebounceValue = '';
 
     #[State]
-    #[Validate('required|min:3')]
+    #[Validate('required|min:3', messages: ['required' => 'Name is required', 'min' => 'Name must be at least :value characters'])]
     public string $formName = '';
 
     #[State]
-    #[Validate('required|email')]
+    #[Validate('required|email', messages: ['required' => 'Email is required', 'email' => 'Please enter a valid email address'])]
     public string $formEmail = '';
 
     #[State]

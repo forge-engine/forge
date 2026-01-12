@@ -179,11 +179,19 @@ final class Hydrator
             if ($validate) {
                 self::$validateRules[$class][$name] = explode('|', $validate->rules);
 
+                $messages = [];
+                if (!empty($validate->messages)) {
+                    if (is_array($validate->messages)) {
+                        $messages = $validate->messages;
+                    } elseif (is_string($validate->messages)) {
+                        $decoded = json_decode($validate->messages, true);
+                        $messages = is_array($decoded) ? $decoded : [];
+                    }
+                }
+
                 $recipe[$name]['validate'] = [
                     'rules' => explode('|', $validate->rules),
-                    'messages' => $validate->messages
-                        ? json_decode($validate->messages, true)
-                        : [],
+                    'messages' => $messages,
                 ];
             }
         }

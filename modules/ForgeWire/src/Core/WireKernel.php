@@ -5,6 +5,7 @@ namespace App\Modules\ForgeWire\Core;
 use App\Modules\ForgeWire\Attributes\Action;
 use App\Modules\ForgeWire\Attributes\Reactive;
 use App\Modules\ForgeWire\Support\Checksum;
+use App\Modules\ForgeWire\Support\ForgeWireResponse;
 use Forge\Core\DI\Container;
 use Forge\Core\Http\Request;
 use Forge\Core\Http\Response;
@@ -34,7 +35,7 @@ final class WireKernel
         $id = (string) ($p["id"] ?? "");
         $class = (string) ($p["controller"] ?? $session->get("forgewire:{$id}:class") ?? "");
         $action = $p["action"] ?? null;
-        $args = $p["args"] ?? [];
+        $args = is_array($p["args"] ?? []) ? $p["args"] : [];
         $dirty = (array) ($p["dirty"] ?? []);
 
         $sessionKey = "forgewire:{$id}";
@@ -57,6 +58,17 @@ final class WireKernel
             return ["ignored" => true, "id" => $id];
         }
 
+        if ($action !== null) {
+            $ctx["action"] = $action;
+            $ctx["args"] = $args;
+            
+            $hasExpectedActions = $this->hasAnyExpectedActions($sessionKey, $session);
+            
+            if ($hasExpectedActions && !$this->checksum->isExpectedAction($sessionKey, $session, $action, $args)) {
+                throw new \RuntimeException('ForgeWire security violation: Action or arguments have been tampered with.');
+            }
+        }
+
         $this->checksum->verify(
             $p["checksum"] ?? null,
             $sessionKey,
@@ -65,6 +77,16 @@ final class WireKernel
         );
 
         $instance = $this->container->make($class);
+
+        try {
+            $reflection = new ReflectionClass($instance);
+            if ($reflection->hasProperty('__fw_id')) {
+                $prop = $reflection->getProperty('__fw_id');
+                $prop->setAccessible(true);
+                $prop->setValue($instance, $id);
+            }
+        } catch (\ReflectionException $e) {
+        }
 
         $isSubmit =
             $action !== null
@@ -84,14 +106,18 @@ final class WireKernel
                 $instance,
                 $dirty,
                 $class,
-                $isSubmit
+                $isSubmit,
+                $id,
+                $session
             );
 
             if ($errors !== []) {
+                $stateCtx = $ctx;
+                unset($stateCtx['action'], $stateCtx['args']);
                 return [
                     "html" => "",
                     "state" => null,
-                    "checksum" => $this->checksum->sign($sessionKey, $session, $ctx),
+                    "checksum" => $this->checksum->sign($sessionKey, $session, $stateCtx),
                     "events" => [],
                     "redirect" => null,
                     "flash" => [],
@@ -103,6 +129,9 @@ final class WireKernel
         $this->hydrator->hydrate($instance, $dirty, $session, $sessionKey, $sharedKey);
 
         $sharedStatesBefore = $this->getSharedStates($instance, $class);
+
+        $responseContext = new ForgeWireResponse();
+        ForgeWireResponse::setContext($id, $responseContext);
 
         $html = "";
 
@@ -125,6 +154,11 @@ final class WireKernel
             $html = (string) $instance->render();
         }
 
+        $redirect = $responseContext->getRedirect();
+        $flashes = $responseContext->getFlashes();
+        $events = $responseContext->getEvents();
+        ForgeWireResponse::clearContext($id);
+
         $this->parseSharedGroupsFromHtml($html, $session, $class);
         $this->discoverSharedGroupFromRegisteredComponents($session, $class);
         $this->initializeSharedGroupIfNeeded($id, $class, $session, $request, $sharedKey, $html);
@@ -136,8 +170,13 @@ final class WireKernel
             $componentHtml = $html;
         }
 
+        $this->storeExpectedActions($componentHtml, $id, $session, $sessionKey);
+
         $state = $this->hydrator->dehydrate($instance, $session, $sessionKey, $sharedKey);
-        $sig = $this->checksum->sign($sessionKey, $session, $ctx);
+        
+        $stateCtx = $ctx;
+        unset($stateCtx['action'], $stateCtx['args']);
+        $sig = $this->checksum->sign($sessionKey, $session, $stateCtx);
 
         $sharedStatesAfter = $this->getSharedStates($instance, $class);
         $sharedStateChanges = $this->getSharedStateChanges($sharedStatesBefore, $sharedStatesAfter);
@@ -166,13 +205,21 @@ final class WireKernel
             }
         }
 
+        $eventData = [];
+        foreach ($events as $event) {
+            $eventData[] = [
+                'name' => $event['name'],
+                'data' => $event['data'],
+            ];
+        }
+
         return [
             "html" => $componentHtml,
             "state" => $state,
             "checksum" => $sig,
-            "events" => [],
-            "redirect" => null,
-            "flash" => [],
+            "events" => $eventData,
+            "redirect" => $redirect,
+            "flash" => $flashes,
             "updates" => $updates,
         ];
     }
@@ -245,14 +292,25 @@ final class WireKernel
             }
 
             if ($v === null) {
-                $v = $args[$i] ?? $args[$name] ?? $dirty[$name] ?? null;
-                if ($typeName !== null) {
-                    if ($typeName === "int" && $v !== null && is_string($v))
+                if (is_array($args)) {
+                    $v = $args[$name] ?? $args[$i] ?? $dirty[$name] ?? null;
+                    
+                    if ($v === null) {
+                        $v = $this->findCaseInsensitiveParam($args, $name) ?? $dirty[$name] ?? null;
+                    }
+                } else {
+                    $v = $dirty[$name] ?? null;
+                }
+                
+                if ($typeName !== null && $v !== null) {
+                    if ($typeName === "int" && is_string($v))
                         $v = (int) $v;
-                    elseif ($typeName === "float" && $v !== null && is_string($v))
+                    elseif ($typeName === "float" && is_string($v))
                         $v = (float) $v;
-                    elseif ($typeName === "bool" && $v !== null && is_string($v))
+                    elseif ($typeName === "bool" && is_string($v))
                         $v = filter_var($v, FILTER_VALIDATE_BOOLEAN);
+                    elseif ($typeName === "string" && !is_string($v))
+                        $v = (string) $v;
                 }
             }
             $methodArgs[] = $v;
@@ -263,6 +321,85 @@ final class WireKernel
             return $res->getContent();
         }
         return (string) $res;
+    }
+
+    private function findCaseInsensitiveParam(array $args, string $name): mixed
+    {
+        foreach ($args as $key => $value) {
+            if (is_string($key) && strcasecmp($key, $name) === 0) {
+                return $value;
+            }
+        }
+        return null;
+    }
+
+    private function extractActionsFromHtml(string $html, string $componentId): array
+    {
+        $actions = [];
+        
+        if (empty($html)) {
+            return $actions;
+        }
+
+        $pattern = '/<[^>]*fw:click=["\']([^"\']+)["\'][^>]*>/i';
+        if (!preg_match_all($pattern, $html, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE)) {
+            return $actions;
+        }
+
+        foreach ($matches as $match) {
+            $fullTag = $match[0][0];
+            $actionName = trim($match[1][0] ?? '');
+            
+            if (empty($actionName)) {
+                continue;
+            }
+
+            $args = [];
+            
+            if (preg_match_all('/fw:param-([a-zA-Z0-9_-]+)=["\']([^"\']*)["\']/i', $fullTag, $paramMatches, PREG_SET_ORDER)) {
+                foreach ($paramMatches as $paramMatch) {
+                    $paramName = strtolower(trim($paramMatch[1]));
+                    $paramValue = $paramMatch[2];
+                    $args[$paramName] = $paramValue;
+                }
+            }
+
+            $actions[] = [
+                'action' => $actionName,
+                'args' => $args,
+            ];
+        }
+
+        return $actions;
+    }
+
+    private function storeExpectedActions(string $html, string $componentId, SessionInterface $session, string $sessionKey): void
+    {
+        $actions = $this->extractActionsFromHtml($html, $componentId);
+        
+        $prefix = $sessionKey . ':actions:';
+        $allSession = $session->all();
+        foreach ($allSession as $key => $value) {
+            if (str_starts_with($key, $prefix)) {
+                $session->remove($key);
+            }
+        }
+        
+        foreach ($actions as $actionData) {
+            $this->checksum->storeExpectedAction($sessionKey, $session, $actionData['action'], $actionData['args']);
+        }
+    }
+
+    private function hasAnyExpectedActions(string $sessionKey, SessionInterface $session): bool
+    {
+        $prefix = $sessionKey . ':actions:';
+        $allSession = $session->all();
+        foreach ($allSession as $key => $value) {
+            if (str_starts_with($key, $prefix)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private function isSubmitAction(string $class, string $action): bool
@@ -426,6 +563,7 @@ final class WireKernel
         }
 
         $this->parseAndStoreUses($componentHtml, $componentId, $session);
+        $this->storeExpectedActions($componentHtml, $componentId, $session, $sessionKey);
 
         $state = $this->hydrator->dehydrate($instance, $session, $sessionKey, $sharedKey);
         $checksum = $this->checksum->sign($sessionKey, $session, $ctx);
@@ -442,7 +580,9 @@ final class WireKernel
         object $instance,
         array $dirty,
         string $class,
-        bool $isSubmit
+        bool $isSubmit,
+        string $id,
+        SessionInterface $session
     ): array {
         $recipe = Hydrator::getRecipe($class);
 
@@ -458,16 +598,11 @@ final class WireKernel
                 continue;
             }
 
-            if (
-                !array_key_exists($prop, $dirty)
-                && !$isSubmit
-            ) {
+            if (!array_key_exists($prop, $dirty)) {
                 continue;
             }
 
-            $value = array_key_exists($prop, $dirty)
-                ? $dirty[$prop]
-                : $cfg['reader']($instance);
+            $value = $dirty[$prop];
 
             $data[$prop] = $value;
             $rules[$prop] = $cfg['validate']['rules'];
