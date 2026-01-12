@@ -14,6 +14,7 @@ use Forge\Core\Helpers\ModuleResources;
     <link rel="stylesheet" href="<?= ModuleResources::pathTo(module: 'forge-nexus', resource: 'css/main.css') ?>">
     <link rel="stylesheet" href="<?= ModuleResources::pathTo(module: 'forge-nexus', resource: 'css/nexus.css') ?>">
     <?= external_asset('font_awesome') ?>
+    <?= raw(csrf_meta()) ?>
 </head>
 
 <body>

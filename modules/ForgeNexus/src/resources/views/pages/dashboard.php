@@ -1,24 +1,25 @@
 <?php
-use Forge\Core\View\View;
-
-View::layout(name: "nexus", loadFromModule: true);
+/** @var array $data */
+layout(name: "nexus", fromModule: true);
 ?>
 
 <!-- Top row cards -->
-<section class="card metric-card">
+<section class="card metric-card" <?= fw_id('metric-users') ?>>
     <div class="card-content">
         <h2 class="card-title">Total Users</h2>
-        <p class="metric">1,234</p>
+        <p class="metric" fw:target>
+            <?= $usersCount ?>
+        </p>
         <p class="metric-change positive">+12% from last month</p>
     </div>
-    <div class="card-icon">
+    <div class="card-icon" fw:click="refreshUsersCount">
         <i class="fa-solid fa-users"></i>
     </div>
 </section>
-<section class="card metric-card">
+<section class="card metric-card" <?= fw_id('metric-revenue') ?>>
     <div class="card-content">
         <h2 class="card-title">Revenue</h2>
-        <p class="metric">$45,678</p>
+        <p class="metric" fw:target>$45,678</p>
         <p class="metric-change positive">+8% from last month</p>
     </div>
     <div class="card-icon">

@@ -47,17 +47,29 @@
 
 	function findPollTarget(root) {
 		const names = root.getAttributeNames();
-		if (names.includes('fw:poll')) return { el: root, everyMs: 2000 };
+		if (names.includes('fw:poll')) {
+			const action = root.getAttribute('fw:action');
+			return { el: root, everyMs: 2000, action: action || null };
+		}
 		const param = names.find(n => n.startsWith('fw:poll.'));
-		if (param) return { el: root, everyMs: parsePollInterval(param) };
+		if (param) {
+			const action = root.getAttribute('fw:action');
+			return { el: root, everyMs: parsePollInterval(param), action: action || null };
+		}
 
 		const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
 		while (walker.nextNode()) {
 			const node = /** @type {Element} */(walker.currentNode);
 			const ns = node.getAttributeNames();
-			if (ns.includes('fw:poll')) return { el: node, everyMs: 2000 };
+			if (ns.includes('fw:poll')) {
+				const action = node.getAttribute('fw:action');
+				return { el: node, everyMs: 2000, action: action || null };
+			}
 			const p = ns.find(n => n.startsWith('fw:poll.'));
-			if (p) return { el: node, everyMs: parsePollInterval(p) };
+			if (p) {
+				const action = node.getAttribute('fw:action');
+				return { el: node, everyMs: parsePollInterval(p), action: action || null };
+			}
 		}
 		return null;
 	}
@@ -250,7 +262,10 @@
 			}
 		} else {
 			const domTargets = root.querySelectorAll('[fw\\:target]');
-			const docTargets = doc.querySelectorAll('[fw\\:target]');
+			const matchingComponent = doc.querySelector(`[fw\\:id="${id}"]`);
+			const docTargets = matchingComponent 
+				? matchingComponent.querySelectorAll('[fw\\:target]')
+				: doc.querySelectorAll('[fw\\:target]');
 
 			if (domTargets.length > 0 && docTargets.length === domTargets.length) {
 				domTargets.forEach((el, i) => {
@@ -442,7 +457,8 @@
 		if (!target) return;
 
 		const every = target.everyMs | 0;
-		pollers.set(id, { el: root, timer: null, everyMs: every, visible: false });
+		const pollAction = target.action || null;
+		pollers.set(id, { el: root, timer: null, everyMs: every, visible: false, action: pollAction });
 
 		const obs = ensureObserver();
 		obs.observe(root);
@@ -493,7 +509,9 @@
 				schedulePoll(root);
 				return;
 			}
-			trigger(root, null, []);
+			const pollAction = rec.action || null;
+			const parsed = pollAction ? parseAction(pollAction) : { method: null, args: [] };
+			trigger(root, parsed.method, parsed.args);
 			rec.timer = null;
 			schedulePoll(root);
 		}, wait);
@@ -647,7 +665,18 @@
 		}
 	});
 
-	document.addEventListener('DOMContentLoaded', () => {
-		document.querySelectorAll('[fw\\:id]').forEach(setupPolling);
-	});
+	function initializePolling() {
+		document.querySelectorAll('[fw\\:id]').forEach(root => {
+			const pollTarget = findPollTarget(root);
+			if (pollTarget) {
+				setupPolling(root);
+			}
+		});
+	}
+
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', initializePolling);
+	} else {
+		initializePolling();
+	}
 })();
