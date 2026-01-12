@@ -1,7 +1,6 @@
 <?php
 
 use Forge\Core\Helpers\ModuleResources;
-use Forge\Core\View\Component;
 
 /** @var string $content */
 ?>
@@ -14,7 +13,7 @@ use Forge\Core\View\Component;
     <title>Nexus CMS</title>
     <link rel="stylesheet" href="<?= ModuleResources::pathTo(module: 'forge-nexus', resource: 'css/main.css') ?>">
     <link rel="stylesheet" href="<?= ModuleResources::pathTo(module: 'forge-nexus', resource: 'css/nexus.css') ?>">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <?= external_asset('font_awesome') ?>
 </head>
 
 <body>

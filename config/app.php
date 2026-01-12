@@ -1,8 +1,7 @@
 <?php
 
 return [
-    'name' => 'Forge Framework',
-    'developer_mode' => env('FORGE_DEVELOPER_MODE', false),
+    'name' => 'Forty Two Cleaning',
     'cors' => [
         'allowed_origins' => env('CORS_ALLOWED_ORIGINS', ['*']),
         'allowed_methods' => env('CORS_ALLOWED_METHODS', ['GET, POST, PUT, DELETE, OPTIONS']),
@@ -10,6 +9,7 @@ return [
     ],
     "log" => [
         'driver' => env("LOG_DRIVER", "syslog"),
-        'path' => BASE_PATH .  "/storage/logs/forge.log"
+        'path' => BASE_PATH . "/storage/logs/forge.log"
     ],
+    'env' => env('APP_ENV', 'development')
 ];

@@ -31,4 +31,20 @@ return [
             'after_logout' => '/',
         ],
     ],
+    'csp' => [
+        'enabled' => env('CSP_ENABLED', true),
+        'directives' => [
+            'default-src' => ["'self'"],
+            'script-src' => ["'self'", "'unsafe-inline'"],
+            'style-src' => ["'self'", "'unsafe-inline'"],
+        ],
+        'external_assets' => [
+            ...external_asset_config(
+                name: 'font_awesome',
+                url: 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
+                integrity: 'sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==',
+                crossorigin: 'anonymous'
+            ),
+        ],
+    ],
 ];
