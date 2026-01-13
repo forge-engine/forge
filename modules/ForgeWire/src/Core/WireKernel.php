@@ -62,10 +62,14 @@ final class WireKernel
             $ctx["action"] = $action;
             $ctx["args"] = $args;
             
-            $hasExpectedActions = $this->hasAnyExpectedActions($sessionKey, $session);
+            $isInternalAction = ($action === 'input');
             
-            if ($hasExpectedActions && !$this->checksum->isExpectedAction($sessionKey, $session, $action, $args)) {
-                throw new \RuntimeException('ForgeWire security violation: Action or arguments have been tampered with.');
+            if (!$isInternalAction) {
+                $hasExpectedActions = $this->hasAnyExpectedActions($sessionKey, $session);
+                
+                if ($hasExpectedActions && !$this->checksum->isExpectedAction($sessionKey, $session, $action, $args)) {
+                    throw new \RuntimeException('ForgeWire security violation: Action or arguments have been tampered with.');
+                }
             }
         }
 

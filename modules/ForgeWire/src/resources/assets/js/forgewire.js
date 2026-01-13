@@ -1,9 +1,15 @@
 (() => {
+	// ============================================================================
+	// CONSTANTS & CONFIGURATION
+	// ============================================================================
 	const DEFAULT_DEBOUNCE = 600;
 	const rootSel = '[fw\\:id]';
 	const attr = (el, n) => el.getAttribute(n);
 	const closestRoot = el => el.closest(rootSel);
 	
+	// ============================================================================
+	// ATTRIBUTE CACHING SYSTEM
+	// ============================================================================
 	const attributeCache = new WeakMap();
 	
 	function getCachedAttributes(el) {
@@ -17,6 +23,9 @@
 		attributeCache.delete(el);
 	}
 	
+	// ============================================================================
+	// CLEANUP REGISTRY (Memory Leak Prevention)
+	// ============================================================================
 	const cleanupRegistry = new Map();
 	
 	function registerCleanup(id, cleanupFn) {
@@ -40,6 +49,9 @@
 		}
 	}
 	
+	// ============================================================================
+	// STATE MANAGEMENT
+	// ============================================================================
 	let composing = false;
 	let tabbing = false;
 	let suppressInputsUntil = 0;
@@ -48,6 +60,9 @@
 	document.addEventListener('compositionstart', () => composing = true);
 	document.addEventListener('compositionend', () => composing = false);
 
+	// ============================================================================
+	// POLLING SYSTEM (IntersectionObserver)
+	// ============================================================================
 	let io = null;
 
 	function ensureObserver() {
@@ -83,6 +98,9 @@
 		return (root.__fw_suppress_until && Date.now() < root.__fw_suppress_until);
 	}
 
+	// ============================================================================
+	// DOM QUERIES & ELEMENT FINDING
+	// ============================================================================
 	function findPollTarget(root) {
 		const names = getCachedAttributes(root);
 		if (names.includes('fw:poll')) {
@@ -133,6 +151,9 @@
 		return params;
 	}
 
+	// ============================================================================
+	// ACTION PARSING
+	// ============================================================================
 	function parseAction(expr) {
 		if (!expr) return { method: null, args: [] };
 		const t = expr.trim();
@@ -185,6 +206,9 @@
 		return { method, args: args.map(norm) };
 	}
 
+	// ============================================================================
+	// MODEL BINDING
+	// ============================================================================
 	function getModelBinding(el) {
 		// Use cached attributes - this is called in loops (collectDirty, input events)
 		for (const name of getCachedAttributes(el)) {
@@ -210,6 +234,9 @@
 		return null;
 	}
 
+	// ============================================================================
+	// DIRTY STATE COLLECTION
+	// ============================================================================
 	function collectDirty(root) {
 		const dirty = {};
 		const inputs = root.querySelectorAll('input, textarea, select');
@@ -231,6 +258,9 @@
 		return dirty;
 	}
 
+	// ============================================================================
+	// NETWORK & COMMUNICATION
+	// ============================================================================
 	async function send(payload, signal) {
 		const headers = {
 			'Content-Type': 'application/json',
@@ -247,6 +277,9 @@
 		return res.json();
 	}
 
+	// ============================================================================
+	// DEBOUNCE MANAGEMENT
+	// ============================================================================
 	function cancelDebounces(root) {
 		root.querySelectorAll('[data-fw-timer-id]').forEach(n => {
 			const id = Number(n.getAttribute('data-fw-timer-id'));
@@ -255,6 +288,9 @@
 		});
 	}
 
+	// ============================================================================
+	// REQUEST QUEUING
+	// ============================================================================
 	const queues = new Map(); // id -> Array of requests
 
 	async function trigger(root, action = null, args = [], dirtyOverride = null) {
@@ -284,6 +320,9 @@
 		}
 	}
 
+	// ============================================================================
+	// COMPONENT UPDATE (HTML from server is trusted, but we validate structure)
+	// ============================================================================
 	function applyComponentUpdate(root, html, state, checksum, dirty = {}) {
 		const id = attr(root, 'fw:id');
 
@@ -371,6 +410,9 @@
 		return root;
 	}
 
+	// ============================================================================
+	// TRIGGER EXECUTION
+	// ============================================================================
 	async function performTrigger(root, action = null, args = [], dirtyOverride = null) {
 		if (pendingRedirectTimeout !== null) {
 			clearTimeout(pendingRedirectTimeout);
@@ -526,6 +568,9 @@
 		return { root };
 	}
 
+	// ============================================================================
+	// POLLING SYSTEM
+	// ============================================================================
 	const pollers = new Map();
 
 	function parsePollInterval(attrName) {
@@ -641,7 +686,9 @@
 		});
 	}
 
-	// -- events ----------------------------------------------------------------
+	// ============================================================================
+	// EVENT HANDLERS
+	// ============================================================================
 
 	document.addEventListener('click', (e) => {
 		const el = e.target.closest('[fw\\:click]');
@@ -801,6 +848,9 @@
 		}
 	});
 
+	// ============================================================================
+	// INITIALIZATION
+	// ============================================================================
 	function initializePolling() {
 		document.querySelectorAll('[fw\\:id]').forEach(root => {
 			const pollTarget = findPollTarget(root);
@@ -834,6 +884,9 @@
 		initializePolling();
 	}
 
+	// ============================================================================
+	// BROWSER ACTIONS (Redirects, Flash Messages, Events)
+	// ============================================================================
 	function handleFlashMessages(flashes) {
 		let container = document.getElementById('fw-flash-container');
 		if (!container) {
