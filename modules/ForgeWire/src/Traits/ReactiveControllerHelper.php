@@ -44,13 +44,13 @@ trait ReactiveControllerHelper
         return $this->__fw_id;
     }
 
-    public function redirect(string $url): void
+    public function redirect(string $url, int $delay = 0): void
     {
         $context = $this->getResponseContext();
         if ($context === null) {
             throw new \RuntimeException('redirect() can only be called from within a ForgeWire action');
         }
-        $context->setRedirect($url);
+        $context->setRedirect($url, $delay);
     }
 
     public function flash(string $type, string $message): void

@@ -6,6 +6,7 @@
 	let composing = false;
 	let tabbing = false;
 	let suppressInputsUntil = 0;
+	let pendingRedirectTimeout = null;
 
 	document.addEventListener('compositionstart', () => composing = true);
 	document.addEventListener('compositionend', () => composing = false);
@@ -311,6 +312,11 @@
 	}
 
 	async function performTrigger(root, action = null, args = [], dirtyOverride = null) {
+		if (pendingRedirectTimeout !== null) {
+			clearTimeout(pendingRedirectTimeout);
+			pendingRedirectTimeout = null;
+		}
+		
 		const id = attr(root, 'fw:id');
 
 		let dirty = {};
@@ -419,8 +425,27 @@
 		}
 
 		if (out.redirect) {
-			if (isValidRedirect(out.redirect)) {
-				window.location.assign(out.redirect);
+			if (pendingRedirectTimeout !== null) {
+				clearTimeout(pendingRedirectTimeout);
+				pendingRedirectTimeout = null;
+			}
+			
+			const redirectUrl = typeof out.redirect === 'string' ? out.redirect : out.redirect.url;
+			const redirectDelay = typeof out.redirect === 'object' && out.redirect.delay ? out.redirect.delay : 0;
+			
+			if (isValidRedirect(redirectUrl)) {
+				if (redirectDelay > 0) {
+					pendingRedirectTimeout = setTimeout(() => {
+						pendingRedirectTimeout = null;
+						window.location.assign(redirectUrl);
+					}, redirectDelay * 1000);
+				} else {
+					if (pendingRedirectTimeout !== null) {
+						clearTimeout(pendingRedirectTimeout);
+						pendingRedirectTimeout = null;
+					}
+					window.location.assign(redirectUrl);
+				}
 			}
 			return { root };
 		}
@@ -692,6 +717,20 @@
 
 	if (document.readyState === 'loading') {
 		document.addEventListener('DOMContentLoaded', initializePolling);
+		
+		window.addEventListener('beforeunload', () => {
+			if (pendingRedirectTimeout !== null) {
+				clearTimeout(pendingRedirectTimeout);
+				pendingRedirectTimeout = null;
+			}
+		});
+		
+		window.addEventListener('pagehide', () => {
+			if (pendingRedirectTimeout !== null) {
+				clearTimeout(pendingRedirectTimeout);
+				pendingRedirectTimeout = null;
+			}
+		});
 	} else {
 		initializePolling();
 	}

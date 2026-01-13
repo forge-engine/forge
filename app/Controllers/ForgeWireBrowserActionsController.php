@@ -22,7 +22,7 @@ final class ForgeWireBrowserActionsController
 
     #[Route("/forge-wire-browser-actions")]
     #[Action]
-    public function index(): Response|string
+    public function index(Request $request): Response|string
     {
         return $this->view("pages/examples/browser-actions", []);
     }
@@ -60,26 +60,19 @@ final class ForgeWireBrowserActionsController
     #[Action]
     public function openModal(string $modalId, string $title = '', string $message = ''): void
     {
-        $this->dispatch('openModal', [
-            'id' => $modalId,
-            'title' => $title,
-            'message' => $message,
-        ]);
+        modal($modalId, $title, $message);
     }
 
     #[Action]
-    public function closeModal(): void
+    public function closeModal(?string $id = null): void
     {
-        $this->dispatch('closeModal');
+        close_modal($id);
     }
 
     #[Action]
     public function showNotification(string $type = 'success', string $message = 'Notification triggered!'): void
     {
-        $this->dispatch('showNotification', [
-            'type' => $type,
-            'message' => $message,
-        ]);
+        notification($message, $type);
     }
 
     #[Action]
@@ -96,6 +89,6 @@ final class ForgeWireBrowserActionsController
     {
         $this->flash('success', 'Action completed successfully!');
         $this->dispatch('closeModal');
-        $this->redirect('/forge-wire-examples');
+        $this->redirect('/forge-wire-examples', 2);
     }
 }

@@ -8,7 +8,7 @@ final class ForgeWireResponse
 {
     private static array $contexts = [];
 
-    private ?string $redirect = null;
+    private ?array $redirect = null;
     private array $flashes = [];
     private array $events = [];
 
@@ -27,9 +27,22 @@ final class ForgeWireResponse
         unset(self::$contexts[$id]);
     }
 
-    public function setRedirect(string $url): void
+    public static function getCurrentContextId(): ?string
     {
-        $this->redirect = $this->validateRedirect($url);
+        $ids = array_keys(self::$contexts);
+        return end($ids) ?: null;
+    }
+
+    public function setRedirect(string $url, int $delay = 0): void
+    {
+        if ($delay < 0) {
+            throw new \InvalidArgumentException("Redirect delay must be a non-negative integer");
+        }
+        
+        $this->redirect = [
+            'url' => $this->validateRedirect($url),
+            'delay' => $delay,
+        ];
     }
 
     public function addFlash(string $type, string $message): void
@@ -57,7 +70,7 @@ final class ForgeWireResponse
         ];
     }
 
-    public function getRedirect(): ?string
+    public function getRedirect(): ?array
     {
         return $this->redirect;
     }

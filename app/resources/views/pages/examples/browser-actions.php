@@ -1,6 +1,9 @@
 <?php layout('main') ?>
 
-<?= component('ui/flash-container') ?>
+<?= component('ForgeUi:flash-container') ?>
+<?= component('ForgeUi:flash-message') ?>
+<?= component('ForgeUi:modals') ?>
+<?= component('ForgeUi:notifications') ?>
 
 <div class="container my-5">
     <h1 class="text-3xl font-bold mb-5">ForgeWire Browser Actions</h1>
@@ -79,55 +82,3 @@
         </section>
     </div>
 </div>
-
-<?= component('examples/modal-example') ?>
-
-<script>
-document.addEventListener('fw:event:openModal', (e) => {
-    const { id, title, message } = e.detail;
-    const modal = document.getElementById('fw-modal');
-    const modalTitle = document.getElementById('fw-modal-title');
-    const modalMessage = document.getElementById('fw-modal-message');
-    
-    if (modal && modalTitle && modalMessage) {
-        modalTitle.textContent = title || '';
-        modalMessage.textContent = message || '';
-        modal.classList.remove('hidden');
-    }
-});
-
-document.addEventListener('fw:event:closeModal', () => {
-    const modal = document.getElementById('fw-modal');
-    if (modal) {
-        modal.classList.add('hidden');
-    }
-});
-
-document.addEventListener('fw:event:showNotification', (e) => {
-    const { type, message } = e.detail;
-    const container = document.getElementById('fw-flash-container');
-    if (!container) return;
-
-    const notificationEl = document.createElement('div');
-    notificationEl.className = 'fw-flash-message';
-    notificationEl.setAttribute('data-flash-type', type || 'info');
-    notificationEl.setAttribute('role', 'alert');
-    
-    const textEl = document.createElement('div');
-    textEl.className = 'fw-flash-message-text';
-    textEl.textContent = message || '';
-    notificationEl.appendChild(textEl);
-
-    container.appendChild(notificationEl);
-
-    setTimeout(() => {
-        notificationEl.classList.add('fw-flash-message-dismissing');
-        setTimeout(() => {
-            if (notificationEl.parentNode) {
-                notificationEl.parentNode.removeChild(notificationEl);
-            }
-        }, 300);
-    }, 5000);
-});
-
-</script>
