@@ -1,0 +1,42 @@
+{
+  "name": "forge-framework",
+  "displayName": "Forge Framework",
+  "description": "Go-to-definition support for Forge framework views, components, and layouts",
+  "version": "0.1.0",
+  "publisher": "forge-framework",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:php"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "php",
+        "extensions": [".php"]
+      }
+    ],
+    "snippets": [
+      {
+        "language": "php",
+        "path": "./snippets/forgewire.json"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.74.0",
+    "@types/node": "^18.0.0",
+    "typescript": "^5.0.0"
+  }
+}

@@ -87,34 +87,14 @@ final class MinifyForgeWireCommand extends Command
     private function minifyJavaScript(string $source): string
     {
         $minified = $source;
-        
-        // Step 1: Remove single-line comments (// ...) but be careful with URLs and regex
-        // Match // comments that are not part of http:// or https://
         $minified = preg_replace('/(?<!:|\/)\/\/[^\r\n]*/', '', $minified);
-        
-        // Step 2: Remove multi-line comments (/* ... */) but preserve /*! ... */ (license comments)
         $minified = preg_replace('/\/\*(?!\!)[^*]*\*+(?:[^*\/][^*]*\*+)*\//s', '', $minified);
-        
-        // Step 3: Remove whitespace around operators and punctuation (safer approach)
-        // Remove spaces around operators, but preserve in strings
         $minified = preg_replace('/\s*([=+\-*\/%<>!&|?:;,])\s*/', '$1', $minified);
-        
-        // Step 4: Remove whitespace around braces and brackets
         $minified = preg_replace('/\s*([{}()\[\]])\s*/', '$1', $minified);
-        
-        // Step 5: Remove whitespace after keywords (but keep one space)
         $minified = preg_replace('/\b(if|else|for|while|function|return|var|let|const|async|await|try|catch|finally|throw|new|typeof|instanceof|in|of)\s+/', '$1 ', $minified);
-        
-        // Step 6: Remove trailing semicolons before closing braces (optional semicolons)
         $minified = preg_replace('/;\s*}/', '}', $minified);
-        
-        // Step 7: Collapse multiple spaces to single space (but preserve newlines in strings)
         $minified = preg_replace('/[ \t]+/', ' ', $minified);
-        
-        // Step 8: Remove newlines and carriage returns (but preserve in strings)
         $minified = preg_replace('/[\r\n]+/', '', $minified);
-        
-        // Step 9: Remove whitespace at start and end
         $minified = trim($minified);
 
         return $minified;
