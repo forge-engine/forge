@@ -82,8 +82,12 @@
 				rec.visible = entry.isIntersecting;
 
 				if (rec.visible) {
-					if (!rec.timer) schedulePoll(root);
+					// Element became visible - start polling if not already polling
+					if (!rec.timer) {
+						schedulePoll(root);
+					}
 				} else {
+					// Element became invisible - stop polling immediately
 					if (rec.timer) {
 						clearTimeout(rec.timer);
 						rec.timer = null;
@@ -663,6 +667,11 @@
 
 		const wait = jitter(rec.everyMs);
 		const timerId = setTimeout(() => {
+			// Check if timer was cleared (component removed or visibility changed)
+			if (rec.timer !== timerId) {
+				return;
+			}
+			
 			if (!document.documentElement.contains(root)) {
 				try {
 					if (io) io.unobserve(root);
@@ -672,24 +681,28 @@
 				cleanupComponent(id);
 				return;
 			}
+			
+			// Double-check visibility before triggering poll
 			if (document.hidden || !rec.visible) {
 				rec.timer = null;
-				schedulePoll(root);
 				return;
 			}
+			
 			const pollAction = rec.action || null;
 			const parsed = pollAction ? parseAction(pollAction) : { method: null, args: [] };
 			trigger(root, parsed.method, parsed.args);
-			rec.timer = null;
-			schedulePoll(root);
+			
+			// Only reschedule if still visible and timer hasn't been cleared
+			if (rec.timer === timerId && rec.visible) {
+				rec.timer = null;
+				schedulePoll(root);
+			}
 		}, wait);
 		rec.timer = timerId;
 		
 		registerCleanup(id, () => {
-			if (timerId) {
+			if (timerId && rec.timer === timerId) {
 				clearTimeout(timerId);
-			}
-			if (rec.timer === timerId) {
 				rec.timer = null;
 			}
 		});
@@ -846,11 +859,19 @@
 		if (match) {
 			const expr = el.getAttribute(match);
 			if (expr) {
-				const escapedName = match.replace(/:/g, '\\:');
-				const directiveEl = e.target.closest(`[${escapedName}]`);
-				if (directiveEl) {
-					handleDirective(e, match, 120);
+				e.preventDefault();
+				const parsed = parseAction(expr);
+				const params = collectParams(el);
+				let combinedArgs = Array.isArray(parsed.args) ? [...parsed.args] : [];
+
+				if (Object.keys(params).length > 0) {
+					const obj = {};
+					combinedArgs.forEach((v, i) => obj[i] = v);
+					Object.assign(obj, params);
+					combinedArgs = obj;
 				}
+
+				trigger(root, parsed.method, combinedArgs);
 			}
 		}
 	});
