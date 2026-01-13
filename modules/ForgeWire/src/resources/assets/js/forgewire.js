@@ -392,9 +392,30 @@
 				if (el) {
 					const isFocused = (document.activeElement === el);
 					if (isFocused) {
-						if (val !== undefined && val !== el.value && val !== dirty[key]) {
+						const sentValue = dirty[key];
+						if (val !== undefined && val !== sentValue && el.value === sentValue) {
+							const start = el.selectionStart ?? el.value.length;
+							const end = el.selectionEnd ?? el.value.length;
+							
 							el.value = val;
+
+							Promise.resolve().then(() => {
+								if (document.activeElement === el && el.setSelectionRange) {
+									try {
+										
+										const oldLength = sentValue ? sentValue.length : 0;
+										const newLength = el.value.length;
+										const lengthDiff = newLength - oldLength;
+										const newStart = Math.max(0, Math.min(start + lengthDiff, newLength));
+										const newEnd = Math.max(0, Math.min(end + lengthDiff, newLength));
+										el.setSelectionRange(newStart, newEnd);
+									} catch {
+										//
+									}
+								}
+							});
 						}
+					
 					} else {
 						if (el.type === 'checkbox') el.checked = !!val;
 						else if (el.type === 'radio') el.checked = (el.value == val);

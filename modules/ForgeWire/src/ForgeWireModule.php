@@ -15,6 +15,7 @@ use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Module\Attributes\LifecycleHook;
 use Forge\Core\Module\LifecycleHookName;
 use Forge\CLI\Traits\OutputHelper;
+use Forge\Core\Config\Config;
 use Forge\Core\Http\Request;
 use Forge\Core\Http\Response;
 use Forge\Traits\InjectsAssets;
@@ -52,7 +53,12 @@ final class ForgeWireModule
     private function registerWireAssets(): void
     {
         $css = '<style>[fw\:id] [fw\:loading] { display: none; } [fw\:id][fw\:loading] [fw\:loading], [fw\:id].fw-loading [fw\:loading] { display: block !important; }</style>';
-        $assetHtml = '<script src="/assets/modules/forge-wire/js/forgewire.js" async></script>';
+        
+        $config = Container::getInstance()->make(Config::class);
+        $useMinified = $config->get('app.forgewire.use_minified', false);
+        $jsFile = $useMinified ? 'forgewire.min.js' : 'forgewire.js';
+        $assetHtml = '<script src="/assets/modules/forge-wire/js/' . $jsFile . '" async></script>';
+        
         $this->registerAsset(assetHtml: $css, beforeTag: '</head>');
         $this->registerAsset(assetHtml: $assetHtml, beforeTag: '</body>');
     }

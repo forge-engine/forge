@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'name' => 'Forty Two Cleaning',
+    'name' => 'Forge Kernel',
     'cors' => [
         'allowed_origins' => env('CORS_ALLOWED_ORIGINS', ['*']),
         'allowed_methods' => env('CORS_ALLOWED_METHODS', ['GET, POST, PUT, DELETE, OPTIONS']),
@@ -11,5 +11,8 @@ return [
         'driver' => env("LOG_DRIVER", "syslog"),
         'path' => BASE_PATH . "/storage/logs/forge.log"
     ],
-    'env' => env('APP_ENV', 'development')
+    'env' => env('APP_ENV', 'development'),
+    'forgewire' => [
+        'use_minified' => env('FORGEWIRE_MINIFIED', false),
+    ],
 ];
