@@ -16,6 +16,6 @@
 [submodule "forge-starter"]
 	path = forge-starter
 	url = git@github.com:forge-engine/forge-starter.git
-[submodule "vs-code-extension"]
+[submodule "forge-vscode-extension"]
 	path = forge-vscode-extension
 	url = git@github.com:forge-engine/vs-code-extension.git
