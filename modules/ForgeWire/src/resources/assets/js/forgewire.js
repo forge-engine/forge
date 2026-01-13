@@ -74,6 +74,10 @@
 				if (!id) return;
 				const rec = pollers.get(id);
 				if (!rec) return;
+				
+				if (rec.el !== root) {
+					rec.el = root;
+				}
 
 				rec.visible = entry.isIntersecting;
 
@@ -141,7 +145,6 @@
 
 	function collectParams(el) {
 		const params = {};
-		// Use cached attributes - called on every action click
 		for (const name of getCachedAttributes(el)) {
 			if (name.startsWith('fw:param-')) {
 				const key = name.slice('fw:param-'.length);
@@ -210,7 +213,6 @@
 	// MODEL BINDING
 	// ============================================================================
 	function getModelBinding(el) {
-		// Use cached attributes - this is called in loops (collectDirty, input events)
 		for (const name of getCachedAttributes(el)) {
 			if (name === 'fw:model') return { key: el.getAttribute(name), type: 'immediate', debounce: 0 };
 			if (name === 'fw:model.lazy') return { key: el.getAttribute(name), type: 'lazy', debounce: null };
@@ -332,7 +334,6 @@
 		const newRoot = doc.querySelector(`[fw\\:id="${id}"]`) || doc.body.firstElementChild;
 
 		if (newRoot && newRoot.getAttribute('fw:id') === id) {
-			// Clean up old root's resources before replacing
 			cleanupComponent(id);
 			root.replaceWith(newRoot);
 			const updatedRoot = document.querySelector(`[fw\\:id="${id}"]`);
@@ -341,7 +342,6 @@
 				updatedRoot.__fw_checksum = checksum || null;
 				updatedRoot.setAttribute('fw:checksum', checksum || '');
 				root = updatedRoot;
-				// New element from replaceWith - cache will be empty on first access, no need to invalidate
 			}
 		} else {
 			const domTargets = root.querySelectorAll('[fw\\:target]');
@@ -368,15 +368,12 @@
 				root.innerHTML = html;
 				root.__fw_checksum = checksum || null;
 				root.setAttribute('fw:checksum', checksum || '');
-				// innerHTML changed - invalidate cache for root and all children
 				invalidateElementCache(root);
 				root.querySelectorAll('*').forEach(child => invalidateElementCache(child));
 			}
 		}
 
-		// Sync server state back to ALL model-bound elements
 		if (state) {
-			// Build key->element map once (O(n)) instead of calling findModelByKey for each key (O(n*m))
 			const keyToElement = new Map();
 			const inputs = root.querySelectorAll('input, textarea, select');
 			for (const el of inputs) {
@@ -386,13 +383,11 @@
 				}
 			}
 			
-			// Now update each state key using the map (O(m))
 			Object.entries(state).forEach(([key, val]) => {
 				const el = keyToElement.get(key);
 				if (el) {
 					const isFocused = (document.activeElement === el);
 					if (isFocused) {
-						// Only update focused element if server says it's DIFFERENT from what was sent OR what it is now
 						if (val !== undefined && val !== el.value && val !== dirty[key]) {
 							el.value = val;
 						}
@@ -507,7 +502,6 @@
 
 		setupPolling(root);
 
-		// Process updates for affected components (shared state changes)
 		if (out.updates && Array.isArray(out.updates)) {
 			out.updates.forEach(update => {
 				const affectedRoot = document.querySelector(`[fw\\:id="${update.id}"]`);
@@ -593,25 +587,34 @@
 		if (prev) {
 			if (prev.timer) clearTimeout(prev.timer);
 			try {
-				if (io && prev.el) io.unobserve(prev.el);
+				if (io && prev.el && prev.el !== root) {
+					io.unobserve(prev.el);
+				}
 			} catch {
 			}
-			pollers.delete(id);
 		}
-		// Clean up any registered cleanup functions for this component (timeouts, observers, etc.)
-		cleanupComponent(id);
+
 
 		const target = findPollTarget(root);
-		if (!target) return;
+		if (!target) {
+			if (prev) {
+				pollers.delete(id);
+				cleanupComponent(id);
+			}
+			return;
+		}
 
 		const every = target.everyMs | 0;
 		const pollAction = target.action || null;
-		pollers.set(id, { el: root, timer: null, everyMs: every, visible: false, action: pollAction });
+		
+		const wasVisible = prev ? prev.visible : false;
+		pollers.set(id, { el: root, timer: null, everyMs: every, visible: wasVisible, action: pollAction });
 
 		const obs = ensureObserver();
-		obs.observe(root);
+		if (!prev || prev.el !== root) {
+			obs.observe(root);
+		}
 		
-		// Register cleanup for IntersectionObserver
 		registerCleanup(id, () => {
 			try {
 				if (io && root) io.unobserve(root);
@@ -621,16 +624,23 @@
 
 		requestAnimationFrame(() => {
 			const rec = pollers.get(id);
-			if (!rec) return;
+			if (!rec || rec.el !== root) return;
+			
 			const inDom = document.documentElement.contains(root);
+			if (!inDom) {
+				rec.visible = false;
+				return;
+			}
+			
 			const rect = root.getBoundingClientRect();
-			const onScreen = inDom && rect.width > 0 && rect.height > 0 &&
+			const onScreen = rect.width > 0 && rect.height > 0 &&
 				rect.bottom >= 0 && rect.right >= 0 &&
 				rect.top <= (window.innerHeight || 0) &&
 				rect.left <= (window.innerWidth || 0);
-			if (onScreen) {
-				rec.visible = true;
-				if (!rec.timer) schedulePoll(root);
+			
+			rec.visible = onScreen;
+			if (onScreen && !rec.timer) {
+				schedulePoll(root);
 			}
 		});
 	}
@@ -675,7 +685,6 @@
 		}, wait);
 		rec.timer = timerId;
 		
-		// Register cleanup for polling timer
 		registerCleanup(id, () => {
 			if (timerId) {
 				clearTimeout(timerId);
@@ -769,7 +778,6 @@
 			}, wait);
 			el.setAttribute('data-fw-timer-id', String(id));
 			
-			// Register cleanup for debounce timer
 			if (componentId) {
 				registerCleanup(componentId, () => {
 					if (Number(el.getAttribute('data-fw-timer-id')) === id) {
@@ -868,7 +876,6 @@
 				clearTimeout(pendingRedirectTimeout);
 				pendingRedirectTimeout = null;
 			}
-			// Clean up all component resources on page unload
 			cleanupRegistry.forEach((_, id) => cleanupComponent(id));
 		});
 		
@@ -877,7 +884,6 @@
 				clearTimeout(pendingRedirectTimeout);
 				pendingRedirectTimeout = null;
 			}
-			// Clean up all component resources on page hide
 			cleanupRegistry.forEach((_, id) => cleanupComponent(id));
 		});
 	} else {
