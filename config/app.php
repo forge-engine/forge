@@ -13,6 +13,6 @@ return [
     ],
     'env' => env('APP_ENV', 'development'),
     'forgewire' => [
-        'use_minified' => env('FORGEWIRE_MINIFIED', false),
+        'use_minified' => env('FORGEWIRE_MINIFIED', true),
     ],
 ];

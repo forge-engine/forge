@@ -53,12 +53,12 @@ final class ForgeWireModule
     private function registerWireAssets(): void
     {
         $css = '<style>[fw\:id] [fw\:loading] { display: none; } [fw\:id][fw\:loading] [fw\:loading], [fw\:id].fw-loading [fw\:loading] { display: block !important; }</style>';
-        
+
         $config = Container::getInstance()->make(Config::class);
-        $useMinified = $config->get('app.forgewire.use_minified', false);
+        $useMinified = $config->get('app.forgewire.use_minified', true);
         $jsFile = $useMinified ? 'forgewire.min.js' : 'forgewire.js';
         $assetHtml = '<script src="/assets/modules/forge-wire/js/' . $jsFile . '" async></script>';
-        
+
         $this->registerAsset(assetHtml: $css, beforeTag: '</head>');
         $this->registerAsset(assetHtml: $assetHtml, beforeTag: '</body>');
     }

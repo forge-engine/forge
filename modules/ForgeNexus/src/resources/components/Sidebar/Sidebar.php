@@ -2,7 +2,7 @@
 $tempMenu = [
     [
         'isActive' => true,
-        'target' => '#',
+        'target' => 'nexus/dashboard',
         'label' => 'Dashboard',
         'icon' => 'fa-gauge-high'
     ],

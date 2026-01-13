@@ -6,14 +6,12 @@ namespace App\Controllers;
 
 use App\Modules\ForgeAuth\Services\ForgeAuthService;
 use App\Modules\ForgeMultiTenant\Attributes\TenantScope;
-use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Http\Attributes\Middleware;
 use Forge\Core\Http\Response;
 use Forge\Core\Routing\Route;
 use Forge\Traits\ControllerHelper;
 use Forge\Traits\SecurityHelper;
 
-#[Service]
 #[TenantScope("tenant")]
 #[Middleware("web")]
 final class DashboardController
