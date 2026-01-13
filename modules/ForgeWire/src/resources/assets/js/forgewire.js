@@ -76,8 +76,8 @@
 	}
 
 	function findModelByKey(root, key) {
-		const nodes = root.querySelectorAll('*');
-		for (const n of nodes) {
+		const inputs = root.querySelectorAll('input, textarea, select');
+		for (const n of inputs) {
 			const b = getModelBinding(n);
 			if (b && b.key === key) return n;
 		}
@@ -173,21 +173,22 @@
 
 	function collectDirty(root) {
 		const dirty = {};
-		root.querySelectorAll('*').forEach(node => {
+		const inputs = root.querySelectorAll('input, textarea, select');
+		for (const node of inputs) {
 			const bind = getModelBinding(node);
-			if (!bind) return;
+			if (!bind) continue;
 
 			let value;
 			if (node.type === 'checkbox') {
 				value = !!node.checked;
 			} else if (node.type === 'radio') {
-				if (!node.checked) return;
+				if (!node.checked) continue;
 				value = node.value;
 			} else {
 				value = node.value;
 			}
 			dirty[bind.key] = value;
-		});
+		}
 		return dirty;
 	}
 
@@ -288,8 +289,19 @@
 
 		// Sync server state back to ALL model-bound elements
 		if (state) {
+			// Build key->element map once (O(n)) instead of calling findModelByKey for each key (O(n*m))
+			const keyToElement = new Map();
+			const inputs = root.querySelectorAll('input, textarea, select');
+			for (const el of inputs) {
+				const bind = getModelBinding(el);
+				if (bind && bind.key) {
+					keyToElement.set(bind.key, el);
+				}
+			}
+			
+			// Now update each state key using the map (O(m))
 			Object.entries(state).forEach(([key, val]) => {
-				const el = findModelByKey(root, key);
+				const el = keyToElement.get(key);
 				if (el) {
 					const isFocused = (document.activeElement === el);
 					if (isFocused) {
