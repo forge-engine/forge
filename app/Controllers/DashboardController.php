@@ -18,23 +18,23 @@ use Forge\Traits\SecurityHelper;
 #[Middleware("web")]
 final class DashboardController
 {
-    use ControllerHelper;
-    use SecurityHelper;
+  use ControllerHelper;
+  use SecurityHelper;
 
-    public function __construct(private readonly ForgeAuthService $authService)
-    {
-        //
-    }
+  public function __construct(private readonly ForgeAuthService $authService)
+  {
+    //
+  }
 
-    #[Route("/dashboard")]
-    #[Middleware("App\Modules\ForgeAuth\Middlewares\AuthMiddleware")]
-    public function welcome(): Response
-    {
-        $data = [
-            "title" => "Welcome to Forge Framework",
-            "user" => $this->authService->user() ?? [],
-        ];
+  #[Route("/dashboard")]
+  #[Middleware("\App\Modules\ForgeAuth\Middlewares\AuthMiddleware::class")]
+  public function welcome(): Response
+  {
+    $data = [
+      "title" => "Welcome to Forge Framework",
+      "user" => $this->authService->user() ?? [],
+    ];
 
-        return $this->view(view: "pages/dashboard/index", data: $data);
-    }
+    return $this->view(view: "pages/dashboard/index", data: $data);
+  }
 }
