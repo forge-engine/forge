@@ -3,6 +3,20 @@
 	const rootSel = '[fw\\:id]';
 	const attr = (el, n) => el.getAttribute(n);
 	const closestRoot = el => el.closest(rootSel);
+	
+	const attributeCache = new WeakMap();
+	
+	function getCachedAttributes(el) {
+		if (!attributeCache.has(el)) {
+			attributeCache.set(el, Array.from(el.getAttributeNames()));
+		}
+		return attributeCache.get(el);
+	}
+	
+	function invalidateElementCache(el) {
+		attributeCache.delete(el);
+	}
+	
 	let composing = false;
 	let tabbing = false;
 	let suppressInputsUntil = 0;
@@ -47,7 +61,7 @@
 	}
 
 	function findPollTarget(root) {
-		const names = root.getAttributeNames();
+		const names = getCachedAttributes(root);
 		if (names.includes('fw:poll')) {
 			const action = root.getAttribute('fw:action');
 			return { el: root, everyMs: 2000, action: action || null };
@@ -61,7 +75,7 @@
 		const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
 		while (walker.nextNode()) {
 			const node = /** @type {Element} */(walker.currentNode);
-			const ns = node.getAttributeNames();
+			const ns = getCachedAttributes(node);
 			if (ns.includes('fw:poll')) {
 				const action = node.getAttribute('fw:action');
 				return { el: node, everyMs: 2000, action: action || null };
@@ -86,7 +100,8 @@
 
 	function collectParams(el) {
 		const params = {};
-		for (const name of el.getAttributeNames()) {
+		// Use cached attributes - called on every action click
+		for (const name of getCachedAttributes(el)) {
 			if (name.startsWith('fw:param-')) {
 				const key = name.slice('fw:param-'.length);
 				params[key] = el.getAttribute(name);
@@ -148,7 +163,8 @@
 	}
 
 	function getModelBinding(el) {
-		for (const name of el.getAttributeNames()) {
+		// Use cached attributes - this is called in loops (collectDirty, input events)
+		for (const name of getCachedAttributes(el)) {
 			if (name === 'fw:model') return { key: el.getAttribute(name), type: 'immediate', debounce: 0 };
 			if (name === 'fw:model.lazy') return { key: el.getAttribute(name), type: 'lazy', debounce: null };
 			if (name === 'fw:model.defer') return { key: el.getAttribute(name), type: 'defer', debounce: null };
@@ -261,6 +277,7 @@
 				updatedRoot.__fw_checksum = checksum || null;
 				updatedRoot.setAttribute('fw:checksum', checksum || '');
 				root = updatedRoot;
+				// New element from replaceWith - cache will be empty on first access, no need to invalidate
 			}
 		} else {
 			const domTargets = root.querySelectorAll('[fw\\:target]');
@@ -276,6 +293,9 @@
 					for (const attr of docTargets[i].attributes) {
 						el.setAttribute(attr.name, attr.value);
 					}
+					// Attributes changed - invalidate cache for this element and its children
+					invalidateElementCache(el);
+					el.querySelectorAll('*').forEach(child => invalidateElementCache(child));
 				});
 
 				root.__fw_checksum = checksum || null;
@@ -284,6 +304,9 @@
 				root.innerHTML = html;
 				root.__fw_checksum = checksum || null;
 				root.setAttribute('fw:checksum', checksum || '');
+				// innerHTML changed - invalidate cache for root and all children
+				invalidateElementCache(root);
+				root.querySelectorAll('*').forEach(child => invalidateElementCache(child));
 			}
 		}
 
@@ -686,7 +709,7 @@
 		if (!root) return;
 
 		const key = e.key.toLowerCase();
-		const attrs = el.getAttributeNames();
+		const attrs = getCachedAttributes(el);
 
 		const keyMap = {
 			'enter': 'enter',
