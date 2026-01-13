@@ -12,7 +12,7 @@ use Forge\Core\Routing\Route;
 use Forge\Traits\ControllerHelper;
 use Forge\Traits\SecurityHelper;
 
-#[TenantScope("tenant")]
+#[TenantScope("central")]
 #[Middleware("web")]
 final class DashboardController
 {
@@ -25,7 +25,7 @@ final class DashboardController
   }
 
   #[Route("/dashboard")]
-  #[Middleware("\App\Modules\ForgeAuth\Middlewares\AuthMiddleware::class")]
+  #[Middleware("\App\Modules\ForgeAuth\Middlewares\AuthMiddleware")]
   public function welcome(): Response
   {
     $data = [

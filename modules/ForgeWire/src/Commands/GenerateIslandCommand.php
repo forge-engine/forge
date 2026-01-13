@@ -84,9 +84,46 @@ final class GenerateIslandCommand extends Command
       '{{ islandName }}' => $normalizedName,
     ];
 
+    $this->showForgeWireInfo();
+
     $stubPath = $this->islandStubPath();
     $this->generateFromStubPath($stubPath, $islandFile, $tokens);
+
+    if ($this->kind === 'page') {
+      $createController = $this->askCreateReactiveController();
+      if ($createController) {
+        $this->generateReactiveController();
+      }
+    }
+
     return 0;
+  }
+
+  private function showForgeWireInfo(): void
+  {
+    $messages = [
+      'Making Your Controller Reactive',
+      '  • Add #[Reactive] attribute to your controller class',
+      '  • The island view alone is not reactive without this',
+      '',
+      'Exposing Actions to the Browser',
+      '  • Add #[Action] attribute above methods you want accessible',
+      '  • These methods must be public',
+      '  • Use ReactiveControllerHelper trait for flash(), redirect(), dispatch()',
+      '',
+      'Two-Way Data Binding',
+      '  • Add #[State] attribute to properties you want to bind',
+      '  • Properties must be public',
+      '  • Changes sync automatically between browser and server',
+      '',
+      'Understanding Visibility',
+      '  • Public = accessible by other classes (not automatically exposed)',
+      '  • Private = accessible only within the current class',
+      '  • You still need to pass data to views explicitly',
+      '  • Only #[Action] methods are exposed to the browser',
+    ];
+
+    $this->showInfoBox('ForgeWire Island Setup Guide', $messages);
   }
 
   private function islandPath(): string
@@ -142,6 +179,91 @@ final class GenerateIslandCommand extends Command
   private function islandStubPath(): string
   {
     return BASE_PATH . '/modules/ForgeWire/src/resources/stubs/island.stub';
+  }
+
+  private function askCreateReactiveController(): bool
+  {
+    $this->prompt("\033[1;36mCreate reactive controller? (y/n) [No]:\033[0m ");
+    $input = trim(fgets(STDIN));
+
+    if ($input === '') {
+      return false;
+    }
+
+    $normalized = strtolower($input);
+    return in_array($normalized, ['y', 'yes'], true);
+  }
+
+  private function generateReactiveController(): void
+  {
+    $parsed = $this->parseFolderFilenameForClass($this->name);
+    $folder = $parsed['folder'];
+    $className = $parsed['filename'];
+    $pascalClassName = $this->toPascalCase($className) . 'Controller';
+
+    if ($this->type === 'app') {
+      $baseDir = BASE_PATH . '/app/Controllers';
+      $namespace = 'App\\Controllers';
+    } else {
+      $baseDir = BASE_PATH . "/modules/{$this->module}/src/Controllers";
+      $namespace = "App\\Modules\\{$this->module}\\Controllers";
+    }
+
+    if ($this->path !== '') {
+      $normalizedPath = $this->normalizePath($this->path);
+      $baseDir .= '/' . $normalizedPath;
+      $namespace .= '\\' . str_replace('/', '\\', $normalizedPath);
+    }
+
+    if ($folder !== '') {
+      $baseDir .= '/' . $folder;
+      $namespace .= '\\' . str_replace('/', '\\', $folder);
+    }
+
+    $controllerFile = $baseDir . '/' . $pascalClassName . '.php';
+
+    $dir = dirname($controllerFile);
+    if (!is_dir($dir)) {
+      mkdir($dir, 0755, true);
+    }
+
+    $routePath = $this->buildRoutePath();
+    $viewPath = $this->buildViewPath();
+
+    $tokens = [
+      '{{ controllerName }}' => $pascalClassName,
+      '{{ controllerNamespace }}' => $namespace,
+      '{{ routePath }}' => $routePath,
+      '{{ viewPath }}' => $viewPath,
+    ];
+
+    $stubPath = $this->reactiveControllerStubPath();
+    $this->generateFromStubPath($stubPath, $controllerFile, $tokens);
+  }
+
+  private function buildRoutePath(): string
+  {
+    $parts = explode('/', $this->name);
+    $normalizedParts = array_map(fn($part) => $this->slugify($part), $parts);
+    return implode('/', $normalizedParts);
+  }
+
+  private function buildViewPath(): string
+  {
+    $parts = explode('/', $this->name);
+    $normalizedParts = array_map(fn($part) => $this->slugify($part), $parts);
+    $viewPath = implode('/', $normalizedParts);
+
+    if ($this->kind === 'page') {
+      return "pages/{$viewPath}";
+    }
+
+    return $viewPath;
+  }
+
+  private function reactiveControllerStubPath(): string
+  {
+    return BASE_PATH . '/modules/ForgeWire/src/resources/stubs/reactive-controller.stub';
   }
 
   private function generateFromStubPath(string $stubPath, string $targetPath, array $tokens, bool $force = false): void

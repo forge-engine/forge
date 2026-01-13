@@ -1,0 +1,46 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {{ controllerNamespace }};
+
+use App\Modules\ForgeWire\Attributes\Action;
+use App\Modules\ForgeWire\Attributes\Reactive;
+use App\Modules\ForgeWire\Attributes\State;
+use App\Modules\ForgeWire\Traits\ReactiveControllerHelper;
+use Forge\Core\Http\Attributes\Middleware;
+use Forge\Traits\ControllerHelper;
+use Forge\Core\Routing\Route;
+use Forge\Core\Http\Request;
+use Forge\Core\Http\Response;
+
+#[Middleware("web")]
+#[Reactive]
+final class {{ controllerName }}
+{
+    use ControllerHelper;
+    use ReactiveControllerHelper;
+
+    #[State]
+    public int $counter = 0;
+
+    #[Route("/{{ routePath }}")]
+    public function index(Request $request): Response
+    {
+        return $this->view("{{ viewPath }}", [
+            'counter' => $this->counter,
+        ]);
+    }
+
+    #[Action]
+    public function increment(): void
+    {
+        $this->counter++;
+    }
+
+    #[Action]
+    public function decrement(): void
+    {
+        $this->counter--;
+    }
+}
