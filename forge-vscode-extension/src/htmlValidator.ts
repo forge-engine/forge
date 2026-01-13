@@ -34,6 +34,7 @@ const FORGEWIRE_DIRECTIVE_PATTERNS = [
     /^fw:keydown\.(enter|escape|backspace|tab|up|down|left|right)$/,
     /^fw:param-[a-zA-Z0-9_-]+$/,
     /^fw:event:[a-zA-Z0-9_-]+$/,
+    /^fw:shared$/,
 ];
 
 export class ForgeWireHtmlValidator {

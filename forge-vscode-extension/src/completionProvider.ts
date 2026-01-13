@@ -41,8 +41,16 @@ export class ForgeWireCompletionProvider implements vscode.CompletionItemProvide
   }
 
   private isInStateDirective(text: string): boolean {
-    return /fw:model(\.(lazy|defer|debounce(\.\d+(ms|s))?))?\s*=\s*["']?$/.test(text) ||
-           /fw:model(\.(lazy|defer|debounce(\.\d+(ms|s))?))?\s*=\s*["'][^"']*$/.test(text) ||
+    return /fw:model\.debounce\.\d+(ms|s)\s*=\s*["']?$/.test(text) ||
+           /fw:model\.debounce\.\d+(ms|s)\s*=\s*["'][^"']*$/.test(text) ||
+           /fw:model\.debounce\s*=\s*["']?$/.test(text) ||
+           /fw:model\.debounce\s*=\s*["'][^"']*$/.test(text) ||
+           /fw:model\.defer\s*=\s*["']?$/.test(text) ||
+           /fw:model\.defer\s*=\s*["'][^"']*$/.test(text) ||
+           /fw:model\.lazy\s*=\s*["']?$/.test(text) ||
+           /fw:model\.lazy\s*=\s*["'][^"']*$/.test(text) ||
+           /fw:model\s*=\s*["']?$/.test(text) ||
+           /fw:model\s*=\s*["'][^"']*$/.test(text) ||
            /fw:validation-error(\.all)?\s*=\s*["']?$/.test(text) ||
            /fw:validation-error(\.all)?\s*=\s*["'][^"']*$/.test(text);
   }

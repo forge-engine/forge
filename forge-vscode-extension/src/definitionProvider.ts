@@ -361,15 +361,26 @@ export class ForgeDefinitionProvider implements vscode.DefinitionProvider {
       }
     }
 
-    const modelRegex = /fw:model(\.(lazy|defer|debounce(\.\d+(ms|s))?))?\s*=\s*["']([^"']+)["']/;
-    const modelMatch = lineText.match(modelRegex);
-    if (modelMatch && modelMatch[5]) {
-      const matchStart = lineText.indexOf(modelMatch[0]);
-      const nameStart = modelMatch[0].indexOf(modelMatch[5]);
-      const nameEnd = nameStart + modelMatch[5].length;
+    // Match all fw:model variants: fw:model, fw:model.lazy, fw:model.defer, fw:model.debounce, fw:model.debounce.300ms
+    const modelPatterns = [
+      /fw:model\.debounce\.\d+(ms|s)\s*=\s*["']([^"']+)["']/,
+      /fw:model\.debounce\s*=\s*["']([^"']+)["']/,
+      /fw:model\.defer\s*=\s*["']([^"']+)["']/,
+      /fw:model\.lazy\s*=\s*["']([^"']+)["']/,
+      /fw:model\s*=\s*["']([^"']+)["']/,
+    ];
 
-      if (cursorPos >= matchStart + nameStart && cursorPos <= matchStart + nameEnd) {
-        return { type: 'state', name: modelMatch[5] };
+    for (const regex of modelPatterns) {
+      const match = lineText.match(regex);
+      if (match) {
+        const propertyName = match[match.length - 1];
+        const matchStart = lineText.indexOf(match[0]);
+        const nameStart = match[0].indexOf(propertyName);
+        const nameEnd = nameStart + propertyName.length;
+
+        if (cursorPos >= matchStart + nameStart && cursorPos <= matchStart + nameEnd) {
+          return { type: 'state', name: propertyName };
+        }
       }
     }
 
