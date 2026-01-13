@@ -17,6 +17,29 @@
 		attributeCache.delete(el);
 	}
 	
+	const cleanupRegistry = new Map();
+	
+	function registerCleanup(id, cleanupFn) {
+		if (!cleanupRegistry.has(id)) {
+			cleanupRegistry.set(id, new Set());
+		}
+		cleanupRegistry.get(id).add(cleanupFn);
+	}
+	
+	function cleanupComponent(id) {
+		const cleanups = cleanupRegistry.get(id);
+		if (cleanups) {
+			cleanups.forEach(fn => {
+				try {
+					fn();
+				} catch (e) {
+					console.warn('ForgeWire cleanup error:', e);
+				}
+			});
+			cleanupRegistry.delete(id);
+		}
+	}
+	
 	let composing = false;
 	let tabbing = false;
 	let suppressInputsUntil = 0;
@@ -270,6 +293,8 @@
 		const newRoot = doc.querySelector(`[fw\\:id="${id}"]`) || doc.body.firstElementChild;
 
 		if (newRoot && newRoot.getAttribute('fw:id') === id) {
+			// Clean up old root's resources before replacing
+			cleanupComponent(id);
 			root.replaceWith(newRoot);
 			const updatedRoot = document.querySelector(`[fw\\:id="${id}"]`);
 
@@ -528,6 +553,8 @@
 			}
 			pollers.delete(id);
 		}
+		// Clean up any registered cleanup functions for this component (timeouts, observers, etc.)
+		cleanupComponent(id);
 
 		const target = findPollTarget(root);
 		if (!target) return;
@@ -538,6 +565,14 @@
 
 		const obs = ensureObserver();
 		obs.observe(root);
+		
+		// Register cleanup for IntersectionObserver
+		registerCleanup(id, () => {
+			try {
+				if (io && root) io.unobserve(root);
+			} catch {
+			}
+		});
 
 		requestAnimationFrame(() => {
 			const rec = pollers.get(id);
@@ -567,17 +602,19 @@
 			} catch {
 			}
 			pollers.delete(id);
+			cleanupComponent(id);
 			return;
 		}
 
 		const wait = jitter(rec.everyMs);
-		rec.timer = setTimeout(() => {
+		const timerId = setTimeout(() => {
 			if (!document.documentElement.contains(root)) {
 				try {
 					if (io) io.unobserve(root);
 				} catch {
 				}
 				pollers.delete(id);
+				cleanupComponent(id);
 				return;
 			}
 			if (document.hidden || !rec.visible) {
@@ -591,6 +628,17 @@
 			rec.timer = null;
 			schedulePoll(root);
 		}, wait);
+		rec.timer = timerId;
+		
+		// Register cleanup for polling timer
+		registerCleanup(id, () => {
+			if (timerId) {
+				clearTimeout(timerId);
+			}
+			if (rec.timer === timerId) {
+				rec.timer = null;
+			}
+		});
 	}
 
 	// -- events ----------------------------------------------------------------
@@ -664,13 +712,25 @@
 
 		if (bind.type === 'debounce') {
 			const wait = bind.debounce || DEFAULT_DEBOUNCE;
+			const componentId = attr(root, 'fw:id');
+			const prev = Number(el.getAttribute('data-fw-timer-id'));
+			if (prev) clearTimeout(prev);
+			
 			const id = setTimeout(() => {
 				if (shouldSuppress(root)) return;
 				trigger(root, 'input');
 			}, wait);
-			const prev = Number(el.getAttribute('data-fw-timer-id'));
-			if (prev) clearTimeout(prev);
 			el.setAttribute('data-fw-timer-id', String(id));
+			
+			// Register cleanup for debounce timer
+			if (componentId) {
+				registerCleanup(componentId, () => {
+					if (Number(el.getAttribute('data-fw-timer-id')) === id) {
+						clearTimeout(id);
+						el.removeAttribute('data-fw-timer-id');
+					}
+				});
+			}
 			return;
 		}
 
@@ -758,6 +818,8 @@
 				clearTimeout(pendingRedirectTimeout);
 				pendingRedirectTimeout = null;
 			}
+			// Clean up all component resources on page unload
+			cleanupRegistry.forEach((_, id) => cleanupComponent(id));
 		});
 		
 		window.addEventListener('pagehide', () => {
@@ -765,6 +827,8 @@
 				clearTimeout(pendingRedirectTimeout);
 				pendingRedirectTimeout = null;
 			}
+			// Clean up all component resources on page hide
+			cleanupRegistry.forEach((_, id) => cleanupComponent(id));
 		});
 	} else {
 		initializePolling();
