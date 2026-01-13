@@ -696,39 +696,59 @@
 	}
 
 	// ============================================================================
-	// EVENT HANDLERS
+	// DIRECTIVE REGISTRY (Easy way to add new event-based directives)
 	// ============================================================================
-
-	document.addEventListener('click', (e) => {
-		const el = e.target.closest('[fw\\:click]');
-		if (!el) return;
+	
+	/**
+	 * Helper to handle common directive pattern: find element, parse action, collect params, trigger
+	 * @param {Event} e - The DOM event
+	 * @param {string} directiveName - The directive name (e.g., 'fw:click')
+	 * @param {number} suppressMs - Milliseconds to suppress inputs after trigger (default: 120)
+	 * @param {Function} beforeTrigger - Optional callback before triggering (receives el, root, e)
+	 * @returns {boolean} - Returns true if directive was handled
+	 */
+	function handleDirective(e, directiveName, suppressMs = 120, beforeTrigger = null) {
+		const escapedName = directiveName.replace(/:/g, '\\:');
+		const el = e.target.closest(`[${escapedName}]`);
+		if (!el) return false;
+		
 		const root = closestRoot(el);
-		if (!root) return;
+		if (!root) return false;
+		
 		e.preventDefault();
-
-		setSuppressUntil(root, 120);
-
-		const parsed = parseAction(attr(el, 'fw:click'));
+		setSuppressUntil(root, suppressMs);
+		
+		if (beforeTrigger) {
+			beforeTrigger(el, root, e);
+		}
+		
+		const parsed = parseAction(attr(el, directiveName));
 		const params = collectParams(el);
 		let combinedArgs = Array.isArray(parsed.args) ? [...parsed.args] : [];
-
+		
 		if (Object.keys(params).length > 0) {
 			const obj = {};
 			combinedArgs.forEach((v, i) => obj[i] = v);
 			Object.assign(obj, params);
 			combinedArgs = obj;
 		}
-
+		
 		trigger(root, parsed.method, combinedArgs);
+		return true;
+	}
+
+	// ============================================================================
+	// EVENT HANDLERS
+	// ============================================================================
+
+	document.addEventListener('click', (e) => {
+		handleDirective(e, 'fw:click', 120);
 	});
 
 	document.addEventListener('submit', (e) => {
 		const form = e.target.closest('[fw\\:submit]');
 		if (!form) return;
-		const root = closestRoot(form);
-		if (!root) return;
-		e.preventDefault();
-
+		
 		const lazyInputs = form.querySelectorAll('[fw\\:model\\.lazy]');
 		lazyInputs.forEach(input => {
 			if (document.activeElement === input) {
@@ -736,21 +756,8 @@
 				input.dispatchEvent(event);
 			}
 		});
-
-		setSuppressUntil(root, 150);
-
-		const parsed = parseAction(attr(form, 'fw:submit'));
-		const params = collectParams(form);
-		let combinedArgs = Array.isArray(parsed.args) ? [...parsed.args] : [];
-
-		if (Object.keys(params).length > 0) {
-			const obj = {};
-			combinedArgs.forEach((v, i) => obj[i] = v);
-			Object.assign(obj, params);
-			combinedArgs = obj;
-		}
-
-		trigger(root, parsed.method, combinedArgs);
+		
+		handleDirective(e, 'fw:submit', 150);
 	});
 
 	document.addEventListener('input', (e) => {
@@ -839,19 +846,11 @@
 		if (match) {
 			const expr = el.getAttribute(match);
 			if (expr) {
-				e.preventDefault();
-				const parsed = parseAction(expr);
-				const params = collectParams(el);
-				let combinedArgs = Array.isArray(parsed.args) ? [...parsed.args] : [];
-
-				if (Object.keys(params).length > 0) {
-					const obj = {};
-					combinedArgs.forEach((v, i) => obj[i] = v);
-					Object.assign(obj, params);
-					combinedArgs = obj;
+				const escapedName = match.replace(/:/g, '\\:');
+				const directiveEl = e.target.closest(`[${escapedName}]`);
+				if (directiveEl) {
+					handleDirective(e, match, 120);
 				}
-
-				trigger(root, parsed.method, combinedArgs);
 			}
 		}
 	});
