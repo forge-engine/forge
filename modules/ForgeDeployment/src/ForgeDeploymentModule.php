@@ -14,7 +14,7 @@ use Forge\Core\Module\LifecycleHookName;
 use Forge\Core\DI\Attributes\Service;
 use Forge\CLI\Traits\OutputHelper;
 
-#[Module(name: 'ForgeDeployment', version: '0.2.0', description: 'Deploy applications to cloud providers with automated provisioning', order: 99)]
+#[Module(name: 'ForgeDeployment', version: '0.3.0', description: 'Deploy applications to cloud providers with automated provisioning', order: 99)]
 #[Service]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
