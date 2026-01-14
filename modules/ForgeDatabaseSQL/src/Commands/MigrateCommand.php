@@ -16,8 +16,9 @@ use Throwable;
 #[Cli(
     command: 'db:migrate',
     description: 'Run database migrations',
-    usage: 'db:migrate [--type=app|engine|module] [--module=ModuleName] [--group=group_name] [--preview]',
+    usage: 'db:migrate [--type=app|engine|module|all] [--module=ModuleName] [--group=group_name] [--preview]',
     examples: [
+        'db:migrate --type=all',
         'db:migrate --type=app',
         'db:migrate --type=module --module=Blog',
         'db:migrate --type=module --module=Blog --group=users',
@@ -30,7 +31,7 @@ final class MigrateCommand extends Command
     use StringHelper;
     use Wizard;
 
-    #[Arg(name: 'type', description: 'Migration type: app, engine, module', required: true, validate: 'app|engine|module')]
+    #[Arg(name: 'type', description: 'Migration type: app, engine, module, all', required: true, validate: 'app|engine|module|all')]
     private ?string $type = null;
     #[Arg(name: 'module', description: 'Module name if type=module', required: false)]
     private ?string $module = null;

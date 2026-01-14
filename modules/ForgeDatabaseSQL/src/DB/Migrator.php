@@ -25,7 +25,7 @@ final class Migrator
 
     private const string MIGRATIONS_TABLE = "forge_migrations";
     private const string CORE_MIGRATIONS_PATH = BASE_PATH . "/engine/Database/Migrations";
-    private const string APP_MIGRATIONS_PATH = BASE_PATH . "/app/Database/migrations";
+    private const string APP_MIGRATIONS_PATH = BASE_PATH . "/app/Database/Migrations";
     private const string MODULES_PATH = BASE_PATH . "/modules";
     private ?int $currentBatch = null;
 
@@ -88,7 +88,7 @@ final class Migrator
         // Normalize ran migrations to lowercase for case-insensitive comparison
         $ranNormalized = array_map('strtolower', $ran);
         $ranLookup = array_flip($ranNormalized);
-        
+
         $scope = $scope ?? 'all';
         $module = $module ? $this->toPascalCase($module) : null;
 
@@ -101,7 +101,7 @@ final class Migrator
         foreach ($allFiles as $path) {
             $migrationName = basename($path);
             $migrationNameNormalized = strtolower($migrationName);
-            
+
             if (isset($ranLookup[$migrationNameNormalized])) {
                 continue;
             }
@@ -176,16 +176,16 @@ final class Migrator
 
     /**
      * Discover migrations using #[Migration] attribute
-     * 
+     *
      * @return array<string> List of full file paths
      */
     private function discoverAttributeBasedMigrations(string $scope, ?string $module): array
     {
         $discoveryService = new AttributeDiscoveryService();
         $basePaths = $this->getBasePathsForMigrationDiscovery($scope, $module);
-        
+
         $classMap = $discoveryService->discover($basePaths, [MigrationAttribute::class]);
-        
+
         $files = [];
         foreach ($classMap as $className => $metadata) {
             if (class_exists($className)) {
@@ -209,7 +209,7 @@ final class Migrator
 
     /**
      * Get base paths for migration discovery based on scope
-     * 
+     *
      * @return array<string>
      */
     private function getBasePathsForMigrationDiscovery(string $scope, ?string $module): array
@@ -453,13 +453,13 @@ final class Migrator
         }
 
         $migrationName = basename($path);
-        
+
         $stmt = $this->connection->prepare(
             "SELECT COUNT(*) FROM " . self::MIGRATIONS_TABLE . " WHERE migration = ?"
         );
         $stmt->execute([$migrationName]);
         $exists = (int)$stmt->fetchColumn() > 0;
-        
+
         if ($exists) {
             return;
         }

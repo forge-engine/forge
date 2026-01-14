@@ -17,8 +17,9 @@ use Throwable;
     Cli(
         command: "db:migrate:rollback",
         description: "Rollback database migrations",
-        usage: "migrate:rollback [--type=app|engine|module] [--module=ModuleName] [--group=GroupName] [--steps=N] [--batch=N] [--preview]",
+        usage: "migrate:rollback [--type=app|engine|module|all] [--module=ModuleName] [--group=GroupName] [--steps=N] [--batch=N] [--preview]",
         examples: [
+            "migrate:rollback --type=all --steps=1",
             "migrate:rollback --type=app --steps=1",
             "migrate:rollback --type=module --module=Blog --group=Users --steps=2",
             "migrate:rollback --batch=3 --preview",
@@ -34,9 +35,9 @@ final class MigrateRollbackCommand extends Command
     #[
         Arg(
             name: "type",
-            description: "Migration type: app, engine, module",
+            description: "Migration type: app, engine, module, all",
             required: true,
-            validate: "app|engine|module",
+            validate: "app|engine|module|all",
         ),
     ]
     private ?string $type = null;
