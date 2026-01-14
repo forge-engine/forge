@@ -50,6 +50,13 @@ final class DatabaseProvisioner
   {
     $result = $this->sshService->execute('export DEBIAN_FRONTEND=noninteractive && apt-get install -y mysql-server', $outputCallback, $errorCallback);
     if (!$result['success']) {
+      if (strpos($result['error'] ?? '', 'lock') !== false || strpos($result['output'] ?? '', 'lock') !== false) {
+        if ($outputCallback !== null) {
+          $outputCallback('      Apt lock detected, waiting...');
+        }
+        $this->sshService->execute('sleep 5');
+        return $this->provisionMysql($version, $ramMb, $outputCallback, $errorCallback);
+      }
       throw new \RuntimeException('Failed to install MySQL: ' . $result['error']);
     }
 
@@ -174,6 +181,13 @@ EOF;
   {
     $result = $this->sshService->execute('apt-get install -y postgresql postgresql-contrib', $outputCallback, $errorCallback);
     if (!$result['success']) {
+      if (strpos($result['error'] ?? '', 'lock') !== false || strpos($result['output'] ?? '', 'lock') !== false) {
+        if ($outputCallback !== null) {
+          $outputCallback('      Apt lock detected, waiting...');
+        }
+        $this->sshService->execute('sleep 5');
+        return $this->provisionPostgresql($version, $ramMb, $outputCallback, $errorCallback);
+      }
       throw new \RuntimeException('Failed to install PostgreSQL: ' . $result['error']);
     }
 

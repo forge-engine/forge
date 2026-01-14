@@ -18,6 +18,9 @@ require BASE_PATH . "/engine/Core/Config/EnvParser.php";
 Autoloader::register();
 EnvParser::load(BASE_PATH . "/.env");
 
+ini_set('display_errors', '1');
+error_reporting(E_ALL);
+
 $container = Container::getInstance();
 Metrics::start('cli_resolution');
 $container = Bootstrap::initCliContainer();

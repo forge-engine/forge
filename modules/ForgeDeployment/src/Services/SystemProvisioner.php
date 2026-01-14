@@ -55,7 +55,7 @@ final class SystemProvisioner
     }
   }
 
-  private function waitForAptLock(?callable $outputCallback = null, ?callable $errorCallback = null, int $maxWait = 120): void
+  public function waitForAptLock(?callable $outputCallback = null, ?callable $errorCallback = null, int $maxWait = 120): void
   {
     $waited = 0;
     $hasShownMessage = false;

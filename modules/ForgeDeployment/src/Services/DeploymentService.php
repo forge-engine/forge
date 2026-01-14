@@ -38,7 +38,7 @@ final class DeploymentService
     return $this->sshService->connect($host, $port, $username, $privateKeyPath, $publicKeyPath, $passphrase);
   }
 
-  public function runPostDeploymentCommands(string $remotePath, array $commands): void
+  public function runPostDeploymentCommands(string $remotePath, array $commands, ?callable $outputCallback = null): void
   {
     if (empty($commands)) {
       return;
@@ -51,9 +51,10 @@ final class DeploymentService
         $fullCommand = "cd {$remotePath} && php forge.php {$command}";
       }
 
-      $result = $this->sshService->execute($fullCommand);
+      $result = $this->sshService->execute($fullCommand, $outputCallback);
       if (!$result['success']) {
-        throw new \RuntimeException("Post-deployment command failed: {$command}. Error: {$result['error']}");
+        $error = $result['error'] ?: $result['output'];
+        throw new \RuntimeException("Post-deployment command failed: {$command}. Error: {$error}");
       }
     }
   }

@@ -38,6 +38,14 @@ final class PhpProvisioner
   {
     $result = $this->sshService->execute('apt-get install -y software-properties-common', $outputCallback, $errorCallback);
     if (!$result['success']) {
+      if (strpos($result['error'] ?? '', 'lock') !== false || strpos($result['output'] ?? '', 'lock') !== false) {
+        if ($outputCallback !== null) {
+          $outputCallback('      Apt lock detected, waiting...');
+        }
+        $this->sshService->execute('sleep 5');
+        $this->installPhp($version, $outputCallback, $errorCallback);
+        return;
+      }
       throw new \RuntimeException('Failed to install software-properties-common: ' . $result['error']);
     }
 
@@ -85,7 +93,7 @@ final class PhpProvisioner
     $memoryLimit = min(256, (int) ($ramMb * 0.25));
     $maxFiles = (int) ($ramMb / 4);
 
-    $phpIni = <<<EOF
+    $baseIni = <<<EOF
 [PHP]
 memory_limit = {$memoryLimit}M
 max_execution_time = 30
@@ -103,7 +111,6 @@ opcache.fast_shutdown=1
 
 [Security]
 expose_php = Off
-disable_functions = exec,passthru,shell_exec,system,proc_open,popen,curl_exec,curl_multi_exec,parse_ini_file,show_source
 display_errors = Off
 display_startup_errors = Off
 log_errors = On
@@ -114,22 +121,25 @@ session.cookie_httponly = 1
 session.use_strict_mode = 1
 EOF;
 
-    $uploaded = $this->sshService->uploadString($phpIni, "/tmp/99-forge.ini", $outputCallback);
+    $fpmIni = $baseIni . "\ndisable_functions = exec,passthru,shell_exec,system,proc_open,popen,curl_exec,curl_multi_exec,parse_ini_file,show_source\n";
+    $cliIni = $baseIni . "\ndisable_functions = \n";
+
+    $uploaded = $this->sshService->uploadString($fpmIni, "/tmp/99-forge-fpm.ini", $outputCallback);
     if (!$uploaded) {
-      throw new \RuntimeException('Failed to upload PHP configuration file');
+      throw new \RuntimeException('Failed to upload PHP FPM configuration file');
     }
 
-    $result = $this->sshService->execute("mv /tmp/99-forge.ini /etc/php/{$version}/fpm/conf.d/99-forge.ini", $outputCallback, $errorCallback);
+    $result = $this->sshService->execute("mv /tmp/99-forge-fpm.ini /etc/php/{$version}/fpm/conf.d/99-forge.ini", $outputCallback, $errorCallback);
     if (!$result['success']) {
       throw new \RuntimeException('Failed to move PHP-FPM config: ' . $result['error']);
     }
 
-    $uploaded = $this->sshService->uploadString($phpIni, "/tmp/99-forge.ini", $outputCallback);
+    $uploaded = $this->sshService->uploadString($cliIni, "/tmp/99-forge-cli.ini", $outputCallback);
     if (!$uploaded) {
       throw new \RuntimeException('Failed to upload PHP CLI configuration file');
     }
 
-    $result = $this->sshService->execute("mv /tmp/99-forge.ini /etc/php/{$version}/cli/conf.d/99-forge.ini", $outputCallback, $errorCallback);
+    $result = $this->sshService->execute("mv /tmp/99-forge-cli.ini /etc/php/{$version}/cli/conf.d/99-forge.ini", $outputCallback, $errorCallback);
     if (!$result['success']) {
       throw new \RuntimeException('Failed to move PHP-CLI config: ' . $result['error']);
     }
@@ -177,6 +187,8 @@ EOF;
     if (!$result['success']) {
       throw new \RuntimeException("Failed to restart PHP-FPM: " . $result['error']);
     }
+
+    $this->sshService->execute("update-alternatives --set php /usr/bin/php{$version}", $outputCallback, $errorCallback);
 
     $statusResult = $this->sshService->execute("systemctl is-active php{$version}-fpm", $outputCallback, $errorCallback, 10);
     if (trim($statusResult['output'] ?? '') !== 'active') {

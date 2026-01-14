@@ -1,0 +1,18 @@
+{
+    "server_ip": "192.241.136.29",
+    "server_id": "544403685",
+    "ssh_key_path": "/Users/acidlake/.ssh/id_rsa",
+    "domain": "forge-v3.upper.do",
+    "completed_steps": [
+        "dns_configured",
+        "ssl_configured",
+        "post_deployment_completed"
+    ],
+    "current_step": "post_deployment_completed",
+    "last_updated": "2026-01-14T21:52:22+00:00",
+    "config": {
+        "php_version": "8.4",
+        "database_type": "mysql",
+        "database_version": "8.0"
+    }
+}

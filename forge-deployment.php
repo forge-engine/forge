@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 return [
   'server' => [
-    'name' => 'my-app-server',
+    'name' => 'forge-v3-app-server',
     'region' => 'nyc1',
     'size' => 's-1vcpu-1gb',
     'image' => 'ubuntu-22-04-x64',

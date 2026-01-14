@@ -153,6 +153,17 @@ final class ForgeDeploymentService
       $progress("  ⏭ Skipping site configuration (already completed)");
     }
 
+    if (!empty($deploymentConfig->postDeploymentCommands)) {
+      if ($state === null || !$state->isStepCompleted('post_deployment_completed')) {
+        $progress("  → Running post-deployment commands...");
+        $this->deploymentService->runPostDeploymentCommands($remotePath, $deploymentConfig->postDeploymentCommands, $outputCallback);
+        $progress("  ✓ Post-deployment commands completed");
+        $saveState('post_deployment_completed');
+      } else {
+        $progress("  ⏭ Skipping post-deployment commands (already completed)");
+      }
+    }
+
     return true;
   }
 }
