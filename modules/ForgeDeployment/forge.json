@@ -1,7 +1,7 @@
 {
     "$schema": "./../../engine/Core/Schema/module-schema.json",
     "name": "ForgeDeployment",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "description": "Deploy applications to cloud providers with automated provisioning",
     "type": "generic",
     "order": 99,
