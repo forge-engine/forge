@@ -1,14 +1,14 @@
 {
-  "$schema": "./../../engine/Core/Schema/module-schema.json",
-  "name": "forge-storage",
-  "version": "0.1.2",
-  "description": "Multi-driver storage system with bucket management",
-  "type": "storage",
-  "order": 40,
-  "cli": {
-    "commands": []
-  },
-  "tags": [],
-  "author": "Forge Team",
-  "license": "MIT"
+    "$schema": "./../../engine/Core/Schema/module-schema.json",
+    "name": "forge-storage",
+    "version": "0.2.0",
+    "description": "Multi-driver storage system with bucket management",
+    "type": "storage",
+    "order": 40,
+    "cli": {
+        "commands": []
+    },
+    "tags": [],
+    "author": "Forge Team",
+    "license": "MIT"
 }
