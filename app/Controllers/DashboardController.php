@@ -12,7 +12,7 @@ use Forge\Core\Routing\Route;
 use Forge\Traits\ControllerHelper;
 use Forge\Traits\SecurityHelper;
 
-#[TenantScope("central")]
+#[TenantScope("tenant")]
 #[Middleware("web")]
 final class DashboardController
 {

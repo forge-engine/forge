@@ -1,4 +1,24 @@
 <?php
+
+use App\Modules\ForgeUi\DesignTokens;
+
+$id = $id ?? 'fw-dropdown-' . uniqid();
+$placement = $placement ?? 'bottom-start';
+
+if (isset($slots['trigger']) && isset($slots['menu'])) {
+    $triggerClasses = class_merge(['fw-dropdown-trigger'], $class ?? '');
+    $menuClasses = class_merge(['fw-dropdown-menu', 'hidden', 'absolute', 'z-50', 'mt-1', 'min-w-[200px]', 'bg-white', 'rounded-md', 'shadow-lg', 'border', 'border-gray-200', 'py-1'], $class ?? '');
+    ?>
+    <div class="relative inline-block" data-dropdown-id="<?= e($id) ?>">
+        <div class="<?= $triggerClasses ?>" data-dropdown-trigger="<?= e($id) ?>">
+            <?= $slots['trigger'] ?>
+        </div>
+        <div id="fw-dropdown-<?= e($id) ?>" class="<?= $menuClasses ?>" data-dropdown-menu="<?= e($id) ?>" role="menu">
+            <?= $slots['menu'] ?>
+        </div>
+    </div>
+    <?php
+}
 ?>
 <div id="fw-dropdowns-container"></div>
 
@@ -38,7 +58,7 @@
                 menuItem.setAttribute('role', 'menuitem');
                 menuItem.setAttribute('tabindex', item.disabled ? '-1' : '0');
                 menuItem.textContent = item.label || item.text || '';
-                
+
                 if (item.icon) {
                     const icon = document.createElement('span');
                     icon.innerHTML = item.icon;
@@ -141,5 +161,30 @@
             }
         });
     }
+
+    document.querySelectorAll('[data-dropdown-trigger]').forEach(trigger => {
+        const id = trigger.getAttribute('data-dropdown-trigger');
+        const menu = document.getElementById('fw-dropdown-' + id);
+        if (!menu) return;
+
+        trigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = !menu.classList.contains('hidden');
+            if (isOpen) {
+                menu.classList.add('hidden');
+            } else {
+                menu.classList.remove('hidden');
+                const rect = trigger.getBoundingClientRect();
+                menu.style.top = (rect.bottom + 4) + 'px';
+                menu.style.left = rect.left + 'px';
+            }
+        });
+
+        document.addEventListener('click', function closeOnOutside(e) {
+            if (!trigger.contains(e.target) && !menu.contains(e.target)) {
+                menu.classList.add('hidden');
+            }
+        });
+    });
 })();
 </script>

@@ -1,57 +1,62 @@
 <?php
-    $id = $id ?? 'fw-modal';
-    $size = $size ?? 'md';
-    $closable = $closable ?? true;
-    $backdrop = $backdrop ?? true;
 
-    $sizeClasses = [
-        'sm' => 'fw-modal-content-sm',
-        'md' => 'fw-modal-content',
-        'lg' => 'fw-modal-content-lg',
-        'xl' => 'fw-modal-content-xl',
-        '2xl' => 'fw-modal-content-2xl',
-        'full' => 'fw-modal-content-full',
-    ];
+use App\Modules\ForgeUi\DesignTokens;
 
-    $sizeClass = $sizeClasses[$size] ?? $sizeClasses['md'];
+$id = $id ?? 'fw-modal';
+$size = $size ?? 'md';
+$closable = $closable ?? true;
+$backdrop = $backdrop ?? true;
+
+$modalClasses = class_merge(DesignTokens::modal($size), ['hidden'], $class ?? '');
+$contentClasses = class_merge(DesignTokens::modalContent($size), $class ?? '');
 ?>
-<div id="<?= e($id) ?>" class="fw-modal hidden" data-modal-id="<?= e($id) ?>">
+<div id="<?= e($id) ?>" class="<?= $modalClasses ?>" data-modal-id="<?= e($id) ?>">
     <?php if ($backdrop): ?>
-    <div class="fw-modal-backdrop" data-modal-close></div>
+    <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" data-modal-close></div>
     <?php endif; ?>
-    
-    <div class="fw-modal-wrapper">
-        <div class="<?= $sizeClass ?>">
+
+    <div class="relative z-50 w-full h-full flex items-center justify-center p-4">
+        <div class="<?= $contentClasses ?>">
             <?php if ($closable): ?>
-            <div class="flex justify-end p-2">
-                <button class="fw-modal-close" data-modal-close aria-label="Close">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
+                <?php if (isset($slots['closeButton'])): ?>
+                    <?= $slots['closeButton'] ?>
+                <?php else: ?>
+                    <div class="flex justify-end p-2">
+                        <button class="fw-modal-close text-gray-400 hover:text-gray-600 transition-colors" data-modal-close aria-label="Close">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                <?php endif; ?>
             <?php endif; ?>
-            
+
+            <?php if (isset($slots['icon'])): ?>
+                <div class="fw-modal-icon flex justify-center mb-4">
+                    <?= $slots['icon'] ?>
+                </div>
+            <?php endif; ?>
+
             <?php if (isset($slots['header']) || isset($slots['title'])): ?>
-            <div class="fw-modal-header">
+            <div class="fw-modal-header px-6 pt-6 pb-4">
                 <?php if (isset($slots['title'])): ?>
-                    <h3 class="fw-modal-title"><?= $slots['title'] ?></h3>
+                    <h3 class="fw-modal-title text-lg font-semibold text-gray-900"><?= $slots['title'] ?></h3>
                 <?php elseif (isset($slots['header'])): ?>
                     <?= $slots['header'] ?>
                 <?php endif; ?>
             </div>
             <?php endif; ?>
-            
-            <div class="fw-modal-body">
+
+            <div class="fw-modal-body px-6 py-4">
                 <?php if (isset($slots['default'])): ?>
                     <?= $slots['default'] ?>
                 <?php elseif (isset($slots['message'])): ?>
-                    <p class="fw-modal-message"><?= $slots['message'] ?></p>
+                    <p class="fw-modal-message text-gray-600"><?= $slots['message'] ?></p>
                 <?php endif; ?>
             </div>
-            
+
             <?php if (isset($slots['footer']) || isset($slots['actions'])): ?>
-            <div class="fw-modal-footer">
+            <div class="fw-modal-footer px-6 pb-6 pt-4 border-t border-gray-200">
                 <?php if (isset($slots['actions'])): ?>
                     <?= $slots['actions'] ?>
                 <?php elseif (isset($slots['footer'])): ?>
@@ -89,7 +94,7 @@
     function openModal() {
         modal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
-        
+
         requestAnimationFrame(() => {
             modal.style.display = '';
         });

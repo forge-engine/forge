@@ -25,10 +25,20 @@
             "integrity": "27d86c506a6785e0e635f328c44f935708c5054b8008273d276cccdb4006f2d7"
         },
         "forge-testing": {
-            "version": "0.1.0",
+            "version": "0.1.4",
             "registry": "forge-engine-modules",
-            "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-testing/0.1.0/0.1.0.zip",
-            "integrity": "e26ffe4a1b167a7bbd7613e6fefd66d0c9a65574189bb3f77357eadb4fbc3b3d"
+            "module_path": "forge-testing/0.1.4",
+            "integrity": "33d9bba8f6bf0ccc9109479a00e91d920b5e8e4ec21d612dd0d814060f5d39ad",
+            "source_type": "git",
+            "source_config": {
+                "name": "forge-engine-modules",
+                "type": "git",
+                "url": "https://github.com/forge-engine/modules",
+                "branch": "main",
+                "private": false,
+                "description": "Forge Kernel Official Modules",
+                "debug": false
+            }
         },
         "forge-wire": {
             "version": "1.0.9",

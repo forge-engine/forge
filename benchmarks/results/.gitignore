@@ -1,0 +1,8 @@
+# Ignore all benchmark result files
+*.json
+*.txt
+*.dat
+*.csv
+
+# But keep this directory
+!.gitignore

@@ -1,0 +1,11 @@
+{
+	"$schema": "./../../engine/Core/Schema/module-schema.json",
+	"name": "ForgeComponents",
+	"version": "0.1.0",
+	"description": "Component library module that composes ForgeUi primitives",
+	"type": "generic",
+	"order": 99,
+	"tags": [],
+	"author": "Your name",
+	"license: "LICENSE"
+}
