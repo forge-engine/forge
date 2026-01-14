@@ -1,0 +1,11 @@
+{
+    "$schema": "./../../engine/Core/Schema/module-schema.json",
+    "name": "ForgeDeployment",
+    "version": "0.1.0",
+    "description": "Deploy applications to cloud providers with automated provisioning",
+    "type": "generic",
+    "order": 99,
+    "tags": [],
+    "author": "Forge Engine",
+    "license": "MIT"
+}
