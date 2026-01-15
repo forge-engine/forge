@@ -28,56 +28,56 @@ use Forge\Traits\SecurityHelper;
 #[Middleware("web")]
 final class HomeController
 {
-    use ControllerHelper;
-    use SecurityHelper;
+  use ControllerHelper;
+  use SecurityHelper;
 
-    public function __construct(
-        public readonly ForgeAuthService $forgeAuthService,
-        public readonly UserService $userService,
-    ) {
+  public function __construct(
+    public readonly ForgeAuthService $forgeAuthService,
+    public readonly UserService $userService,
+  ) {
+  }
+
+  #[Route("/")]
+  public function index(): Response
+  {
+    Metrics::start("db_load_one_record_test");
+    $posts = [];
+    Metrics::stop("db_load_one_record_test");
+
+    $data = [
+      "title" => "Welcome to Forge Framework",
+      "posts" => $posts,
+    ];
+
+    return $this->view(view: "pages/tenants/index", data: $data);
+  }
+
+  #[Route("/app", "POST")]
+  public function register(Request $request): Response
+  {
+    try {
+      ForgeAuthValidate::register($request->postData);
+      $credentials = $this->sanitize($request->postData);
+      $this->forgeAuthService->register($credentials);
+
+      Flash::set("success", "User registered successfully");
+      return Redirect::to("/");
+    } catch (ValidationException) {
+      return Redirect::to("/");
     }
+  }
 
-    #[Route("/")]
-    public function index(): Response
-    {
-        Metrics::start("db_load_one_record_test");
-        $posts = Post::all();
-        Metrics::stop("db_load_one_record_test");
+  #[Route("/app/{id}", "PATCH")]
+  #[Middleware("App\Modules\ForgeAuth\Middlewares\AuthMiddleware")]
+  public function updateUser(Request $request, string $id): Response
+  {
+    $id = (int) $id;
+    $data = [
+      "identifier" => $request->postData["identifier"],
+      "email" => $request->postData["email"],
+    ];
+    //$this->userRepository->update($id, $data);
 
-        $data = [
-            "title" => "Welcome to Forge Framework",
-            "posts" => $posts,
-        ];
-
-        return $this->view(view: "pages/tenants/index", data: $data);
-    }
-
-    #[Route("/app", "POST")]
-    public function register(Request $request): Response
-    {
-        try {
-            ForgeAuthValidate::register($request->postData);
-            $credentials = $this->sanitize($request->postData);
-            $this->forgeAuthService->register($credentials);
-
-            Flash::set("success", "User registered successfully");
-            return Redirect::to("/");
-        } catch (ValidationException) {
-            return Redirect::to("/");
-        }
-    }
-
-    #[Route("/app/{id}", "PATCH")]
-    #[Middleware("App\Modules\ForgeAuth\Middlewares\AuthMiddleware")]
-    public function updateUser(Request $request, string $id): Response
-    {
-        $id = (int) $id;
-        $data = [
-            "identifier" => $request->postData["identifier"],
-            "email" => $request->postData["email"],
-        ];
-        //$this->userRepository->update($id, $data);
-
-        return new Response("<h1> Successfully updated!</h1>", 401);
-    }
+    return new Response("<h1> Successfully updated!</h1>", 401);
+  }
 }
