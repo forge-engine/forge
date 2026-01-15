@@ -102,6 +102,22 @@
                 "description": "Forge Kernel Official Modules",
                 "debug": false
             }
+        },
+        "forge-debug-bar": {
+            "version": "0.1.3",
+            "registry": "forge-engine-modules",
+            "module_path": "forge-debug-bar/0.1.3",
+            "integrity": "e4bcc3f52c4309de72dba75b452aa9d6d344aa8d61ff807a0123ecc2ba3fb450",
+            "source_type": "git",
+            "source_config": {
+                "name": "forge-engine-modules",
+                "type": "git",
+                "url": "https://github.com/forge-engine/modules",
+                "branch": "main",
+                "private": false,
+                "description": "Forge Kernel Official Modules",
+                "debug": false
+            }
         }
     }
 }

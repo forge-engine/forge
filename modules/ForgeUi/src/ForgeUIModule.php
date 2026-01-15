@@ -14,7 +14,7 @@ use Forge\CLI\Traits\OutputHelper;
 use Forge\Core\Module\Attributes\Provides;
 
 #[Module(name: 'ForgeUi', version: '1.0.0', description: 'A UI component module by forge.', order: 99, core: false,
-    isCli: false)]
+  isCli: false)]
 #[Provides(interface: ForgeUIModule::class, version: '1.0.0')]
 #[Service(id: null, singleton: true)]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
@@ -23,9 +23,10 @@ use Forge\Core\Module\Attributes\Provides;
 #[PostInstall(command: 'asset:unlink', args: ['--type=module', '--module=forge-ui'])]
 final class ForgeUIModule
 {
-    use OutputHelper;
+  use OutputHelper;
 
-    public function register(Container $container): void
-    {
-    }
+  public function register(Container $container): void
+  {
+    add_timeline_event("forge_ui_module_register");
+  }
 }
