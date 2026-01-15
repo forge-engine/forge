@@ -6,13 +6,15 @@
     "completed_steps": [
         "dns_configured",
         "ssl_configured",
-        "post_deployment_completed"
+        "post_deployment_completed",
+        "project_uploaded"
     ],
-    "current_step": "post_deployment_completed",
-    "last_updated": "2026-01-15T00:47:27+00:00",
+    "current_step": "project_uploaded",
+    "last_updated": "2026-01-15T01:19:30+00:00",
     "config": {
         "php_version": "8.4",
         "database_type": "sqlite",
         "database_version": "8.0"
-    }
+    },
+    "last_deployed_commit": "72f5e695e842a116d22e329293925d667fa317a2"
 }

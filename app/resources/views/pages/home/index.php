@@ -11,7 +11,7 @@ use App\Modules\ForgeAuth\Models\User;
 layout(name: "main");
 ?>
 <section class="container">
-  <h2 class="text-2xl">Engine Status</h2>
+  <h2 class="text-2xl">Forge Kernel Welcome Page</h2>
   <!-- <ul>
         <li class="text-6xl">PHP Version <?= PHP_VERSION ?></li>
         <li>Database Driver: <?= env("DB_DRIVER") ?></li>

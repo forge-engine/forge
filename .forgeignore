@@ -9,6 +9,7 @@ storage/bin/
 storage/database/
 storage/sessions/
 storage/framework/cache/
+storage/app/uploads/
 .nova/
 .git/
 .idea/
