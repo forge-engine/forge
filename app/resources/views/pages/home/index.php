@@ -18,7 +18,7 @@ layout(name: "main");
     </ul> -->
   <!-- <h3>User information</h3>
     <pre>
-        <?php print_r($user); ?>
+
     </pre> -->
 
   <section>
@@ -30,7 +30,7 @@ layout(name: "main");
     <input class="form--input mb-sm" type="email" name="email" autocomplete="email" placeholder="Email" required>
     <button class="button" type="submit">Create User</button>
     <?= form_close() ?>
-    <?php if ($user): ?>
+    <?php if (isset($user) && $user): ?>
       <?= form_open("/{$user->id}", "PATCH", ["class" => "form"]) ?>
       <input class="form--input" type="text" name="identifier" placeholder="Username" value="<?= $user->identifier ?>"
         required>
