@@ -14,6 +14,7 @@ use App\Modules\ForgeDeployment\Services\DeploymentConfigReader;
 use App\Modules\ForgeDeployment\Services\DeploymentService;
 use App\Modules\ForgeDeployment\Services\DeploymentStateService;
 use App\Modules\ForgeDeployment\Services\ForgeDeploymentService;
+use App\Modules\ForgeDeployment\Services\GitDiffService;
 use App\Modules\ForgeDeployment\Services\LetsEncryptService;
 use App\Modules\ForgeDeployment\Services\SshKeyManager;
 use Forge\CLI\Attributes\Arg;
@@ -54,7 +55,8 @@ final class DeployCommand extends Command
     private readonly DeploymentService $deploymentService,
     private readonly LetsEncryptService $letsEncryptService,
     private readonly DeploymentConfigReader $configReader,
-    private readonly DeploymentStateService $stateService
+    private readonly DeploymentStateService $stateService,
+    private readonly GitDiffService $gitDiffService
   ) {
   }
 
@@ -352,6 +354,15 @@ final class DeployCommand extends Command
           }
         } else {
           $this->info('⏭ Skipping post-deployment commands (already completed)');
+        }
+      }
+
+      // Save commit hash after successful deployment
+      if ($state !== null && $this->gitDiffService->isGitRepository()) {
+        $currentCommit = $this->gitDiffService->getCurrentCommitHash();
+        if ($currentCommit !== null) {
+          $state = $state->withLastDeployedCommit($currentCommit);
+          $this->stateService->save($state);
         }
       }
 

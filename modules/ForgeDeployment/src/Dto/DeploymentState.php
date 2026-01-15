@@ -14,7 +14,8 @@ final class DeploymentState
     public readonly array $completedSteps = [],
     public readonly ?string $currentStep = null,
     public readonly ?string $lastUpdated = null,
-    public readonly array $config = []
+    public readonly array $config = [],
+    public readonly ?string $lastDeployedCommit = null
   ) {
   }
 
@@ -38,7 +39,23 @@ final class DeploymentState
       $completedSteps,
       $step,
       date('c'),
-      $this->config
+      $this->config,
+      $this->lastDeployedCommit
+    );
+  }
+
+  public function withLastDeployedCommit(string $commitHash): self
+  {
+    return new self(
+      $this->serverIp,
+      $this->serverId,
+      $this->sshKeyPath,
+      $this->domain,
+      $this->completedSteps,
+      $this->currentStep,
+      $this->lastUpdated,
+      $this->config,
+      $commitHash
     );
   }
 
@@ -53,6 +70,7 @@ final class DeploymentState
       'current_step' => $this->currentStep,
       'last_updated' => $this->lastUpdated,
       'config' => $this->config,
+      'last_deployed_commit' => $this->lastDeployedCommit,
     ];
   }
 
@@ -66,7 +84,8 @@ final class DeploymentState
       $data['completed_steps'] ?? [],
       $data['current_step'] ?? null,
       $data['last_updated'] ?? null,
-      $data['config'] ?? []
+      $data['config'] ?? [],
+      $data['last_deployed_commit'] ?? null
     );
   }
 }

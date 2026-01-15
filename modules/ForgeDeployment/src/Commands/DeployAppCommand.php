@@ -7,6 +7,7 @@ namespace App\Modules\ForgeDeployment\Commands;
 use App\Modules\ForgeDeployment\Dto\DeploymentConfig;
 use App\Modules\ForgeDeployment\Services\DeploymentService;
 use App\Modules\ForgeDeployment\Services\DeploymentConfigReader;
+use App\Modules\ForgeDeployment\Services\GitDiffService;
 use App\Modules\ForgeDeployment\Services\NginxProvisioner;
 use App\Modules\ForgeDeployment\Services\SshKeyManager;
 use App\Modules\ForgeDeployment\Services\SshService;
@@ -49,7 +50,8 @@ final class DeployAppCommand extends Command
     private readonly SshService $sshService,
     private readonly DeploymentService $deploymentService,
     private readonly NginxProvisioner $nginxProvisioner,
-    private readonly DeploymentConfigReader $configReader
+    private readonly DeploymentConfigReader $configReader,
+    private readonly GitDiffService $gitDiffService
   ) {
   }
 
@@ -113,6 +115,10 @@ final class DeployAppCommand extends Command
         $this->info('Running post-deployment commands...');
         $this->deploymentService->runPostDeploymentCommands($remotePath, $deploymentConfig->postDeploymentCommands);
       }
+
+      // Save commit hash after successful deployment (if using deployment state)
+      // Note: DeployAppCommand doesn't use DeploymentState, so we skip this for now
+      // If needed in the future, we can add state tracking to this command
 
       $this->success('Application deployed successfully!');
 

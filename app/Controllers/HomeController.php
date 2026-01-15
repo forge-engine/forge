@@ -46,7 +46,7 @@ final class HomeController
   public function index(): Response
   {
     Metrics::start("db_load_one_record_test");
-    $user = $this->userRepository->findById(2);
+    //$user = $this->userRepository->findById(2);
 
     //        $jhon = new User();
     //        $jhon->email = 'test@example.com';
@@ -65,7 +65,7 @@ final class HomeController
 
     $data = [
       "title" => "Welcome to Forge Framework",
-      "user" => $user,
+      //"user" => $user,
     ];
 
     return $this->view(view: "pages/home/index", data: $data);
