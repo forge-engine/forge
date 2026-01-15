@@ -4,28 +4,27 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeErrorHandler;
 
+use Forge\Core\Contracts\ErrorHandlerInterface;
 use Forge\Core\DI\Container;
 use Forge\Core\Module\Attributes\Compatibility;
 use Forge\Core\Module\Attributes\ConfigDefaults;
 use Forge\Core\Module\Attributes\Module;
 use Forge\Core\Module\Attributes\Provides;
 use Forge\Core\Module\Attributes\Repository;
-use App\Modules\ForgeErrorHandler\Contracts\ForgeErrorHandlerInterface;
 use App\Modules\ForgeErrorHandler\Services\ForgeErrorHandlerService;
 use Forge\Core\DI\Attributes\Service;
 use Forge\CLI\Traits\OutputHelper;
 
 #[Module(name: 'ForgeErrorHandler', version: '0.1.2', description: 'An error handler by Forge', order: 2, core: true)]
 #[Service]
-#[Provides(interface: ForgeErrorHandlerInterface::class, version: '0.1.2')]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
 #[ConfigDefaults(defaults: [])]
 final class ForgeErrorHandlerModule
 {
-    use OutputHelper;
-    public function register(Container $container): void
-    {
-        $container->bind(ForgeErrorHandlerInterface::class, ForgeErrorHandlerService::class);
-    }
+  use OutputHelper;
+  public function register(Container $container): void
+  {
+    $container->bind(ErrorHandlerInterface::class, ForgeErrorHandlerService::class);
+  }
 }

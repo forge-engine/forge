@@ -68,6 +68,7 @@ final class HomeController
       //"user" => $user,
     ];
 
+
     return $this->view(view: "pages/home/index", data: $data);
   }
 
