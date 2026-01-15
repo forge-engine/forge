@@ -15,7 +15,7 @@ use App\Modules\ForgeErrorHandler\Services\ForgeErrorHandlerService;
 use Forge\Core\DI\Attributes\Service;
 use Forge\CLI\Traits\OutputHelper;
 
-#[Module(name: 'ForgeErrorHandler', version: '1.0.0', description: 'An error handler by Forge', order: 2, core: true)]
+#[Module(name: 'ForgeErrorHandler', version: '1.1.0', description: 'An error handler by Forge', order: 2, core: true)]
 #[Service]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
