@@ -107,12 +107,18 @@ final class DeployCommand extends Command
           $phpVersion = $provisionConfigData['php_version'] ?? $state->config['php_version'] ?? '8.4';
           $dbType = $provisionConfigData['database_type'] ?? $state->config['database_type'] ?? 'mysql';
           $dbVersion = $provisionConfigData['database_version'] ?? $state->config['database_version'] ?? '8.0';
-          $provisionConfig = new ProvisionConfig($phpVersion, $dbType, $dbVersion);
+          $dbName = $provisionConfigData['database_name'] ?? $state->config['database_name'] ?? null;
+          $dbUser = $provisionConfigData['database_user'] ?? $state->config['database_user'] ?? null;
+          $dbPass = $provisionConfigData['database_password'] ?? $state->config['database_password'] ?? null;
+          $provisionConfig = new ProvisionConfig($phpVersion, $dbType, $dbVersion, $dbName, $dbUser, $dbPass);
         } else {
           $provisionConfig = new ProvisionConfig(
             $state->config['php_version'] ?? '8.4',
             $state->config['database_type'] ?? 'mysql',
-            $state->config['database_version'] ?? '8.0'
+            $state->config['database_version'] ?? '8.0',
+            $state->config['database_name'] ?? null,
+            $state->config['database_user'] ?? null,
+            $state->config['database_password'] ?? null
           );
         }
 
@@ -316,6 +322,13 @@ final class DeployCommand extends Command
       $remotePath = '/var/www/' . $deploymentConfig->domain;
       $this->letsEncryptService->updateNginxConfig($deploymentConfig->domain, $remotePath, $provisionConfig->phpVersion, $outputCallback);
 
+      $this->info('Configuring environment...');
+      $this->deploymentService->configureEnvironment(BASE_PATH, $remotePath, $deploymentConfig->envVars, function (string $message) use ($outputCallback) {
+        if ($outputCallback !== null) {
+          $outputCallback("      {$message}");
+        }
+      }, $provisionConfig->toArray());
+
       if (!empty($deploymentConfig->postDeploymentCommands)) {
         if ($state === null || !$state->isStepCompleted('post_deployment_completed')) {
           $this->info('Running post-deployment commands...');
@@ -329,7 +342,7 @@ final class DeployCommand extends Command
           );
 
           if ($connected) {
-            $this->deploymentService->runPostDeploymentCommands($remotePath, $deploymentConfig->postDeploymentCommands);
+            $this->deploymentService->runPostDeploymentCommands($remotePath, $deploymentConfig->postDeploymentCommands, $outputCallback);
             if ($state !== null) {
               $state = $state->markStepCompleted('post_deployment_completed');
               $this->stateService->save($state);
@@ -424,20 +437,27 @@ final class DeployCommand extends Command
       $phpVersion = $provisionConfig['php_version'] ?? null;
       $dbType = $provisionConfig['database_type'] ?? null;
       $dbVersion = $provisionConfig['database_version'] ?? null;
+      $dbName = $provisionConfig['database_name'] ?? null;
+      $dbUser = $provisionConfig['database_user'] ?? null;
+      $dbPass = $provisionConfig['database_password'] ?? null;
 
       if ($phpVersion && $dbType) {
         $this->info("Using provision config from file: PHP {$phpVersion}, {$dbType}");
-        return new ProvisionConfig($phpVersion, $dbType, $dbVersion);
+        return new ProvisionConfig($phpVersion, $dbType, $dbVersion, $dbName, $dbUser, $dbPass);
       }
     }
 
     $phpVersions = ['8.0', '8.1', '8.2', '8.3', '8.4'];
     $phpVersion = $this->templateGenerator->selectFromList('Select PHP version', $phpVersions, '8.4');
 
-    $dbTypes = ['mysql', 'postgresql'];
+    $dbTypes = ['mysql', 'postgresql', 'sqlite'];
     $dbType = $this->templateGenerator->selectFromList('Select database type', $dbTypes, 'mysql');
 
     $dbVersion = null;
+    $dbName = null;
+    $dbUser = null;
+    $dbPass = null;
+
     if ($dbType === 'mysql') {
       $dbVersions = ['5.7', '8.0'];
       $dbVersion = $this->templateGenerator->selectFromList('Select MySQL version', $dbVersions, '8.0');
@@ -446,7 +466,13 @@ final class DeployCommand extends Command
       $dbVersion = $this->templateGenerator->selectFromList('Select PostgreSQL version', $dbVersions, '16');
     }
 
-    return new ProvisionConfig($phpVersion, $dbType, $dbVersion);
+    if ($dbType !== 'sqlite') {
+      $dbName = $this->templateGenerator->askQuestion('Database name', 'forge_app');
+      $dbUser = $this->templateGenerator->askQuestion('Database user', 'forge_user');
+      $dbPass = $this->templateGenerator->askQuestion('Database password', bin2hex(random_bytes(8)));
+    }
+
+    return new ProvisionConfig($phpVersion, $dbType, $dbVersion, $dbName, $dbUser, $dbPass);
   }
 
   private function getDeploymentConfig(?array $fileConfig): DeploymentConfig

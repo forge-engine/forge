@@ -102,6 +102,17 @@ final class ForgeDeploymentService
     if ($state === null || !$state->isStepCompleted('database_installed')) {
       $progress("  → Installing {$provisionConfig->databaseType} " . ($provisionConfig->databaseVersion ?? 'latest') . "...");
       $this->databaseProvisioner->provision($provisionConfig->databaseType, $provisionConfig->databaseVersion, $ramMb, $progress, $outputCallback, $errorCallback);
+
+      if ($provisionConfig->databaseName && $provisionConfig->databaseUser && $provisionConfig->databasePassword) {
+        $progress("  → Creating database '{$provisionConfig->databaseName}' and user '{$provisionConfig->databaseUser}'...");
+        $this->databaseProvisioner->createDatabase(
+          $provisionConfig->databaseType,
+          $provisionConfig->databaseName,
+          $provisionConfig->databaseUser,
+          $provisionConfig->databasePassword
+        );
+      }
+
       $progress("  ✓ {$provisionConfig->databaseType} installed and configured");
       $saveState('database_installed');
     } else {
@@ -151,17 +162,6 @@ final class ForgeDeploymentService
       $saveState('site_configured');
     } else {
       $progress("  ⏭ Skipping site configuration (already completed)");
-    }
-
-    if (!empty($deploymentConfig->postDeploymentCommands)) {
-      if ($state === null || !$state->isStepCompleted('post_deployment_completed')) {
-        $progress("  → Running post-deployment commands...");
-        $this->deploymentService->runPostDeploymentCommands($remotePath, $deploymentConfig->postDeploymentCommands, $outputCallback);
-        $progress("  ✓ Post-deployment commands completed");
-        $saveState('post_deployment_completed');
-      } else {
-        $progress("  ⏭ Skipping post-deployment commands (already completed)");
-      }
     }
 
     return true;

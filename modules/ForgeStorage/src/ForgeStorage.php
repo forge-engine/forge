@@ -21,37 +21,37 @@ use Forge\Core\Module\Attributes\Repository;
 #[Compatibility(framework: '>=0.1.2', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
 #[ConfigDefaults(defaults: [
-    'forge_storage' => [
+      'forge_storage' => [
         'default_driver' => 'local',
         'hash_filenames' => true,
         'root_path' => 'storage/app',
         'public_path' => 'public/storage',
         'buckets' => [
-            'uploads' => [
-                'driver' => 'local',
-                'public' => false,
-                'expire' => 3600
-            ]
+          'uploads' => [
+            'driver' => 'local',
+            'public' => false,
+            'expire' => 3600
+          ]
         ]
-    ]
-])]
-#[PostInstall(command: 'migrate', args: ['--type=module', '--module=forge-storage'])]
-#[PostUninstall(command: 'migrate:rollback', args: ['--type=module', '--module=forge-storage'])]
+      ]
+    ])]
+#[PostInstall(command: 'db:migrate', args: ['--type=module', '--module=forge-storage'])]
+#[PostUninstall(command: 'db:migrate:rollback', args: ['--type=module', '--module=forge-storage'])]
 readonly class ForgeStorage
 {
-    public function __construct(private Config $config)
-    {
-    }
+  public function __construct(private Config $config)
+  {
+  }
 
-    public function register(Container $container): void
-    {
-        $container->singleton(StorageInterface::class, function () {
-            $driver = $this->config->get('forge_storage.default_driver', 'local');
+  public function register(Container $container): void
+  {
+    $container->singleton(StorageInterface::class, function () {
+      $driver = $this->config->get('forge_storage.default_driver', 'local');
 
-            return match ($driver) {
-                'local' => new LocalDriver(),
-                default => throw new \RuntimeException("Unsupported storage driver: {$driver}")
-            };
-        });
-    }
+      return match ($driver) {
+        'local' => new LocalDriver(),
+        default => throw new \RuntimeException("Unsupported storage driver: {$driver}")
+      };
+    });
+  }
 }

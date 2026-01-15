@@ -26,9 +26,8 @@ final class DeploymentService
 
     $this->createRemoteDirectory($remotePath);
     $this->uploadProject($localPath, $remotePath, $progress);
-    $this->configureEnvironment($remotePath, $envVars, $progress);
     $this->setPermissions($remotePath);
-    $this->runCommands($remotePath, $commands);
+    $this->runCommands($remotePath, $commands, $progressCallback);
 
     return true;
   }
@@ -51,7 +50,7 @@ final class DeploymentService
         $fullCommand = "cd {$remotePath} && php forge.php {$command}";
       }
 
-      $result = $this->sshService->execute($fullCommand, $outputCallback);
+      $result = $this->sshService->execute($fullCommand, $outputCallback, null, 1200);
       if (!$result['success']) {
         $error = $result['error'] ?: $result['output'];
         throw new \RuntimeException("Post-deployment command failed: {$command}. Error: {$error}");
@@ -138,18 +137,79 @@ final class DeploymentService
     }
   }
 
-  private function configureEnvironment(string $remotePath, array $envVars, ?callable $progressCallback = null): void
+  public function configureEnvironment(string $localPath, string $remotePath, array $envVars, ?callable $progressCallback = null, array $dbConfig = []): void
   {
-    if (empty($envVars)) {
-      return;
+    $localEnv = $localPath . '/.env';
+    $localExample = $localPath . '/env-example';
+    $remoteEnv = $remotePath . '/.env';
+
+    if (file_exists($localEnv)) {
+      if ($progressCallback !== null) {
+        $progressCallback('Uploading local .env file...');
+      }
+      $this->sshService->upload($localEnv, $remoteEnv);
+    } else {
+      if ($progressCallback !== null) {
+        $progressCallback('Local .env missing, using env-example and generating key...');
+      }
+      if (file_exists($localExample)) {
+        $this->sshService->upload($localExample, $remoteEnv);
+        $this->sshService->execute("cd {$remotePath} && php forge.php key:generate", $progressCallback);
+      }
     }
 
-    $envContent = '';
-    foreach ($envVars as $key => $value) {
-      $envContent .= "{$key}={$value}\n";
+    // Merge DB config into envVars
+    if (!empty($dbConfig)) {
+      $type = $dbConfig['database_type'] ?? 'mysql';
+      if ($type === 'sqlite') {
+        $envVars['DB_CONNECTION'] = 'sqlite';
+        $envVars['DB_DATABASE'] = 'storage/database.sqlite';
+      } else {
+        $envVars['DB_CONNECTION'] = ($type === 'postgresql') ? 'pgsql' : 'mysql';
+        if (isset($dbConfig['database_name']))
+          $envVars['DB_DATABASE'] = $dbConfig['database_name'];
+        if (isset($dbConfig['database_user']))
+          $envVars['DB_USERNAME'] = $dbConfig['database_user'];
+        if (isset($dbConfig['database_password']))
+          $envVars['DB_PASSWORD'] = $dbConfig['database_password'];
+        $envVars['DB_HOST'] = '127.0.0.1';
+        $envVars['DB_PORT'] = ($type === 'postgresql') ? '5432' : '3306';
+      }
     }
 
-    $this->sshService->uploadString($envContent, $remotePath . '/.env', $progressCallback);
+    if (!empty($envVars)) {
+      if ($progressCallback !== null) {
+        $progressCallback('Applying environment variables...');
+      }
+
+      // Read current .env content from server
+      $result = $this->sshService->execute("cat {$remoteEnv}", null, null, 10);
+      $envContent = $result['success'] ? $result['output'] : '';
+      $lines = explode("\n", $envContent);
+      $envMap = [];
+      foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line === '' || str_starts_with($line, '#'))
+          continue;
+        if (strpos($line, '=') !== false) {
+          list($key, $val) = explode('=', $line, 2);
+          $envMap[trim($key)] = trim($val);
+        }
+      }
+
+      // Update with deployment and DB variables
+      foreach ($envVars as $key => $value) {
+        $envMap[$key] = $value;
+      }
+
+      // Rebuild content
+      $newContent = "";
+      foreach ($envMap as $key => $value) {
+        $newContent .= "{$key}={$value}\n";
+      }
+
+      $this->sshService->uploadString($newContent, $remoteEnv, $progressCallback);
+    }
   }
 
   private function setPermissions(string $remotePath): void
@@ -160,11 +220,11 @@ final class DeploymentService
     $this->sshService->execute("chmod -R 775 {$remotePath}/storage");
   }
 
-  private function runCommands(string $remotePath, array $commands): void
+  private function runCommands(string $remotePath, array $commands, ?callable $outputCallback = null): void
   {
     foreach ($commands as $command) {
       $fullCommand = "cd {$remotePath} && {$command}";
-      $result = $this->sshService->execute($fullCommand);
+      $result = $this->sshService->execute($fullCommand, $outputCallback);
       if (!$result['success']) {
         throw new \RuntimeException("Command failed: {$command}. Error: {$result['error']}");
       }

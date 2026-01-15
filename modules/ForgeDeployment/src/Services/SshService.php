@@ -150,7 +150,7 @@ final class SshService
           if ($s === $stream) {
             if (strpos($trimmed, $exitMarker . ':') !== false) {
               if (preg_match('/' . preg_quote($exitMarker) . ':(\d+)/', $trimmed, $matches)) {
-                $exitCode = (int)$matches[1];
+                $exitCode = (int) $matches[1];
                 continue;
               }
             }
@@ -222,7 +222,7 @@ final class SshService
     }
 
     stream_set_blocking($exitStream, true);
-    $exitCode = (int)trim(stream_get_contents($exitStream));
+    $exitCode = (int) trim(stream_get_contents($exitStream));
     fclose($exitStream);
 
     return $exitCode;
@@ -239,14 +239,14 @@ final class SshService
     $remoteDir = dirname($remotePath);
     $this->createRemoteDirectory($remoteDir);
 
-    $sftpId = (int)$this->sftp;
+    $sftpId = (int) $this->sftp;
     $stream = @fopen("ssh2.sftp://{$sftpId}{$remotePath}", 'w');
     if (!$stream || !is_resource($stream)) {
       $this->reinitializeSftp();
-      $sftpId = (int)$this->sftp;
+      $sftpId = (int) $this->sftp;
       $stream = @fopen("ssh2.sftp://{$sftpId}{$remotePath}", 'w');
       if (!$stream || !is_resource($stream)) {
-      return false;
+        return false;
       }
     }
 
@@ -305,7 +305,7 @@ final class SshService
       $remoteDir = dirname($remotePath);
       $this->createRemoteDirectory($remoteDir);
 
-      $sftpId = (int)$this->sftp;
+      $sftpId = (int) $this->sftp;
       $stream = @fopen("ssh2.sftp://{$sftpId}{$remotePath}", 'w');
 
       if ($stream && is_resource($stream)) {
@@ -338,7 +338,12 @@ final class SshService
   {
     $base64Content = base64_encode($content);
 
-    // Use a more robust command structure
+    $remoteDir = dirname($remotePath);
+    $mkdirResult = $this->execute("mkdir -p " . escapeshellarg($remoteDir), null, null, 10);
+    if (!$mkdirResult['success']) {
+      throw new \RuntimeException("Failed to create remote directory: {$remoteDir}. Error: " . ($mkdirResult['error'] ?? 'Unknown error'));
+    }
+
     $command = sprintf(
       'echo %s | base64 -d > %s',
       escapeshellarg($base64Content),
@@ -351,7 +356,6 @@ final class SshService
       throw new \RuntimeException("Failed to upload file via SSH: {$remotePath}. Error: " . ($result['error'] ?? 'Unknown error'));
     }
 
-    // Double check verification
     $verifyResult = $this->execute(sprintf('test -f %s && echo "exists" || echo "missing"', escapeshellarg($remotePath)), null, null, 10);
     if (trim($verifyResult['output'] ?? '') !== 'exists') {
       throw new \RuntimeException("File upload verification failed: {$remotePath} was not created");
@@ -465,7 +469,7 @@ final class SshService
       return;
     }
 
-    $sftpId = (int)$this->sftp;
+    $sftpId = (int) $this->sftp;
     $parts = explode('/', trim($remoteDir, '/'));
     $currentPath = '';
 

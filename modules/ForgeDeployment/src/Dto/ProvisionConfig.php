@@ -9,7 +9,10 @@ final class ProvisionConfig
   public function __construct(
     public readonly string $phpVersion,
     public readonly string $databaseType,
-    public readonly ?string $databaseVersion = null
+    public readonly ?string $databaseVersion = null,
+    public readonly ?string $databaseName = null,
+    public readonly ?string $databaseUser = null,
+    public readonly ?string $databasePassword = null
   ) {
   }
 
@@ -19,6 +22,9 @@ final class ProvisionConfig
       'php_version' => $this->phpVersion,
       'database_type' => $this->databaseType,
       'database_version' => $this->databaseVersion,
+      'database_name' => $this->databaseName,
+      'database_user' => $this->databaseUser,
+      'database_password' => $this->databasePassword,
     ];
   }
 }

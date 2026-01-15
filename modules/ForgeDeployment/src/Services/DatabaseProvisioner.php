@@ -22,6 +22,11 @@ final class DatabaseProvisioner
       }
     };
 
+    if ($type === 'sqlite') {
+      $progress("    ⏭ Skipping database installation (SQLite detected)");
+      return true;
+    }
+
     if ($type === 'mysql') {
       $progress("    • Installing MySQL " . ($version ?? '8.0') . "...");
       $result = $this->provisionMysql($version ?? '8.0', $ramMb, $outputCallback, $errorCallback);
@@ -37,6 +42,10 @@ final class DatabaseProvisioner
 
   public function createDatabase(string $type, string $database, string $username, string $password): bool
   {
+    if ($type === 'sqlite') {
+      return true;
+    }
+
     if ($type === 'mysql') {
       return $this->createMysqlDatabase($database, $username, $password);
     } elseif ($type === 'postgresql') {

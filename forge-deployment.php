@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 return [
   'server' => [
-    'name' => 'forge-v3-app-server',
+    'name' => 'forge-v4-app-server',
     'region' => 'nyc1',
     'size' => 's-1vcpu-1gb',
     'image' => 'ubuntu-22-04-x64',
@@ -13,20 +13,25 @@ return [
 
   'provision' => [
     'php_version' => '8.4',
-    'database_type' => 'mysql',
+    'database_type' => 'sqlite',
     'database_version' => '8.0',
   ],
 
   'deployment' => [
-    'domain' => 'forge-v3.upper.do',
+    'domain' => 'forgev4.upper.do',
     'ssl_email' => 'jeremias2@gmail.com',
     'commands' => [
     ],
     'post_deployment_commands' => [
       'cache:flush',
       'cache:warm',
-      'db:migrate --type=all'
+      'db:migrate --type=all',
+      'modules:forge-deployment:fix-permissions'
     ],
+    'database_type' => 'sqlite',
+    'database_name' => 'forge_v3',
+    'database_user' => 'forge_user',
+    'database_password' => 'forge_password',
     'env_vars' => [
       'APP_ENV' => 'production',
       'APP_DEBUG' => 'false',

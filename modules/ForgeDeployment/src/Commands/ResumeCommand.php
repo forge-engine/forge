@@ -193,7 +193,15 @@ final class ResumeCommand extends Command
 
           if ($connected) {
             $remotePath = '/var/www/' . $deploymentConfig->domain;
-            $this->deploymentService->runPostDeploymentCommands($remotePath, $deploymentConfig->postDeploymentCommands);
+
+            $this->info('Configuring environment...');
+            $this->deploymentService->configureEnvironment(BASE_PATH, $remotePath, $deploymentConfig->envVars, function (string $message) use ($outputCallback) {
+              if ($outputCallback !== null) {
+                $outputCallback("      {$message}");
+              }
+            }, $provisionConfig->toArray());
+
+            $this->deploymentService->runPostDeploymentCommands($remotePath, $deploymentConfig->postDeploymentCommands, $outputCallback);
             $state = $state->markStepCompleted('post_deployment_completed');
             $this->stateService->save($state);
           }

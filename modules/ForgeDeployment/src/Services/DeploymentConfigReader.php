@@ -103,6 +103,9 @@ return [
         'php_version' => '8.4',
         'database_type' => 'mysql',
         'database_version' => '8.0',
+        'database_name' => 'forge_app',
+        'database_user' => 'forge_user',
+        'database_password' => 'secret',
     ],
 
     'deployment' => [
