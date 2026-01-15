@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeMultiTenant;
 
+use App\Modules\ForgeMultiTenant\Services\RouteScopeFilter;
+use App\Modules\ForgeMultiTenant\Services\TenantManager;
+use Forge\Core\Contracts\RouteScopeFilterInterface;
 use Forge\Core\DI\Container;
 use Forge\Core\Module\Attributes\Compatibility;
 use Forge\Core\Module\Attributes\ConfigDefaults;
@@ -13,15 +16,14 @@ use Forge\Core\Module\Attributes\PostUninstall;
 use Forge\Core\Module\Attributes\Repository;
 use Forge\Core\DI\Attributes\Service;
 use Forge\CLI\Traits\OutputHelper;
-use App\Modules\ForgeMultiTenant\Services\TenantManager;
 
-#[Module(name: 'ForgeMultiTenant', version: '0.1.8', description: 'A Multi Tenant Module by Forge', order: 2)]
+#[Module(name: 'ForgeMultiTenant', version: '0.2.0', description: 'A Multi Tenant Module by Forge', order: 2)]
 #[Service]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
 #[ConfigDefaults(defaults: [
-    "forge_multi_tenant" => []
-])]
+      "forge_multi_tenant" => []
+    ])]
 #[PostInstall(command: 'migrate', args: ['--type=', 'module', '--module=', 'ForgeMultiTenant'])]
 #[PostInstall(command: 'seed', args: ['--type=', 'module', '--module=', 'ForgeMultiTenant'])]
 #[PostInstall(command: 'tenant:migrate', args: [''])]
@@ -31,12 +33,14 @@ use App\Modules\ForgeMultiTenant\Services\TenantManager;
 #[PostUninstall(command: 'seed:rollback', args: ['--type=module', '--module=ForgeMultiTenant'])]
 final class ForgeMultiTenantModule
 {
-    use OutputHelper;
+  use OutputHelper;
 
-    public function register(Container $container): void
-    {
-        $container->bind(TenantManager::class, function (Container $container) {
-            return new TenantManager($container);
-        });
-    }
+  public function register(Container $container): void
+  {
+    $container->bind(TenantManager::class, function (Container $container) {
+      return new TenantManager($container);
+    });
+
+    $container->bind(RouteScopeFilterInterface::class, RouteScopeFilter::class);
+  }
 }
