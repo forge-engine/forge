@@ -14,6 +14,9 @@ use Forge\CLI\Attributes\Arg;
 use Forge\CLI\Attributes\Cli;
 use Forge\CLI\Command;
 use Forge\CLI\Traits\OutputHelper;
+use Forge\CLI\Traits\Wizard;
+use Forge\Core\Services\GitService;
+use Forge\Core\Services\TemplateGenerator;
 
 #[Cli(
   command: 'forge-deployment:update',
@@ -29,6 +32,7 @@ use Forge\CLI\Traits\OutputHelper;
 final class UpdateCommand extends Command
 {
   use OutputHelper;
+  use Wizard;
 
   #[Arg(name: 'skip-commands', description: 'Skip post-deployment commands', required: false)]
   private bool $skipCommands = false;
@@ -45,12 +49,16 @@ final class UpdateCommand extends Command
     private readonly DeploymentConfigReader $configReader,
     private readonly SshService $sshService,
     private readonly GitDiffService $gitDiffService,
-    private readonly IncrementalUploadService $incrementalUploadService
+    private readonly IncrementalUploadService $incrementalUploadService,
+    private readonly GitService $gitService,
+    private readonly TemplateGenerator $templateGenerator
   ) {
   }
 
   public function execute(array $args): int
   {
+    $this->wizard($args);
+
     try {
       $state = $this->stateService->load();
 
@@ -112,6 +120,64 @@ final class UpdateCommand extends Command
           $this->error('      ' . trim($line));
         }
       };
+
+      // Check for uncommitted changes (unless using --working-tree flag)
+      if (!$this->workingTree && $this->gitDiffService->isGitRepository() && $this->gitDiffService->hasUncommittedChanges()) {
+        $this->warning('You have uncommitted changes in your repository.');
+
+        $uncommittedFiles = $this->gitDiffService->getUncommittedFiles();
+        if (!empty($uncommittedFiles)) {
+          $this->info('Uncommitted files:');
+          $displayCount = min(count($uncommittedFiles), 10);
+          for ($i = 0; $i < $displayCount; $i++) {
+            $this->line('  - ' . $uncommittedFiles[$i]);
+          }
+          if (count($uncommittedFiles) > 10) {
+            $this->line('  ... and ' . (count($uncommittedFiles) - 10) . ' more file(s)');
+          }
+        }
+
+        $commitChanges = $this->templateGenerator->askQuestion('Would you like to commit these changes before deploying? (y/n)', 'y');
+
+        if (in_array(strtolower($commitChanges), ['y', 'yes', '1', 'true'], true)) {
+          $this->info('Staging files...');
+
+          // Add all files (GitService.addAll respects .gitignore, but we also need to respect .forgeignore)
+          // We'll add files individually to ensure .forgeignore is respected
+          $filesToAdd = $this->gitDiffService->getUncommittedFiles();
+
+          if (!empty($filesToAdd)) {
+            foreach ($filesToAdd as $file) {
+              $this->gitService->addFile(BASE_PATH, $file);
+            }
+          } else {
+            // Fallback to add all if no specific files (shouldn't happen, but safety)
+            $this->gitService->addAll(BASE_PATH);
+          }
+
+          $defaultMessage = 'Deploy changes';
+          $commitMessage = $this->templateGenerator->askQuestion(
+            'Enter commit message (or press Enter for default)',
+            $defaultMessage
+          );
+
+          if (empty(trim($commitMessage))) {
+            $commitMessage = $defaultMessage;
+          }
+
+          $this->info('Committing changes...');
+          if (!$this->gitService->commit(BASE_PATH, $commitMessage)) {
+            $this->error('Failed to commit changes. Deployment aborted.');
+            return 1;
+          }
+
+          $this->success('Changes committed successfully.');
+        } else {
+          $this->info('Skipping commit. Proceeding with deployment of uncommitted changes...');
+          // Continue with deployment using working tree diff
+          $this->workingTree = true;
+        }
+      }
 
       // Determine if we should use incremental upload or full deployment
       $useIncremental = !$this->forceFull && $this->gitDiffService->isGitRepository();
