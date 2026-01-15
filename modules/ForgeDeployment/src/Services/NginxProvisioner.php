@@ -41,6 +41,9 @@ final class NginxProvisioner
     $config = $this->generateSiteConfig($domain, $rootPath, $phpVersion);
     $configPath = "/etc/nginx/sites-available/{$domain}";
 
+    // Remove old config to ensure clean overwrite
+    $this->sshService->execute("rm -f {$configPath}", $outputCallback, $errorCallback, 10);
+
     $uploaded = $this->sshService->uploadString($config, $configPath, $outputCallback);
     if (!$uploaded) {
       throw new \RuntimeException("Failed to upload Nginx site configuration to {$configPath}");
@@ -53,44 +56,85 @@ final class NginxProvisioner
 
     $result = $this->sshService->execute('nginx -t', $outputCallback, $errorCallback, 60);
     if (!$result['success']) {
-      $checkBackup = $this->sshService->execute('test -f /etc/nginx/nginx.conf.backup && echo "exists" || echo "missing"', $outputCallback, $errorCallback, 10);
-      if (trim($checkBackup['output'] ?? '') === 'exists') {
+      $errorMsg = $result['error'] ?? $result['output'] ?? '';
+
+      // Check for missing shared memory zones (old rate limiting configs)
+      if (strpos($errorMsg, 'zero size shared memory zone') !== false || strpos($errorMsg, 'shared memory zone') !== false) {
         if ($outputCallback !== null) {
-          $outputCallback('      Nginx config test failed, restoring main config from backup...');
+          $outputCallback('      Detected old rate limiting configs. Cleaning up...');
         }
-        $restoreResult = $this->sshService->execute('cp /etc/nginx/nginx.conf.backup /etc/nginx/nginx.conf', $outputCallback, $errorCallback, 30);
-        if ($restoreResult['success']) {
+        // Regenerate main config to ensure it's clean
+        $this->regenerateMainConfig($outputCallback, $errorCallback);
+        // Remove rate limiting directives from all site configs
+        $this->sshService->execute('find /etc/nginx/sites-available -type f -exec sed -i "/limit_req/d" {} \\;', $outputCallback, $errorCallback, 30);
+        // Retry test
+        $result = $this->sshService->execute('nginx -t', $outputCallback, $errorCallback, 60);
+        if ($result['success']) {
+          if ($outputCallback !== null) {
+            $outputCallback('      Rate limiting directives removed. Config validated.');
+          }
+        }
+      }
+
+      // Check if error is in a different site config file
+      if (!$result['success'] && preg_match('/in \/etc\/nginx\/sites-enabled\/([^:]+):(\d+)/', $errorMsg, $matches)) {
+        $brokenSite = $matches[1];
+        if ($brokenSite !== $domain) {
+          if ($outputCallback !== null) {
+            $outputCallback("      Detected broken config in {$brokenSite}, temporarily disabling...");
+          }
+          $this->sshService->execute("rm -f /etc/nginx/sites-enabled/{$brokenSite}", $outputCallback, $errorCallback, 10);
+          // Retry test
+          $result = $this->sshService->execute('nginx -t', $outputCallback, $errorCallback, 60);
+          if ($result['success']) {
+            if ($outputCallback !== null) {
+              $outputCallback("      Broken site {$brokenSite} disabled. New site config validated.");
+            }
+          }
+        }
+      }
+
+      // If still failing, check main config
+      if (!$result['success']) {
+        $checkBackup = $this->sshService->execute('test -f /etc/nginx/nginx.conf.backup && echo "exists" || echo "missing"', $outputCallback, $errorCallback, 10);
+        if (trim($checkBackup['output'] ?? '') === 'exists') {
+          if ($outputCallback !== null) {
+            $outputCallback('      Nginx config test failed, restoring main config from backup...');
+          }
+          $restoreResult = $this->sshService->execute('cp /etc/nginx/nginx.conf.backup /etc/nginx/nginx.conf', $outputCallback, $errorCallback, 30);
+          if ($restoreResult['success']) {
+            $retestResult = $this->sshService->execute('nginx -t', $outputCallback, $errorCallback, 60);
+            if ($retestResult['success']) {
+              if ($outputCallback !== null) {
+                $outputCallback('      Main nginx.conf restored and validated. Retrying site config...');
+              }
+              $result = $this->sshService->execute('nginx -t', $outputCallback, $errorCallback, 60);
+              if (!$result['success']) {
+                throw new \RuntimeException('Nginx configuration test failed after restore: ' . $result['error']);
+              }
+            } else {
+              throw new \RuntimeException('Nginx configuration test failed even after restoring backup: ' . $retestResult['error']);
+            }
+          } else {
+            throw new \RuntimeException('Nginx configuration test failed and backup restore also failed: ' . $result['error']);
+          }
+        } else {
+          if ($outputCallback !== null) {
+            $outputCallback('      No backup found, regenerating main nginx.conf...');
+          }
+          $this->regenerateMainConfig($outputCallback, $errorCallback);
           $retestResult = $this->sshService->execute('nginx -t', $outputCallback, $errorCallback, 60);
           if ($retestResult['success']) {
             if ($outputCallback !== null) {
-              $outputCallback('      Main nginx.conf restored and validated. Retrying site config...');
+              $outputCallback('      Main nginx.conf regenerated and validated. Retrying site config...');
             }
             $result = $this->sshService->execute('nginx -t', $outputCallback, $errorCallback, 60);
             if (!$result['success']) {
-              throw new \RuntimeException('Nginx configuration test failed after restore: ' . $result['error']);
+              throw new \RuntimeException('Nginx configuration test failed after regeneration: ' . $result['error']);
             }
           } else {
-            throw new \RuntimeException('Nginx configuration test failed even after restoring backup: ' . $retestResult['error']);
+            throw new \RuntimeException('Nginx configuration test failed even after regenerating config: ' . $retestResult['error']);
           }
-        } else {
-          throw new \RuntimeException('Nginx configuration test failed and backup restore also failed: ' . $result['error']);
-        }
-      } else {
-        if ($outputCallback !== null) {
-          $outputCallback('      No backup found, regenerating main nginx.conf...');
-        }
-        $this->regenerateMainConfig($outputCallback, $errorCallback);
-        $retestResult = $this->sshService->execute('nginx -t', $outputCallback, $errorCallback, 60);
-        if ($retestResult['success']) {
-          if ($outputCallback !== null) {
-            $outputCallback('      Main nginx.conf regenerated and validated. Retrying site config...');
-          }
-          $result = $this->sshService->execute('nginx -t', $outputCallback, $errorCallback, 60);
-          if (!$result['success']) {
-            throw new \RuntimeException('Nginx configuration test failed after regeneration: ' . $result['error']);
-          }
-        } else {
-          throw new \RuntimeException('Nginx configuration test failed even after regenerating config: ' . $retestResult['error']);
         }
       }
     }
@@ -159,9 +203,6 @@ http {
     client_max_body_size 50M;
     client_body_buffer_size 128k;
 
-    limit_req_zone \$binary_remote_addr zone=general:10m rate=10r/s;
-    limit_req_zone \$binary_remote_addr zone=login:10m rate=5r/m;
-
     include /etc/nginx/conf.d/*.conf;
     include /etc/nginx/sites-enabled/*;
 }
@@ -172,7 +213,7 @@ EOF;
       throw new \RuntimeException('Failed to upload Nginx configuration file to /tmp/nginx_main.conf');
     }
 
-    $verifyResult = $this->sshService->execute('grep -q "limit_req_zone" /etc/nginx/nginx.conf && echo "exists" || echo "missing"', $outputCallback, $errorCallback, 10);
+    $verifyResult = $this->sshService->execute('grep -q "worker_connections" /etc/nginx/nginx.conf && echo "exists" || echo "missing"', $outputCallback, $errorCallback, 10);
     $isAlreadyOptimized = trim($verifyResult['output'] ?? '') === 'exists';
 
     // Additional check: does it look like a site config?
@@ -180,17 +221,17 @@ EOF;
     $isCorrupted = strpos($headResult['output'] ?? '', 'server {') !== false;
 
     if ($isAlreadyOptimized && !$isCorrupted) {
-        if ($outputCallback !== null) {
-            $outputCallback('      Nginx already optimized, skipping update...');
-        }
-        $this->sshService->execute('rm -f /tmp/nginx_main.conf', $outputCallback, $errorCallback, 10);
-        return;
+      if ($outputCallback !== null) {
+        $outputCallback('      Nginx already optimized, skipping update...');
+      }
+      $this->sshService->execute('rm -f /tmp/nginx_main.conf', $outputCallback, $errorCallback, 10);
+      return;
     }
 
     if ($isCorrupted) {
-        if ($outputCallback !== null) {
-            $outputCallback('      Nginx main config appears corrupted (contains server block), overwriting...');
-        }
+      if ($outputCallback !== null) {
+        $outputCallback('      Nginx main config appears corrupted (contains server block), overwriting...');
+      }
     }
 
     $result = $this->sshService->execute('cp /etc/nginx/nginx.conf /etc/nginx/nginx.conf.backup', $outputCallback, $errorCallback, 30);
@@ -280,8 +321,6 @@ server {
         access_log off;
     }
 
-    limit_req zone=general burst=20 nodelay;
-    limit_req zone=login burst=3 nodelay;
 }
 EOF;
   }
@@ -330,9 +369,6 @@ http {
 
     client_max_body_size 50M;
     client_body_buffer_size 128k;
-
-    limit_req_zone \$binary_remote_addr zone=general:10m rate=10r/s;
-    limit_req_zone \$binary_remote_addr zone=login:10m rate=5r/m;
 
     include /etc/nginx/conf.d/*.conf;
     include /etc/nginx/sites-enabled/*;

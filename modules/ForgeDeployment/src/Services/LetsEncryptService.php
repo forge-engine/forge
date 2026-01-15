@@ -33,16 +33,57 @@ final class LetsEncryptService
     $config = $this->generateSslConfig($domain, $rootPath, $phpVersion);
     $configPath = "/etc/nginx/sites-available/{$domain}";
 
+    // Remove old config to ensure clean overwrite
+    $this->sshService->execute("rm -f {$configPath}", $outputCallback, null, 10);
+
     $this->sshService->uploadString($config, $configPath, $outputCallback);
 
     $result = $this->sshService->execute('nginx -t', $outputCallback, null, 60);
     if (!$result['success']) {
+      $errorMsg = $result['error'] ?? $result['output'] ?? '';
+
+      // Check for missing shared memory zones (old rate limiting configs)
+      if (strpos($errorMsg, 'zero size shared memory zone') !== false || strpos($errorMsg, 'shared memory zone') !== false) {
+        if ($outputCallback !== null) {
+          $outputCallback('      Detected old rate limiting configs. Cleaning up...');
+        }
+        // Remove rate limiting directives from all site configs
+        $this->sshService->execute('find /etc/nginx/sites-available -type f -exec sed -i "/limit_req/d" {} \\;', $outputCallback, null, 30);
+        // Retry test
+        $result = $this->sshService->execute('nginx -t', $outputCallback, null, 60);
+        if ($result['success']) {
+          if ($outputCallback !== null) {
+            $outputCallback('      Rate limiting directives removed. Config validated.');
+          }
+        }
+      }
+
+      // Check if error is in a different site config file
+      if (!$result['success'] && preg_match('/in \/etc\/nginx\/sites-enabled\/([^:]+):(\d+)/', $errorMsg, $matches)) {
+        $brokenSite = $matches[1];
+        if ($brokenSite !== $domain) {
+          if ($outputCallback !== null) {
+            $outputCallback("      Detected broken config in {$brokenSite}, temporarily disabling...");
+          }
+          $this->sshService->execute("rm -f /etc/nginx/sites-enabled/{$brokenSite}", $outputCallback, null, 10);
+          // Retry test
+          $result = $this->sshService->execute('nginx -t', $outputCallback, null, 60);
+          if ($result['success']) {
+            if ($outputCallback !== null) {
+              $outputCallback("      Broken site {$brokenSite} disabled. New site config validated.");
+            }
+          }
+        }
+      }
+
+      if (!$result['success']) {
         throw new \RuntimeException('Nginx configuration test failed after SSL update: ' . ($result['error'] ?? 'Unknown error'));
+      }
     }
 
     $result = $this->sshService->execute('systemctl reload nginx', $outputCallback, null, 60);
     if (!$result['success']) {
-        throw new \RuntimeException('Failed to reload Nginx after SSL update: ' . ($result['error'] ?? 'Unknown error'));
+      throw new \RuntimeException('Failed to reload Nginx after SSL update: ' . ($result['error'] ?? 'Unknown error'));
     }
 
     return true;
@@ -156,8 +197,6 @@ server {
         access_log off;
     }
 
-    limit_req zone=general burst=20 nodelay;
-    limit_req zone=login burst=3 nodelay;
 }
 EOF;
   }

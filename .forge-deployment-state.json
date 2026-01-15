@@ -1,20 +1,15 @@
 {
-    "server_ip": "159.223.167.247",
-    "server_id": "544423178",
+    "server_ip": "104.248.48.122",
+    "server_id": "544433467",
     "ssh_key_path": "/Users/acidlake/.ssh/id_rsa",
-    "domain": "forge-v4.upper.do",
+    "domain": "forgev6.upper.do",
     "completed_steps": [
-        "server_created",
-        "ssh_connected",
-        "system_provisioned",
-        "php_installed",
-        "database_installed",
         "dns_configured",
         "ssl_configured",
         "post_deployment_completed"
     ],
     "current_step": "post_deployment_completed",
-    "last_updated": "2026-01-15T00:10:22+00:00",
+    "last_updated": "2026-01-15T00:47:27+00:00",
     "config": {
         "php_version": "8.4",
         "database_type": "sqlite",

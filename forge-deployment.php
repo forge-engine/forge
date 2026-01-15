@@ -18,7 +18,7 @@ return [
   ],
 
   'deployment' => [
-    'domain' => 'forgev4.upper.do',
+    'domain' => 'forgev6.upper.do',
     'ssl_email' => 'jeremias2@gmail.com',
     'commands' => [
     ],
@@ -26,7 +26,8 @@ return [
       'cache:flush',
       'cache:warm',
       'db:migrate --type=all',
-      'modules:forge-deployment:fix-permissions'
+      'modules:forge-deployment:fix-permissions',
+      'storage:link'
     ],
     'database_type' => 'sqlite',
     'database_name' => 'forge_v3',
