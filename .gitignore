@@ -105,3 +105,4 @@ secrets.json
 *.trace
 
 # Forge Modules:
+.forge-deployment-state.json
