@@ -18,7 +18,7 @@ use Forge\Core\Security\PermissionsEnum;
 
 #[Module(
   name: 'ForgeHub',
-  version: '0.1.0',
+  version: '0.2.0',
   description: 'Administration Hub for Forge Framework',
   order: 6,
   author: 'Forge Team',
