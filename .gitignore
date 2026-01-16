@@ -32,7 +32,6 @@ tailwindcss
 /storage/database/*
 /storage/framework/logs/*
 /storage/tailwindcss/*
-/storage/framework/trusted_sources.json
 #
 /engine/Core/Module/module_registry.php
 /storage/framework/cache/class-map.php
