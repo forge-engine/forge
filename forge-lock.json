@@ -120,10 +120,10 @@
             }
         },
         "forge-welcome": {
-            "version": "1.0.0",
+            "version": "1.1.0",
             "registry": "forge-engine-modules",
-            "module_path": "forge-welcome/1.0.0",
-            "integrity": "1a351eaa48d167e8f04605486ae9c9438dcedd3b1d33b1efc77329752cedbaab",
+            "module_path": "forge-welcome/1.1.0",
+            "integrity": "dc0ad9f75cdb28df463faa554f5f93b99ae63e75b58b16c6404ebf936cd51bcb",
             "source_type": "git",
             "source_config": {
                 "name": "forge-engine-modules",

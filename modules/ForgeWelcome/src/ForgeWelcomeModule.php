@@ -16,6 +16,7 @@ use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Module\Attributes\LifecycleHook;
 use Forge\Core\Module\LifecycleHookName;
 use Forge\CLI\Traits\OutputHelper;
+use Forge\Core\Module\Attributes\Structure;
 
 #[Module(
   name: 'ForgeWelcome',
@@ -30,6 +31,20 @@ use Forge\CLI\Traits\OutputHelper;
 #[Service]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
+#[Structure(structure: [
+    'controllers' => 'src/Controllers',
+    'services' => 'src/Services',
+    'migrations' => 'src/Database/Migrations',
+    'views' => 'src/Resources/views',
+    'components' => 'src/Resources/components',
+    'commands' => 'src/Commands',
+    'events' => 'src/Events',
+    'tests' => 'src/tests',
+    'models' => 'src/Models',
+    'dto' => 'src/Dto',
+    'seeders' => 'src/Database/Seeders',
+    'middlewares' => 'src/Middlewares',
+])]
 #[PostInstall(command: 'asset:link', args: ['--type=module', '--module=forge-welcome'])]
 #[PostUninstall(command: 'asset:unlink', args: ['--type=module', '--module=forge-welcome'])]
 final class ForgeWelcomeModule

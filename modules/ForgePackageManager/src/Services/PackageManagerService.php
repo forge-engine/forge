@@ -458,7 +458,7 @@ final class PackageManagerService implements PackageManagerInterface
   }
 
 
-  private function extractModule(string $zipPath, string $destinationPath, string $sourcePathInZip): bool
+  private function extractModule(string $zipPath, string $destinationPath, string $sourcePathInZip, ?string $preservedPath = null): bool
   {
     $zip = new ZipArchive();
     if ($zip->open($zipPath) === true) {
@@ -469,11 +469,61 @@ final class PackageManagerService implements PackageManagerInterface
       }
 
       $zip->extractTo($destinationPath);
-
       $zip->close();
+
+      if ($preservedPath !== null && is_dir($preservedPath)) {
+        $this->applyPreservedFiles($preservedPath, $destinationPath);
+      }
+
       return true;
     } else {
       return false;
+    }
+  }
+
+  private function applyPreservedFiles(string $preservedPath, string $destinationPath): void
+  {
+    if (!is_dir($preservedPath)) {
+      $this->warning("Preserved path does not exist: {$preservedPath}");
+      return;
+    }
+
+    try {
+      $iterator = new \RecursiveIteratorIterator(
+        new \RecursiveDirectoryIterator($preservedPath, \RecursiveDirectoryIterator::SKIP_DOTS),
+        \RecursiveIteratorIterator::SELF_FIRST
+      );
+
+      $appliedCount = 0;
+      foreach ($iterator as $file) {
+        if ($file->isFile()) {
+          $relativePath = str_replace($preservedPath . '/', '', $file->getRealPath());
+          $targetPath = $destinationPath . '/' . $relativePath;
+          $targetDir = dirname($targetPath);
+
+          if (!is_dir($targetDir)) {
+            if (!mkdir($targetDir, 0755, true)) {
+              $this->warning("Failed to create directory for preserved file: {$targetDir}");
+              continue;
+            }
+          }
+
+          if (file_exists($targetPath)) {
+            if (copy($file->getRealPath(), $targetPath)) {
+              $appliedCount++;
+            } else {
+              $this->warning("Failed to apply preserved file: {$relativePath}");
+            }
+          }
+        }
+      }
+
+      if ($appliedCount > 0) {
+        $this->info("Applied preserved modifications to {$appliedCount} file(s).");
+      }
+    } catch (\Throwable $e) {
+      $this->warning("Error applying preserved files: " . $e->getMessage());
+      $this->warning("Proceeding with standard installation (modifications may be lost).");
     }
   }
 
@@ -598,7 +648,7 @@ final class PackageManagerService implements PackageManagerInterface
   /**
    * @throws ReflectionException
    */
-  public function installModule(string $moduleName, ?string $version = null, ?string $forceCache = null): void
+  public function installModule(string $moduleName, ?string $version = null, ?string $forceCache = null, ?string $preservedPath = null): void
   {
     $this->info("Installing module: {$moduleName}" . ($version ? " version {$version}" : " (latest)"));
 
@@ -668,9 +718,13 @@ final class PackageManagerService implements PackageManagerInterface
     }
 
     $extractionSourcePath = '';
-    if (!$this->extractModule($moduleCachePath, $moduleInstallPath, $extractionSourcePath)) {
+    if (!$this->extractModule($moduleCachePath, $moduleInstallPath, $extractionSourcePath, $preservedPath)) {
       $this->error("Failed to extract module {$moduleName}.");
       return;
+    }
+
+    if ($preservedPath !== null && is_dir($preservedPath)) {
+      $this->removeDirectory($preservedPath);
     }
 
     $this->updateForgeJson($moduleName, $versionToInstall);
