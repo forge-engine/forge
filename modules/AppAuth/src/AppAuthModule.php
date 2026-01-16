@@ -8,9 +8,7 @@ use App\Modules\ForgeAuth\Services\ForgeAuthService;
 use Forge\Core\DI\Container;
 use Forge\Core\Module\Attributes\Module;
 
-#[Module(
-  name: 'AppAuth',
-  version: '1.0.0',
+.0.0',
   description: 'Application-level auth configuration',
   order: 100,
   author: 'Forge Team',
