@@ -13,7 +13,7 @@ use Forge\CLI\Traits\OutputHelper;
 
 #[Module(
   name: 'ForgeComponents',
-  version: '0.1.0',
+  version: '0.2.0',
   description: 'Component library module that composes ForgeUi primitives',
   order: 99,
   author: 'Forge Team',
