@@ -13,7 +13,7 @@ use Forge\CLI\Traits\OutputHelper;
 
 #[Module(
   name: "ForgeEvents",
-  version: "0.2.3",
+  version: "0.3.0",
   description: "An Event Queue system by forge",
   order: 99,
   author: 'Forge Team',
