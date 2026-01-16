@@ -20,7 +20,7 @@ use Forge\Core\Module\Attributes\Structure;
 
 #[Module(
   name: 'ForgeWelcome',
-  version: '1.1.0',
+  version: '1.2.0',
   description: 'A playground by forge',
   order: 99,
   author: 'Forge Team',
