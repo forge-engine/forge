@@ -5,106 +5,138 @@ declare(strict_types=1);
 namespace App\Modules\ForgeStorage\Drivers;
 
 use App\Modules\ForgeStorage\Contracts\StorageDriverInterface;
-use App\Modules\ForgeStorage\Repositories\TemporaryUrlRepository;
 use Forge\Core\Config\Config;
-use Forge\Core\Config\Environment;
-use Forge\Core\Helpers\UUID;
 use Forge\Traits\FileHelper;
 
 class LocalDriver implements StorageDriverInterface
 {
-    use FileHelper;
+  use FileHelper;
 
-    private string $root;
-    private string $publicPath;
-    private Environment $env;
+  private string $root;
+  private string $publicPath;
 
-    public function __construct(
-        private readonly TemporaryUrlRepository $temporaryUrlRepository,
-        private readonly Config                 $config)
-    {
-        $storageConfig = $this->config->get('forge_storage', []);
+  public function __construct(
+    private readonly Config $config
+  ) {
+    $rootPath = $this->config->get('forge_storage.providers.local.root_path', 'storage/app');
+    $publicPath = $this->config->get('forge_storage.providers.local.public_path', 'public/storage');
 
-        $this->root = BASE_PATH . '/' . $storageConfig['root_path'];
-        $this->publicPath = BASE_PATH . '/' . $storageConfig['public_path'];
-        $this->env = Environment::getInstance();
+    $rootPath = is_string($rootPath) ? $rootPath : 'storage/app';
+    $publicPath = is_string($publicPath) ? $publicPath : 'public/storage';
+
+    $this->root = BASE_PATH . '/' . $rootPath;
+    $this->publicPath = BASE_PATH . '/' . $publicPath;
+  }
+
+  public function get(string $path)
+  {
+    $fullPath = $this->root . '/' . $path;
+    if (!file_exists($fullPath)) {
+      throw new \RuntimeException("File not found: {$path}");
+  }
+    return file_get_contents($fullPath);
+  }
+
+  public function put(string $path, $contents, array $options = []): bool
+  {
+    $fullPath = $this->root . '/' . $path;
+    $this->ensureDirectoryExists(dirname($fullPath));
+    return file_put_contents($fullPath, $contents) !== false;
+  }
+
+  public function delete(string $path): bool
+  {
+    $fullPath = $this->root . '/' . $path;
+    return file_exists($fullPath) && unlink($fullPath);
+  }
+
+  public function exists(string $path): bool
+  {
+    return file_exists($this->root . '/' . $path);
+  }
+
+  public function getUrl(string $path): string
+  {
+    return "/storage/{$path}";
+  }
+
+  public function signedUrl(string $path, int $expires): string
+  {
+    $token = hash_hmac('sha256', "{$path}|{$expires}", env('APP_KEY', ''));
+    return "/storage/signed/{$path}?expires={$expires}&signature={$token}";
+  }
+
+  public function getMetadata(string $path): array
+  {
+    $fullPath = $this->root . '/' . $path;
+
+    if (!file_exists($fullPath)) {
+      throw new \RuntimeException("File not found: {$path}");
     }
 
-    public function get(string $bucket, string $path)
-    {
-        return file_get_contents($this->getBucketPath($bucket) . '/' . $path);
+    $stat = stat($fullPath);
+    $mimeType = mime_content_type($fullPath) ?: 'application/octet-stream';
+    $etag = md5_file($fullPath);
+
+    return [
+      'size' => $stat['size'],
+      'mime_type' => $mimeType,
+      'etag' => $etag,
+      'last_modified' => date('Y-m-d H:i:s', $stat['mtime']),
+    ];
+  }
+
+  public function copy(string $sourcePath, string $destPath): bool
+  {
+    $sourceFullPath = $this->root . '/' . $sourcePath;
+    $destFullPath = $this->root . '/' . $destPath;
+
+    if (!file_exists($sourceFullPath)) {
+      return false;
     }
 
-    private function getBucketPath(string $bucket): string
-    {
-        return "{$this->root}/{$bucket}";
+    $this->ensureDirectoryExists(dirname($destFullPath));
+    return copy($sourceFullPath, $destFullPath);
+  }
+
+  public function list(string $prefix = '', int $maxKeys = 1000): array
+  {
+    if (!is_dir($this->root)) {
+      return [];
     }
 
-    public function put(string $bucket, string $path, $contents, array $options = []): bool
-    {
-        $fullPath = $this->getBucketPath($bucket) . '/' . $path;
-        $this->ensureDirectoryExists(dirname($fullPath));
+    $files = [];
+    $iterator = new \RecursiveIteratorIterator(
+      new \RecursiveDirectoryIterator($this->root, \RecursiveDirectoryIterator::SKIP_DOTS),
+      \RecursiveIteratorIterator::SELF_FIRST
+    );
 
-        return file_put_contents($fullPath, $contents) !== false;
-    }
+    $count = 0;
+    foreach ($iterator as $file) {
+      if ($count >= $maxKeys) {
+        break;
+      }
 
-    public function delete(string $bucket, string $path): bool
-    {
-        $fullPath = $this->getBucketPath($bucket) . '/' . $path;
-        return file_exists($fullPath) && unlink($fullPath);
-    }
+      if ($file->isFile()) {
+        $relativePath = str_replace($this->root . '/', '', $file->getPathname());
 
-    public function exists(string $bucket, string $path): bool
-    {
-        return file_exists($this->getBucketPath($bucket) . '/' . $path);
-    }
-
-    public function getUrl(string $bucket, string $path): string
-    {
-        $bucketConfig = $this->getBucketConfig($bucket);
-        return $bucketConfig['public']
-            ? $this->publicPath . "/{$bucket}/{$path}"
-            : "/storage/{$bucket}/{$path}";
-    }
-
-    private function getBucketConfig(string $bucket): array
-    {
-        $configFile = $this->getBucketPath($bucket) . '/.config';
-        return file_exists($configFile)
-            ? json_decode(file_get_contents($configFile), true)
-            : ['public' => false, 'expire' => null];
-    }
-
-    public function temporaryUrl(string $bucket, string $path, int $expires): string
-    {
-        $token = hash_hmac('sha256', "{$bucket}/{$path}|{$expires}", $this->env->get('APP_KEY'));
-
-        // Generate a clean URL
-        $cleanPath = bin2hex(random_bytes(16)) . '-' . basename($path);
-
-        $this->temporaryUrlRepository->create([
-            'id' => UUID::generate(),
-            'clean_path' => $cleanPath,
-            'bucket' => $bucket,
-            'path' => $path,
-            'expires_at' => date('Y-m-d H:i:s', $expires),
-            'token' => $token,
-        ]);
-
-        return "/files/{$cleanPath}?expires={$expires}&token={$token}";
-    }
-
-    public function listBuckets(): array
-    {
-        return array_filter(scandir($this->root), fn($dir) => !in_array($dir, ['.', '..']));
-    }
-
-    public function createBucket(string $name, array $config = []): bool
-    {
-        $path = $this->root . '/' . $name;
-        if (!file_exists($path)) {
-            return mkdir($path, 0755, true);
+        if ($prefix !== '' && !str_starts_with($relativePath, $prefix)) {
+          continue;
         }
-        return true;
+
+        $stat = $file->getStat();
+        $mimeType = mime_content_type($file->getPathname()) ?: 'application/octet-stream';
+
+        $files[] = [
+          'path' => $relativePath,
+          'size' => $stat['size'],
+          'mime_type' => $mimeType,
+          'last_modified' => date('Y-m-d H:i:s', $stat['mtime']),
+        ];
+        $count++;
+      }
     }
+
+    return $files;
+  }
 }

@@ -33,18 +33,28 @@ final class ApiUserController
     {
         $this->authorize($request, [Permission::UsersRead->value]);
 
-        $paginationParams = $this->getPaginationParams($request);
+        $paginationParams = $this->getPaginationParamsForApi($request);
 
-        $result = User::paginate(
+        // Define searchable fields for User model
+        $searchFields = ['email', 'identifier', 'status'];
+
+        // Use the simple paginate method with search fields in options
+        $paginator = User::paginate(
             $paginationParams['page'],
             $paginationParams['limit'],
             $paginationParams['column'],
             $paginationParams['direction'],
-            $paginationParams['search']
+            $paginationParams['search'],
+            [
+                'searchFields' => $searchFields,
+                'filters' => $paginationParams['filters'],
+                'baseUrl' => $paginationParams['baseUrl'],
+                'queryParams' => $paginationParams['queryParams'],
+            ]
         );
 
-        return $this->apiResponse($result['data'])
-            ->withMeta($result['meta']);
+        return $this->apiResponse($paginator->items())
+            ->withMeta($paginator->meta());
     }
 
     #[ApiRoute('/users/{id}', 'GET', ['api'])]

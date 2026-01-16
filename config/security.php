@@ -31,7 +31,7 @@ return [
   ],
   'auth' => [
     'redirect' => [
-      'after_login' => '/dashboard',
+      'after_login' => '/',
       'after_logout' => '/',
     ],
   ],

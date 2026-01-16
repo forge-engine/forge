@@ -17,29 +17,28 @@ use Forge\Core\Module\Attributes\Repository;
 use Forge\Core\DI\Attributes\Service;
 use Forge\CLI\Traits\OutputHelper;
 
-#[Module(name: 'ForgeSqlOrm', version: '0.3.0', description: 'SQL ORM Support (SQLite, MySQL, PostgreSQL)', order: 1,
-    type: 'core')]
+#[Module(name: 'ForgeSqlOrm', version: '0.3.0', description: 'SQL ORM Support (SQLite, MySQL, PostgreSQL)', order: 1, author: 'Forge Team', license: 'MIT', type: 'core', tags: ['database', 'sql', 'orm'])]
 #[Service]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
 #[ConfigDefaults(defaults: [
-    "forge_sql_orm" => []
+  "forge_sql_orm" => []
 ])]
 final class ForgeSqlOrmModule
 {
-    use OutputHelper;
+  use OutputHelper;
 
-    public function register(Container $container): void
-    {
-        Metrics::start('query_builder_resolution');
-        $container->bind(id: QueryBuilderInterface::class, concrete: function ($c) {
-            return new QueryBuilder($c->get(DatabaseConnectionInterface::class));
-        });
-        Metrics::stop('query_builder_resolution');
+  public function register(Container $container): void
+  {
+    Metrics::start('query_builder_resolution');
+    $container->bind(id: QueryBuilderInterface::class, concrete: function ($c) {
+      return new QueryBuilder($c->get(DatabaseConnectionInterface::class));
+    });
+    Metrics::stop('query_builder_resolution');
 
-        $container->singleton(QueryCache::class, function () {
-            return new QueryCache(3600);
-        });
-    }
+    $container->singleton(QueryCache::class, function () {
+      return new QueryCache(3600);
+    });
+  }
 
 }

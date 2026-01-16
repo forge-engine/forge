@@ -13,16 +13,24 @@ use App\Modules\ForgeNexus\Services\ForgeNexusService;
 use Forge\Core\DI\Attributes\Service;
 use Forge\CLI\Traits\OutputHelper;
 
-#[Module(name: 'ForgeNexus', description: 'CMS for Forge Framework')]
+#[Module(
+  name: 'ForgeNexus',
+  version: '0.1.0',
+  description: 'CMS for Forge Framework',
+  author: 'Forge Team',
+  license: 'MIT',
+  type: 'cms',
+  tags: ['cms', 'content', 'management', 'system', 'cms']
+)]
 #[Service]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
 final class ForgeNexusModule
 {
-    use OutputHelper;
+  use OutputHelper;
 
-    public function register(Container $container): void
-    {
-        $container->bind(ForgeNexusInterface::class, ForgeNexusService::class);
-    }
+  public function register(Container $container): void
+  {
+    $container->bind(ForgeNexusInterface::class, ForgeNexusService::class);
+  }
 }

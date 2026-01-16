@@ -20,6 +20,25 @@ layout(name: "main");
     <pre>
 
     </pre> -->
+  <?= form_open('/__upload', 'POST', ['enctype' => 'multipart/form-data']) ?>
+  <?= upload_input('file', 'avatars', ['csrf' => false]) ?>
+  <button type="submit">Upload</button>
+  <?= form_close() ?>
+  <div class="users-list">
+    <?php foreach ($paginator->items() as $user): ?>
+      <div>
+        <?= $user['email'] ?>
+      </div>
+    <?php endforeach; ?>
+  </div>
+
+  <div class="pagination-info">
+    <?= pagination_info($paginator) ?>
+  </div>
+
+  <div class="pagination-links">
+    <?= pagination($paginator) ?>
+  </div>
 
   <section>
     <?= form_open("/users", "POST", ["class" => "form"]) ?>

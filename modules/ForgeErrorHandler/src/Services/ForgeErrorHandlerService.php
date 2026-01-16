@@ -39,6 +39,12 @@ final class ForgeErrorHandlerService implements ErrorHandlerInterface
   {
     $this->logThrowable($e, $request);
 
+    if ($this->isApiRequest($request)) {
+      return $this->debug
+        ? $this->buildDebugJsonResponse($e, $request)
+        : $this->buildProductionJsonResponse($e);
+    }
+
     return $this->debug
       ? $this->buildDebugResponse($e, $request)
       : $this->buildProductionResponse();
@@ -109,10 +115,10 @@ final class ForgeErrorHandlerService implements ErrorHandlerInterface
     $source = PHP_SAPI === 'cli'
       ? ['cli' => implode(' ', $_SERVER['argv'] ?? [])]
       : [
-      'ip' => $this->clientIp(),
-      'method' => $request->getMethod(),
-      'uri' => $request->getUri()
-    ];
+        'ip' => $this->clientIp(),
+        'method' => $request->getMethod(),
+        'uri' => $request->getUri()
+      ];
 
     return [
       'fingerprint' => $fingerprint,
@@ -199,6 +205,91 @@ final class ForgeErrorHandlerService implements ErrorHandlerInterface
   private function buildProductionResponse(): Response
   {
     return new Response($this->renderUserFriendlyPage(), 500);
+  }
+
+  /**
+   * Check if the request is an API request.
+   *
+   * @param Request $request
+   * @return bool
+   */
+  private function isApiRequest(Request $request): bool
+  {
+    $accept = $request->getHeader('Accept') ?? '';
+    if (str_contains(strtolower($accept), 'application/json')) {
+      return true;
+    }
+
+    $uri = $request->getUri();
+    if (str_starts_with($uri, '/api')) {
+      return true;
+    }
+
+    $contentType = $request->getHeader('Content-Type') ?? '';
+    if (str_contains(strtolower($contentType), 'application/json')) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Build JSON response for API requests in debug mode.
+   *
+   * @param Throwable $e
+   * @param Request $request
+   * @return Response
+   */
+  private function buildDebugJsonResponse(Throwable $e, Request $request): Response
+  {
+    $snippets = $this->extractSnippets($e);
+    $trace = $this->filterTrace($e->getTrace());
+    foreach ($trace as $idx => &$frame) {
+      $frame['code_snippet'] = $snippets[$idx] ?? [];
+    }
+
+    $data = [
+      'error' => [
+        'message' => $e->getMessage(),
+        'type' => get_class($e),
+        'code' => $e->getCode(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+        'trace' => $trace,
+      ],
+      'request' => [
+        'method' => $request->getMethod(),
+        'uri' => $request->getUri(),
+        'headers' => $request->getHeaders(),
+        'parameters' => $this->mask($request->serverParams),
+        'query' => $this->mask($request->queryParams),
+      ],
+      'session' => $this->mask($_SESSION ?? []),
+      'environment' => $this->mask($_ENV),
+    ];
+
+    $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    return new Response($json, 500, ['Content-Type' => 'application/json']);
+  }
+
+  /**
+   * Build JSON response for API requests in production mode.
+   *
+   * @param Throwable $e
+   * @return Response
+   */
+  private function buildProductionJsonResponse(Throwable $e): Response
+  {
+    $data = [
+      'error' => [
+        'message' => 'An error occurred. Please try again later.',
+        'type' => 'InternalServerError',
+        'code' => 500,
+      ],
+    ];
+
+    $json = json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    return new Response($json, 500, ['Content-Type' => 'application/json']);
   }
 
   private function mask(array $input): array

@@ -7,175 +7,180 @@ use App\Modules\ForgeSqlOrm\ORM\Cache\QueryCache;
 
 abstract class RecordRepository implements Repository
 {
-    protected QueryCache $cache;
-    protected string $modelClass;
-    protected string $tableName;
+  protected QueryCache $cache;
+  protected string $modelClass;
+  protected string $tableName;
 
-    public function __construct(QueryCache $cache)
-    {
-        $this->cache = $cache;
-        $this->modelClass = $this->getModelClass();
-        $this->tableName = $this->modelClass::table();
+  public function __construct(QueryCache $cache)
+  {
+    $this->cache = $cache;
+    $this->modelClass = $this->getModelClass();
+    $this->tableName = $this->modelClass::table();
+  }
+
+  abstract protected function getModelClass(): string;
+
+  public function create(mixed $data): Model
+  {
+    $record = new ($this->modelClass)();
+
+    foreach ($data as $key => $value) {
+      if (property_exists($record, $key)) {
+        $record->{$key} = $value;
+      }
     }
 
-    abstract protected function getModelClass(): string;
+    $record->save();
+    return $record;
+  }
 
-    public function create(mixed $data): Model
-    {
-        $record = new ($this->modelClass)();
-
-        foreach ($data as $key => $value) {
-            if (property_exists($record, $key)) {
-                $record->{$key} = $value;
-            }
-        }
-
-        $record->save();
-        return $record;
+  public function update(Model $record, mixed $data): bool
+  {
+    foreach ($data as $key => $value) {
+      if (property_exists($record, $key)) {
+        $record->{$key} = $value;
+      }
     }
 
-    public function update(Model $record, mixed $data): bool
-    {
-        foreach ($data as $key => $value) {
-            if (property_exists($record, $key)) {
-                $record->{$key} = $value;
-            }
-        }
+    $result = $record->save();
 
-        $result = $record->save();
-
-        if ($result) {
-            $pk = $this->modelClass::primaryProperty()->getName();
-            $id = $record->{$pk};
-            $this->cache->forget($this->cache->generateKey($this->tableName, 'find', $id));
-            $this->cache->invalidate($this->tableName);
-        }
-
-        return $result;
+    if ($result) {
+      $pk = $this->modelClass::primaryProperty()->getName();
+      $id = $record->{$pk};
+      $this->cache->forget($this->cache->generateKey($this->tableName, 'find', $id));
+      $this->cache->invalidate($this->tableName);
     }
 
-    public function delete(Model|int $record): bool
-    {
-        if (is_int($record)) {
-            $record = $this->find($record);
-            if ($record === null) {
-                return false;
-            }
-        }
+    return $result;
+  }
 
-        $pk = $this->modelClass::primaryProperty()->getName();
-        $id = $record->{$pk};
-
-        $result = $record->delete() > 0;
-
-        if ($result) {
-            $this->cache->forget($this->cache->generateKey($this->tableName, 'find', $id));
-            $this->cache->invalidate($this->tableName);
-        }
-
-        return $result;
+  public function delete(Model|int $record): bool
+  {
+    if (is_int($record)) {
+      $record = $this->find($record);
+      if ($record === null) {
+        return false;
+      }
     }
 
-    public function find(int $id): ?Model
-    {
-        $key = $this->cache->generateKey($this->tableName, 'find', $id);
-        $cached = $this->cache->get($key);
+    $pk = $this->modelClass::primaryProperty()->getName();
+    $id = $record->{$pk};
 
-        if ($cached !== null) {
-            return $cached;
-        }
+    $result = $record->delete() > 0;
 
-        $record = $this->modelClass::query()->id($id)->first();
-
-        if ($record !== null) {
-            $this->cache->set($key, $record);
-        }
-        return $record;
+    if ($result) {
+      $this->cache->forget($this->cache->generateKey($this->tableName, 'find', $id));
+      $this->cache->invalidate($this->tableName);
     }
 
-    public function findBy(string $field, mixed $value): ?Model
-    {
-        $key = $this->cache->generateKey($this->tableName, 'findBy', $field, $value);
-        $cached = $this->cache->get($key);
+    return $result;
+  }
 
-        if ($cached !== null) {
-            return $cached;
-        }
+  public function find(int $id): ?Model
+  {
+    $key = $this->cache->generateKey($this->tableName, 'find', $id);
+    $cached = $this->cache->get($key);
 
-        $record = $this->modelClass::query()->where($field, '=', $value)->first();
-
-        if ($record !== null) {
-            $this->cache->set($key, $record);
-        }
-
-        return $record;
+    if ($cached !== null) {
+      return $cached;
     }
 
-    public function findAll(): array
-    {
-        $key = $this->cache->generateKey($this->tableName, 'findAll');
-        $cached = $this->cache->get($key);
+    $record = $this->modelClass::query()->id($id)->first();
 
-        if ($cached !== null) {
-            return $cached;
+    if ($record !== null) {
+      $this->cache->set($key, $record);
+    }
+    return $record;
+  }
+
+  public function findBy(string $field, mixed $value): ?Model
+  {
+    $key = $this->cache->generateKey($this->tableName, 'findBy', $field, $value);
+    $cached = $this->cache->get($key);
+
+    if ($cached !== null) {
+      return $cached;
+    }
+
+    $record = $this->modelClass::query()->where($field, '=', $value)->first();
+
+    if ($record !== null) {
+      $this->cache->set($key, $record);
+    }
+
+    return $record;
+  }
+
+  public function findAll(): array
+  {
+    $key = $this->cache->generateKey($this->tableName, 'findAll');
+    $cached = $this->cache->get($key);
+
+    if ($cached !== null) {
+      return $cached;
+    }
+
+    $records = $this->modelClass::query()->get();
+    $this->cache->set($key, $records, 300);
+
+    return $records;
+  }
+
+  public function query(): ModelQuery
+  {
+    return $this->modelClass::query();
+  }
+
+  public function createMany(array $data): array
+  {
+    $records = [];
+    $pk = $this->modelClass::primaryProperty()->getName();
+
+    foreach ($data as $row) {
+      $record = new ($this->modelClass)();
+      foreach ($row as $key => $value) {
+        if (property_exists($record, $key)) {
+          $record->{$key} = $value;
         }
-
-        $records = $this->modelClass::query()->get();
-        $this->cache->set($key, $records, 300);
-
-        return $records;
+      }
+      $record->save();
+      $records[] = $record;
     }
 
-    public function query(): ModelQuery
-    {
-        return $this->modelClass::query();
+    $this->cache->invalidate($this->tableName);
+
+    return $records;
+  }
+
+  public function updateMany(array $records, array $data): int
+  {
+    $count = 0;
+
+    foreach ($records as $record) {
+      if ($this->update($record, $data)) {
+        $count++;
+      }
     }
 
-    public function createMany(array $data): array
-    {
-        $records = [];
-        $pk = $this->modelClass::primaryProperty()->getName();
+    return $count;
+  }
 
-        foreach ($data as $row) {
-            $record = new ($this->modelClass)();
-            foreach ($row as $key => $value) {
-                if (property_exists($record, $key)) {
-                    $record->{$key} = $value;
-                }
-            }
-            $record->save();
-            $records[] = $record;
-        }
+  public function deleteMany(array $ids): int
+  {
+    $count = 0;
 
-        $this->cache->invalidate($this->tableName);
-
-        return $records;
+    foreach ($ids as $id) {
+      if ($this->delete($id)) {
+        $count++;
+      }
     }
 
-    public function updateMany(array $records, array $data): int
-    {
-        $count = 0;
+    return $count;
+  }
 
-        foreach ($records as $record) {
-            if ($this->update($record, $data)) {
-                $count++;
-            }
-        }
-
-        return $count;
-    }
-
-    public function deleteMany(array $ids): int
-    {
-        $count = 0;
-
-        foreach ($ids as $id) {
-            if ($this->delete($id)) {
-                $count++;
-            }
-        }
-
-        return $count;
-    }
+  public function paginate(int $page = 1, int $perPage = 10, array $options = []): Paginator
+  {
+    return $this->modelClass::paginate($page, $perPage, 'created_at', 'ASC', '', $options);
+  }
 }
 

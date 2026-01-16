@@ -16,7 +16,16 @@ use Forge\Core\Module\Attributes\HubItem;
 use Forge\Core\Module\ForgeIcon;
 use Forge\Core\Security\PermissionsEnum;
 
-#[Module(name: 'ForgeHub', description: 'Administration Hub for Forge Framework', order: 6)]
+#[Module(
+  name: 'ForgeHub',
+  version: '0.1.0',
+  description: 'Administration Hub for Forge Framework',
+  order: 6,
+  author: 'Forge Team',
+  license: 'MIT',
+  type: 'generic',
+  tags: ['generic', 'hub', 'management', 'system', 'administration-hub']
+)]
 #[HubItem(label: 'CLI Command', route: '/hub/commands', icon: ForgeIcon::COG, order: 3, permissions: [PermissionsEnum::RUN_COMMAND, PermissionsEnum::VIEW_COMMAND])]
 #[HubItem(label: 'Logs', route: '/hub/logs', icon: ForgeIcon::LOG)]
 #[Service]
@@ -24,90 +33,90 @@ use Forge\Core\Security\PermissionsEnum;
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
 final class ForgeHubModule
 {
-    use OutputHelper;
+  use OutputHelper;
 
-    public function register(Container $container): void
-    {
-        $container->bind(ForgeHubInterface::class, ForgeHubService::class);
-        $this->registerNexusItems($container);
+  public function register(Container $container): void
+  {
+    $container->bind(ForgeHubInterface::class, ForgeHubService::class);
+    $this->registerNexusItems($container);
+  }
+
+  private function registerNexusItems(Container $container): void
+  {
+    $menuFile = BASE_PATH . '/modules/ForgeHub/config/menu.php';
+
+    if (!class_exists(\App\Modules\ForgeHub\ForgeHubModule::class)) {
+      return;
     }
 
-    private function registerNexusItems(Container $container): void
-    {
-        $menuFile = BASE_PATH . '/modules/ForgeHub/config/menu.php';
+    $existingEntries = file_exists($menuFile) ? include $menuFile : [];
 
-        if (!class_exists(\App\Modules\ForgeHub\ForgeHubModule::class)) {
-            return;
+    $menuEntries = [];
+    $hasChanges = false;
+
+    foreach ($container->getServiceIds() as $serviceId) {
+      try {
+        $reflection = new \ReflectionClass($serviceId);
+      } catch (\ReflectionException $e) {
+        continue;
+      }
+
+      foreach ($reflection->getAttributes(HubItem::class) as $attribute) {
+        /** @var NexusItem $instance */
+        $instance = $attribute->newInstance();
+        $newEntry = [
+          'label' => $instance->label,
+          'route' => $instance->route,
+          'icon' => $instance->icon?->value ?? null,
+          'order' => $instance->order,
+          'permissions' => array_map(fn($perm) => $perm->value, $instance->permissions),
+        ];
+
+        $existingEntryKey = array_search($newEntry['route'], array_column($existingEntries, 'route'));
+
+        if ($existingEntryKey !== false) {
+          $existingEntry = $existingEntries[$existingEntryKey];
+
+          if ($existingEntry !== $newEntry) {
+            $hasChanges = true;
+            $existingEntries[$existingEntryKey] = $newEntry;
+          }
+
+          $menuEntries[] = $existingEntries[$existingEntryKey];
+        } else {
+          $hasChanges = true;
+          $menuEntries[] = $newEntry;
         }
-
-        $existingEntries = file_exists($menuFile) ? include $menuFile : [];
-
-        $menuEntries = [];
-        $hasChanges = false;
-
-        foreach ($container->getServiceIds() as $serviceId) {
-            try {
-                $reflection = new \ReflectionClass($serviceId);
-            } catch (\ReflectionException $e) {
-                continue;
-            }
-
-            foreach ($reflection->getAttributes(HubItem::class) as $attribute) {
-                /** @var NexusItem $instance */
-                $instance = $attribute->newInstance();
-                $newEntry = [
-                    'label' => $instance->label,
-                    'route' => $instance->route,
-                    'icon' => $instance->icon?->value ?? null,
-                    'order' => $instance->order,
-                    'permissions' => array_map(fn($perm) => $perm->value, $instance->permissions),
-                ];
-
-                $existingEntryKey = array_search($newEntry['route'], array_column($existingEntries, 'route'));
-
-                if ($existingEntryKey !== false) {
-                    $existingEntry = $existingEntries[$existingEntryKey];
-
-                    if ($existingEntry !== $newEntry) {
-                        $hasChanges = true;
-                        $existingEntries[$existingEntryKey] = $newEntry;
-                    }
-
-                    $menuEntries[] = $existingEntries[$existingEntryKey];
-                } else {
-                    $hasChanges = true;
-                    $menuEntries[] = $newEntry;
-                }
-            }
-        }
-
-        usort($menuEntries, fn($a, $b) => $a['order'] <=> $b['order']);
-
-        if ($hasChanges) {
-            $output = "<?php\n\nreturn [\n";
-            foreach ($menuEntries as $entry) {
-                $output .= "    [\n";
-                foreach ($entry as $key => $value) {
-                    $output .= "        '{$key}' => ";
-                    if (is_array($value)) {
-                        $output .= "[\n";
-                        foreach ($value as $item) {
-                            $output .= "            '{$item}',\n";
-                        }
-                        $output .= "        ],\n";
-                    } elseif (is_string($value)) {
-                        $output .= "'{$value}',\n";
-                    } elseif (is_null($value)) {
-                        $output .= "null,\n";
-                    } else {
-                        $output .= var_export($value, true) . ",\n";
-                    }
-                }
-                $output .= "    ],\n";
-            }
-            $output .= "];\n";
-
-            file_put_contents($menuFile, $output);
-        }
+      }
     }
+
+    usort($menuEntries, fn($a, $b) => $a['order'] <=> $b['order']);
+
+    if ($hasChanges) {
+      $output = "<?php\n\nreturn [\n";
+      foreach ($menuEntries as $entry) {
+        $output .= "    [\n";
+        foreach ($entry as $key => $value) {
+          $output .= "        '{$key}' => ";
+          if (is_array($value)) {
+            $output .= "[\n";
+            foreach ($value as $item) {
+              $output .= "            '{$item}',\n";
+            }
+            $output .= "        ],\n";
+          } elseif (is_string($value)) {
+            $output .= "'{$value}',\n";
+          } elseif (is_null($value)) {
+            $output .= "null,\n";
+          } else {
+            $output .= var_export($value, true) . ",\n";
+          }
+        }
+        $output .= "    ],\n";
+      }
+      $output .= "];\n";
+
+      file_put_contents($menuFile, $output);
+    }
+  }
 }

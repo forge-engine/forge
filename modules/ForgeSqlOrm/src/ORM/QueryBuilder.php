@@ -22,7 +22,8 @@ final class QueryBuilder implements QueryBuilderInterface
     private ?string $order = null,
     private ?int $limit = null,
     private ?int $offset = null,
-    private bool $forUpdate = false
+    private bool $forUpdate = false,
+    private array $joins = []
   ) {
   }
 
@@ -37,7 +38,8 @@ final class QueryBuilder implements QueryBuilderInterface
       order: $this->order,
       limit: $this->limit,
       offset: $this->offset,
-      forUpdate: $this->forUpdate
+      forUpdate: $this->forUpdate,
+      joins: $this->joins
     );
   }
 
@@ -52,7 +54,8 @@ final class QueryBuilder implements QueryBuilderInterface
       order: $this->order,
       limit: $this->limit,
       offset: $this->offset,
-      forUpdate: $this->forUpdate
+      forUpdate: $this->forUpdate,
+      joins: $this->joins
     );
   }
 
@@ -80,7 +83,8 @@ final class QueryBuilder implements QueryBuilderInterface
       order: $this->order,
       limit: $this->limit,
       offset: $this->offset,
-      forUpdate: $this->forUpdate
+      forUpdate: $this->forUpdate,
+      joins: $this->joins
     );
   }
 
@@ -97,7 +101,8 @@ final class QueryBuilder implements QueryBuilderInterface
         order: $this->order,
         limit: $this->limit,
         offset: $this->offset,
-        forUpdate: $this->forUpdate
+        forUpdate: $this->forUpdate,
+        joins: $this->joins
       );
     }
     $key = ':p' . count($this->params);
@@ -112,7 +117,8 @@ final class QueryBuilder implements QueryBuilderInterface
       order: $this->order,
       limit: $this->limit,
       offset: $this->offset,
-      forUpdate: $this->forUpdate
+      forUpdate: $this->forUpdate,
+      joins: $this->joins
     );
   }
 
@@ -138,7 +144,8 @@ final class QueryBuilder implements QueryBuilderInterface
       order: $this->order,
       limit: $this->limit,
       offset: $this->offset,
-      forUpdate: $this->forUpdate
+      forUpdate: $this->forUpdate,
+      joins: $this->joins
     );
   }
 
@@ -163,7 +170,8 @@ final class QueryBuilder implements QueryBuilderInterface
       order: "$column $direction",
       limit: $this->limit,
       offset: $this->offset,
-      forUpdate: $this->forUpdate
+      forUpdate: $this->forUpdate,
+      joins: $this->joins
     );
   }
 
@@ -178,7 +186,8 @@ final class QueryBuilder implements QueryBuilderInterface
       order: $this->order,
       limit: $this->limit,
       offset: $count,
-      forUpdate: $this->forUpdate
+      forUpdate: $this->forUpdate,
+      joins: $this->joins
     );
   }
 
@@ -193,7 +202,8 @@ final class QueryBuilder implements QueryBuilderInterface
       order: $this->order,
       limit: $this->limit,
       offset: $this->offset,
-      forUpdate: true
+      forUpdate: true,
+      joins: $this->joins
     );
   }
 
@@ -222,6 +232,11 @@ final class QueryBuilder implements QueryBuilderInterface
   {
     $sql = 'SELECT ' . ($this->select === [] ? '*' : implode(', ', $this->select))
       . " FROM {$this->table}";
+
+    // Add joins
+    foreach ($this->joins as $join) {
+      $sql .= " {$join['type']} JOIN {$join['table']} ON {$join['first']} {$join['operator']} {$join['second']}";
+    }
 
     if ($this->where !== []) {
       $sql .= ' WHERE ' . implode(' AND ', $this->where);
@@ -374,23 +389,78 @@ final class QueryBuilder implements QueryBuilderInterface
       order: $this->order,
       limit: $this->limit,
       offset: $this->offset,
-      forUpdate: $this->forUpdate
+      forUpdate: $this->forUpdate,
+      joins: $this->joins
     );
   }
 
   public function leftJoin(string $t, string $a, string $op, string $b): self
   {
-    return $this;
+    $joins = [...$this->joins, [
+      'type' => 'LEFT',
+      'table' => $t,
+      'first' => $a,
+      'operator' => $op,
+      'second' => $b,
+    ]];
+    return new self(
+      $this->conn,
+      table: $this->table,
+      select: $this->select,
+      where: $this->where,
+      params: $this->params,
+      order: $this->order,
+      limit: $this->limit,
+      offset: $this->offset,
+      forUpdate: $this->forUpdate,
+      joins: $joins
+    );
   }
 
   public function join(string $t, string $a, string $op, string $b, string $type = 'INNER'): self
   {
-    return $this;
+    $joins = [...$this->joins, [
+      'type' => strtoupper($type),
+      'table' => $t,
+      'first' => $a,
+      'operator' => $op,
+      'second' => $b,
+    ]];
+    return new self(
+      $this->conn,
+      table: $this->table,
+      select: $this->select,
+      where: $this->where,
+      params: $this->params,
+      order: $this->order,
+      limit: $this->limit,
+      offset: $this->offset,
+      forUpdate: $this->forUpdate,
+      joins: $joins
+    );
   }
 
   public function rightJoin(string $t, string $a, string $op, string $b): self
   {
-    return $this;
+    $joins = [...$this->joins, [
+      'type' => 'RIGHT',
+      'table' => $t,
+      'first' => $a,
+      'operator' => $op,
+      'second' => $b,
+    ]];
+    return new self(
+      $this->conn,
+      table: $this->table,
+      select: $this->select,
+      where: $this->where,
+      params: $this->params,
+      order: $this->order,
+      limit: $this->limit,
+      offset: $this->offset,
+      forUpdate: $this->forUpdate,
+      joins: $joins
+    );
   }
 
   public function groupBy(string ...$cols): self
@@ -425,7 +495,8 @@ final class QueryBuilder implements QueryBuilderInterface
       order: $this->order,
       limit: $n,
       offset: $this->offset,
-      forUpdate: $this->forUpdate
+      forUpdate: $this->forUpdate,
+      joins: $this->joins
     );
   }
 
@@ -581,7 +652,8 @@ final class QueryBuilder implements QueryBuilderInterface
       order: $this->order,
       limit: $this->limit,
       offset: $this->offset,
-      forUpdate: $this->forUpdate
+      forUpdate: $this->forUpdate,
+      joins: $this->joins
     );
   }
 

@@ -11,22 +11,24 @@ use Forge\Core\Module\Attributes\Module;
 use Forge\Core\Module\Attributes\Provides;
 use Forge\Core\Module\Attributes\Repository;
 
-#[
-    Module(
-        name: "ForgeTesting",
-        version: "0.1.4",
-        description: "A Test Suite Module By Forge",
-        order: 9999,
-        isCli: true,
-    ),
-]
+#[Module(
+  name: "ForgeTesting",
+  version: "0.1.4",
+  description: "A Test Suite Module By Forge",
+  order: 9999,
+  isCli: true,
+  author: 'Forge Team',
+  license: 'MIT',
+  type: 'testing',
+  tags: ['testing', 'unit', 'integration']
+)]
 #[Service]
 #[Compatibility(framework: ">=0.1.20", php: ">=8.3")]
 #[Repository(type: "git", url: "https://github.com/forge-engine/modules")]
 #[Provides(interface: TestCase::class, version: "0.1.4")]
 final class ForgeTestingModule
 {
-    public function register(Container $container): void
-    {
-    }
+  public function register(Container $container): void
+  {
+  }
 }

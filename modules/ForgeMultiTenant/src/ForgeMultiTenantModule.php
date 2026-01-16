@@ -17,13 +17,22 @@ use Forge\Core\Module\Attributes\Repository;
 use Forge\Core\DI\Attributes\Service;
 use Forge\CLI\Traits\OutputHelper;
 
-#[Module(name: 'ForgeMultiTenant', version: '0.2.0', description: 'A Multi Tenant Module by Forge', order: 2)]
+#[Module(
+  name: 'ForgeMultiTenant',
+  version: '0.2.0',
+  description: 'A Multi Tenant Module by Forge',
+  order: 2,
+  author: 'Forge Team',
+  license: 'MIT',
+  type: 'multi-tenant',
+  tags: ['multi-tenant', 'tenant', 'management', 'database', 'multi-tenant', 'multi-tenant-management']
+)]
 #[Service]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
 #[ConfigDefaults(defaults: [
-      "forge_multi_tenant" => []
-    ])]
+  "forge_multi_tenant" => []
+])]
 #[PostInstall(command: 'migrate', args: ['--type=', 'module', '--module=', 'ForgeMultiTenant'])]
 #[PostInstall(command: 'seed', args: ['--type=', 'module', '--module=', 'ForgeMultiTenant'])]
 #[PostInstall(command: 'tenant:migrate', args: [''])]

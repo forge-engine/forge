@@ -118,6 +118,22 @@
                 "description": "Forge Kernel Official Modules",
                 "debug": false
             }
+        },
+        "forge-welcome": {
+            "version": "1.0.0",
+            "registry": "forge-engine-modules",
+            "module_path": "forge-welcome/1.0.0",
+            "integrity": "1a351eaa48d167e8f04605486ae9c9438dcedd3b1d33b1efc77329752cedbaab",
+            "source_type": "git",
+            "source_config": {
+                "name": "forge-engine-modules",
+                "type": "git",
+                "url": "https://github.com/forge-engine/modules",
+                "branch": "main",
+                "private": false,
+                "description": "Forge Kernel Official Modules",
+                "debug": false
+            }
         }
     }
 }

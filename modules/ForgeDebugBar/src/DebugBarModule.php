@@ -27,14 +27,23 @@ use Forge\Core\Module\LifecycleHookName;
 use Forge\Traits\InjectsAssets;
 
 #[Service]
-#[Module(name: 'ForgeDebugBar', version: '1.0.0', description: 'Forge Debug Bar', order: 3)]
+#[Module(
+  name: 'ForgeDebugBar',
+  version: '1.0.0',
+  description: 'A debug bar by Forge',
+  order: 3,
+  author: 'Forge Team',
+  license: 'MIT',
+  type: 'generic',
+  tags: ['generic', 'debug', 'debug-bar', 'debug-bar-system', 'debug-bar-library', 'debug-bar-framework']
+)]
 #[Provides(\App\Modules\ForgeDebugBar\DebugBar::class, version: '1.0.0')]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[ConfigDefaults(defaults: [
-      'forge_debug_bar' => [
-        'enabled' => true
-      ]
-    ])]
+  'forge_debug_bar' => [
+    'enabled' => true
+  ]
+])]
 #[PostInstall(command: 'asset:link', args: ['--type=module', '--module=forge-debug-bar'])]
 #[PostUninstall(command: 'asset:unlink', args: ['--type=module', '--module=forge-debug-bar'])]
 class DebugBarModule

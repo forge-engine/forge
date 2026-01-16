@@ -13,19 +13,27 @@ use App\Modules\ForgeLogger\Contracts\ForgeLoggerInterface;
 use App\Modules\ForgeLogger\Services\ForgeLoggerService;
 use Forge\Core\DI\Attributes\Service;
 use Forge\CLI\Traits\OutputHelper;
-use const pcov\version;
 
-#[Module(name: 'ForgeLogger', version: '0.1.2', description: 'A logger by Forge.', order: 90)]
+#[Module(
+  name: 'ForgeLogger',
+  version: '0.1.2',
+  description: 'A logger by Forge.',
+  order: 90,
+  author: 'Forge Team',
+  license: 'MIT',
+  type: 'logging',
+  tags: ['logging', 'logger', 'log', 'logging-system', 'logging-library', 'logging-framework']
+)]
 #[Service]
 #[Provides(ForgeLoggerInterface::class, version: '0.1.2')]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
 final class ForgeLoggerModule
 {
-    use OutputHelper;
+  use OutputHelper;
 
-    public function register(Container $container): void
-    {
-        $container->bind(ForgeLoggerInterface::class, ForgeLoggerService::class);
-    }
+  public function register(Container $container): void
+  {
+    $container->bind(ForgeLoggerInterface::class, ForgeLoggerService::class);
+  }
 }

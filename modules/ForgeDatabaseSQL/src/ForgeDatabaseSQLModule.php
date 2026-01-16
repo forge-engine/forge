@@ -19,26 +19,34 @@ use Forge\Core\Module\Attributes\Requires;
 use Forge\Core\DI\Attributes\Service;
 use Forge\CLI\Traits\OutputHelper;
 
-#[Module(name: 'ForgeDatabaseSQL', version: '0.4.0', description: 'SQL database support (SQLite, MySQL, PostgreSQL)',
-    order: 0, type: 'core')]
+#[Module(
+  name: 'ForgeDatabaseSQL',
+  version: '0.4.0',
+  description: 'SQL database support (SQLite, MySQL, PostgreSQL)',
+  order: 0,
+  author: 'Forge Team',
+  license: 'MIT',
+  type: 'core',
+  tags: ['database', 'sql', 'sqlite', 'mysql', 'postgresql']
+)]
 #[Service]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[Requires(interface: DatabaseConnectionInterface::class, version: '>=0.1.0')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
 #[Provides(interface: 'forge-database-sql', version: '0.4.0')]
 #[ConfigDefaults(defaults: [
-    "forge_database_sql" => []
+  "forge_database_sql" => []
 ])]
 #[PostInstall(command: 'forge-database-sql:greet', args: [])]
 #[PostUninstall(command: 'forge-database-sql:greet', args: ['--post-uninstall'])]
 final class ForgeDatabaseSQLModule
 {
-    use OutputHelper;
+  use OutputHelper;
 
-    public function register(Container $container): void
-    {
-        $env = Environment::getInstance();
-        DatabaseSetup::setup($container, $env);
-    }
+  public function register(Container $container): void
+  {
+    $env = Environment::getInstance();
+    DatabaseSetup::setup($container, $env);
+  }
 
 }

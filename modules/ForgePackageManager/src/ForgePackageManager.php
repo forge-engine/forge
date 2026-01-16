@@ -13,21 +13,31 @@ use Forge\Core\Module\Attributes\ConfigDefaults;
 use Forge\Core\Module\Attributes\Module;
 use Forge\Core\Module\Attributes\Repository;
 
-#[Module(name: 'ForgePackageManager', version: '2.2.0', description: 'A Package Manager By Forge', order: 1, isCli: true)]
+#[Module(
+  name: 'ForgePackageManager',
+  version: '2.2.0',
+  description: 'A Package Manager By Forge',
+  order: 1,
+  isCli: true,
+  author: 'Forge Team',
+  license: 'MIT',
+  type: 'management',
+  tags: ['management', 'package', 'dependency', 'installer']
+)]
 #[Service]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
 #[ConfigDefaults(defaults: [
-    'source_list' => [
-        'registry' => []
-    ]
+  'source_list' => [
+    'registry' => []
+  ]
 ])]
 final class ForgePackageManager
 {
-    public function register(Container $container): void
-    {
-        if (PHP_SAPI === 'cli') {
-            $container->bind(PackageManagerInterface::class, PackageManagerService::class);
-        }
+  public function register(Container $container): void
+  {
+    if (PHP_SAPI === 'cli') {
+      $container->bind(PackageManagerInterface::class, PackageManagerService::class);
     }
+  }
 }

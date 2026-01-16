@@ -9,24 +9,28 @@ use Forge\Core\DI\Container;
 use Forge\Core\Module\Attributes\Module;
 
 #[Module(
-    name: 'AppAuth',
-    version: '1.0.0',
-    description: 'Application-level auth configuration',
-    order: 100,
+  name: 'AppAuth',
+  version: '1.0.0',
+  description: 'Application-level auth configuration',
+  order: 100,
+  author: 'Forge Team',
+  license: 'MIT',
+  type: 'generic',
+  tags: ['generic', 'auth', 'authentication', 'authorization', 'authentication-system', 'authentication-library', 'authentication-framework', 'app-auth']
 )]
 final class AppAuthModule
 {
-    public function register(Container $container): void
-    {
-        ForgeAuthService::addCustomClaimsCallback(
-            static function ($user): array {
-                return [
-                    'email'      => $user->email,
-                    'identifier' => $user->identifier,
-                    'tenant_id'  => $user->tenant_id ?? null,
-                ];
-            }
-        );
-    }
+  public function register(Container $container): void
+  {
+    ForgeAuthService::addCustomClaimsCallback(
+      static function ($user): array {
+        return [
+          'email' => $user->email,
+          'identifier' => $user->identifier,
+          'tenant_id' => $user->tenant_id ?? null,
+        ];
+      }
+    );
+  }
 }
 

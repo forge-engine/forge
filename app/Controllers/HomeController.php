@@ -9,9 +9,11 @@ use App\Modules\ForgeAuth\Repositories\UserRepository;
 use App\Modules\ForgeAuth\Services\ForgeAuthService;
 use App\Modules\ForgeAuth\Validation\ForgeAuthValidate;
 use App\Modules\ForgeMultiTenant\Attributes\TenantScope;
+use App\Modules\ForgeNotification\Services\ForgeNotificationService;
 use App\Modules\ForgeSqlOrm\ORM\QueryBuilder;
 use App\Services\UserService;
 use Forge\Core\Contracts\Database\DatabaseConnectionInterface;
+use Forge\Core\Contracts\NotificationInterface;
 use Forge\Core\Debug\Metrics;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Helpers\Flash;
@@ -22,14 +24,15 @@ use Forge\Core\Routing\Route;
 use Forge\Core\Http\Request;
 use Forge\Exceptions\ValidationException;
 use Forge\Traits\ControllerHelper;
+use Forge\Traits\PaginationHelper;
 use Forge\Traits\SecurityHelper;
 
-#[Service]
 #[TenantScope("central")]
 #[Middleware("web")]
 final class HomeController
 {
   use ControllerHelper;
+  use PaginationHelper;
   use SecurityHelper;
 
   public function __construct(
@@ -38,16 +41,30 @@ final class HomeController
     public readonly UserRepository $userRepository,
     public readonly QueryBuilder $builder,
     public readonly DatabaseConnectionInterface $connection,
+    public readonly ForgeNotificationService $notification,
   ) {
     //
   }
 
   #[Route("/")]
-  public function index(): Response
+  public function index(Request $request): Response
   {
     Metrics::start("db_load_one_record_test");
 
-    $user = $this->userRepository->findById(2);
+    $paginationParams = $this->getPaginationParamsForApi($request);
+
+    $paginator = $this->userRepository->paginate(
+      $paginationParams['page'],
+      $paginationParams['limit'],
+      [
+        'sort' => $paginationParams['column'],
+        'direction' => $paginationParams['direction'],
+        'search' => $paginationParams['search'],
+        'filters' => $paginationParams['filters'],
+        'baseUrl' => $paginationParams['baseUrl'],
+        'queryParams' => $paginationParams['queryParams'],
+      ]
+    );
 
     //        $jhon = new User();
     //        $jhon->email = 'test@example.com';
@@ -66,14 +83,89 @@ final class HomeController
 
     $data = [
       "title" => "Welcome to Forge Framework",
-      "user" => $user,
+      "paginator" => $paginator,
     ];
 
-    $view = 'pages/home/index';
-
-    collect_view_data($view, $data);
     collect_message_data("HomeController@index", "info");
-    return $this->view(view: $view, data: $data);
+    return $this->view(view: 'pages/home/index', data: $data);
+  }
+
+  #[Route("/test/email")]
+  public function testEmail(Request $request): Response
+  {
+    notify()->email()
+      ->to('test@example.com')
+      ->from('noreply@forge.test')
+      ->subject('Test Email from Forge')
+      ->body('This is a test email sent via ForgeNotification system!')
+      ->send();
+    return $this->jsonResponse(["message" => "Email message sent"]);
+  }
+
+  #[Route("/test/notifications")]
+  public function testNotifications(Request $request): Response
+  {
+    $results = [];
+
+    try {
+      // Test 1: Simple email notification (synchronous)
+      notify()->email()
+        ->to('test@example.com')
+        ->from('noreply@forge.test')
+        ->subject('Test Email from Forge')
+        ->body('This is a test email sent via ForgeNotification system!')
+        ->send();
+
+      $results['email_sync'] = ['status' => 'success', 'message' => 'Email sent synchronously'];
+    } catch (\Exception $e) {
+      $results['email_sync'] = ['status' => 'error', 'message' => $e->getMessage()];
+    }
+
+    try {
+      // Test 2: HTML email notification
+      notify()->email()
+        ->to('test@example.com')
+        ->from('noreply@forge.test')
+        ->subject('Test HTML Email')
+        ->html('<h1>Hello from Forge!</h1><p>This is an <strong>HTML</strong> email.</p>')
+        ->send();
+
+      $results['email_html'] = ['status' => 'success', 'message' => 'HTML email sent'];
+    } catch (\Exception $e) {
+      $results['email_html'] = ['status' => 'error', 'message' => $e->getMessage()];
+    }
+
+    try {
+      // Test 3: Queued email notification (asynchronous)
+      notify()->email()
+        ->to('test@example.com')
+        ->from('noreply@forge.test')
+        ->subject('Queued Email Test')
+        ->body('This email was queued for async sending!')
+        ->queue();
+
+      $results['email_queued'] = ['status' => 'success', 'message' => 'Email queued for async sending'];
+    } catch (\Exception $e) {
+      $results['email_queued'] = ['status' => 'error', 'message' => $e->getMessage()];
+    }
+
+    try {
+      // Test 4: Email with CC and BCC
+      notify()->email()
+        ->to('test@example.com')
+        ->from('noreply@forge.test')
+        ->subject('Email with CC and BCC')
+        ->body('This email has CC and BCC recipients')
+        ->cc(['cc@example.com'])
+        ->bcc(['bcc@example.com'])
+        ->send();
+
+      $results['email_cc_bcc'] = ['status' => 'success', 'message' => 'Email with CC/BCC sent'];
+    } catch (\Exception $e) {
+      $results['email_cc_bcc'] = ['status' => 'error', 'message' => $e->getMessage()];
+    }
+
+    return $this->jsonResponse($results);
   }
 
   #[Route("/", "POST")]
