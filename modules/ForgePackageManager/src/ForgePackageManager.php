@@ -15,7 +15,7 @@ use Forge\Core\Module\Attributes\Repository;
 
 #[Module(
   name: 'ForgePackageManager',
-  version: '3.0.0',
+  version: '3.1.0',
   description: 'A Package Manager By Forge',
   order: 1,
   isCli: true,
