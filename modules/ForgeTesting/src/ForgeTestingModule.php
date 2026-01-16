@@ -13,7 +13,7 @@ use Forge\Core\Module\Attributes\Repository;
 
 #[Module(
   name: "ForgeTesting",
-  version: "0.2.0",
+  version: "0.3.0",
   description: "A Test Suite Module By Forge",
   order: 9999,
   isCli: true,
@@ -25,7 +25,7 @@ use Forge\Core\Module\Attributes\Repository;
 #[Service]
 #[Compatibility(framework: ">=0.1.20", php: ">=8.3")]
 #[Repository(type: "git", url: "https://github.com/forge-engine/modules")]
-#[Provides(interface: TestCase::class, version: "0.2.0")]
+#[Provides(interface: TestCase::class, version: "0.3.0")]
 final class ForgeTestingModule
 {
   public function register(Container $container): void
