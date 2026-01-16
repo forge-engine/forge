@@ -22,7 +22,7 @@ use Forge\Traits\InjectsAssets;
 
 #[Module(
   name: "ForgeWire",
-  version: "2.2.0",
+  version: "2.3.0",
   description: "A reactive controller rendering protocol for PHP",
   order: 99,
   author: 'Forge Team',
@@ -31,7 +31,7 @@ use Forge\Traits\InjectsAssets;
   tags: ['wire', 'reactive', 'rendering']
 )]
 #[Service]
-#[Provides(ForgeWireModule::class, version: '2.2.0')]
+#[Provides(ForgeWireModule::class, version: '2.3.0')]
 #[Compatibility(framework: ">=0.1.0", php: ">=8.3")]
 #[Repository(type: "git", url: "https://github.com/forge-engine/modules")]
 #[PostInstall(command: 'asset:link', args: ['--type=module', '--module=forge-wire'])]
