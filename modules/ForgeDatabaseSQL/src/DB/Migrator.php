@@ -11,8 +11,10 @@ use App\Modules\ForgeDatabaseSQL\DB\Schema\PostgreSqlFormatter;
 use App\Modules\ForgeDatabaseSQL\DB\Schema\SqliteFormatter;
 use Forge\Core\Contracts\Database\DatabaseConnectionInterface;
 use Forge\Core\DI\Attributes\Migration as MigrationAttribute;
+use Forge\Core\DI\Container;
 use Forge\Core\Helpers\ModuleHelper;
 use Forge\Core\Services\AttributeDiscoveryService;
+use Forge\Core\Structure\StructureResolver;
 use Forge\Traits\StringHelper;
 use PDO;
 use ReflectionException;
@@ -26,13 +28,18 @@ final class Migrator
 
   private const string MIGRATIONS_TABLE = "forge_migrations";
   private const string CORE_MIGRATIONS_PATH = BASE_PATH . "/engine/Database/Migrations";
-  private const string APP_MIGRATIONS_PATH = BASE_PATH . "/app/Database/Migrations";
   private const string MODULES_PATH = BASE_PATH . "/modules";
   private ?int $currentBatch = null;
+  private ?StructureResolver $structureResolver = null;
 
-  public function __construct(private DatabaseConnectionInterface $connection)
-  {
+  public function __construct(
+    private DatabaseConnectionInterface $connection,
+    ?Container $container = null
+  ) {
     $this->ensureMigrationsTable();
+    if ($container && $container->has(StructureResolver::class)) {
+      $this->structureResolver = $container->get(StructureResolver::class);
+    }
   }
 
   /**
@@ -146,14 +153,16 @@ final class Migrator
         $paths[] = self::CORE_MIGRATIONS_PATH;
         break;
       case 'app':
-        $paths[] = self::APP_MIGRATIONS_PATH;
+        $appMigrationsPath = $this->getAppMigrationsPath();
+        $paths[] = $appMigrationsPath;
         break;
       case 'module':
         $paths = $this->getModuleMigrationPaths($module);
         break;
       case 'all':
         $paths[] = self::CORE_MIGRATIONS_PATH;
-        $paths[] = self::APP_MIGRATIONS_PATH;
+        $appMigrationsPath = $this->getAppMigrationsPath();
+        $paths[] = $appMigrationsPath;
         $paths = array_merge($paths, $this->getModuleMigrationPaths(null));
         break;
       default:
@@ -261,15 +270,48 @@ final class Migrator
     }
 
     if ($scope === 'app') {
+      if ($this->structureResolver) {
+        try {
+          $appMigrationsPath = $this->structureResolver->getAppPath('migrations');
+          return str_starts_with($relativePath, $appMigrationsPath);
+        } catch (\InvalidArgumentException $e) {
+          return str_starts_with($relativePath, 'app/Database/Migrations');
+        }
+      }
       return str_starts_with($relativePath, 'app/');
     }
 
     if ($scope === 'module' && $module) {
       $modulePath = "modules/$module/";
-      return str_starts_with($relativePath, $modulePath);
+      if (str_starts_with($relativePath, $modulePath)) {
+        if ($this->structureResolver) {
+          try {
+            $moduleMigrationsPath = $this->structureResolver->getModulePath($module, 'migrations');
+            $expectedPath = "$modulePath$moduleMigrationsPath";
+            return str_starts_with($relativePath, $expectedPath);
+          } catch (\InvalidArgumentException $e) {
+            return str_starts_with($relativePath, "$modulePath" . 'src/Database/Migrations');
+          }
+        }
+        return true;
+      }
+      return false;
     }
 
     return true;
+  }
+
+  private function getAppMigrationsPath(): string
+  {
+    if ($this->structureResolver) {
+      try {
+        $appMigrationsPath = $this->structureResolver->getAppPath('migrations');
+        return BASE_PATH . '/' . $appMigrationsPath;
+      } catch (\InvalidArgumentException $e) {
+        return BASE_PATH . "/app/Database/Migrations";
+      }
+    }
+    return BASE_PATH . "/app/Database/Migrations";
   }
 
   /**
@@ -293,14 +335,39 @@ final class Migrator
         continue;
       }
 
-      $central = self::MODULES_PATH . '/' . $moduleName . '/src/Database/Migrations';
-      if (is_dir($central)) {
-        $paths[] = $central;
-      }
+      if ($this->structureResolver) {
+        try {
+          $moduleMigrationsPath = $this->structureResolver->getModulePath($moduleName, 'migrations');
+          $central = self::MODULES_PATH . '/' . $moduleName . '/' . $moduleMigrationsPath;
+          if (is_dir($central)) {
+            $paths[] = $central;
+          }
 
-      $tenant = self::MODULES_PATH . '/' . $moduleName . '/src/Database/Migrations/Tenants';
-      if (is_dir($tenant)) {
-        $paths[] = $tenant;
+          $tenant = $central . '/Tenants';
+          if (is_dir($tenant)) {
+            $paths[] = $tenant;
+          }
+        } catch (\InvalidArgumentException $e) {
+          $central = self::MODULES_PATH . '/' . $moduleName . '/src/Database/Migrations';
+          if (is_dir($central)) {
+            $paths[] = $central;
+          }
+
+          $tenant = self::MODULES_PATH . '/' . $moduleName . '/src/Database/Migrations/Tenants';
+          if (is_dir($tenant)) {
+            $paths[] = $tenant;
+          }
+        }
+      } else {
+        $central = self::MODULES_PATH . '/' . $moduleName . '/src/Database/Migrations';
+        if (is_dir($central)) {
+          $paths[] = $central;
+        }
+
+        $tenant = self::MODULES_PATH . '/' . $moduleName . '/src/Database/Migrations/Tenants';
+        if (is_dir($tenant)) {
+          $paths[] = $tenant;
+        }
       }
     }
 
@@ -334,12 +401,29 @@ final class Migrator
 
     if (str_starts_with($relativePath, 'engine/Database/Migrations')) {
       $type = 'core';
-    } elseif (str_starts_with($relativePath, 'app/Database/Migrations')) {
-      $type = 'app';
     } elseif (str_starts_with($relativePath, 'modules/')) {
       $type = 'module';
       if (preg_match('/^modules\/([^\/]+)\//', $relativePath, $matches)) {
         $module = $matches[1];
+      }
+    } else {
+      if ($this->structureResolver) {
+        try {
+          $appMigrationsPath = $this->structureResolver->getAppPath('migrations');
+          if (str_starts_with($relativePath, $appMigrationsPath)) {
+            $type = 'app';
+          } else {
+            $type = 'app';
+          }
+        } catch (\InvalidArgumentException $e) {
+          if (str_starts_with($relativePath, 'app/Database/Migrations')) {
+            $type = 'app';
+          }
+        }
+      } else {
+        if (str_starts_with($relativePath, 'app/Database/Migrations')) {
+          $type = 'app';
+        }
       }
     }
 

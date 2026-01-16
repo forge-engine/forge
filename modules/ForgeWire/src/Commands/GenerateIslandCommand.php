@@ -11,6 +11,8 @@ use Forge\CLI\Command;
 use Forge\CLI\Traits\CliGenerator;
 use Forge\CLI\Traits\OutputHelper;
 use Forge\CLI\Traits\Wizard;
+use Forge\Core\DI\Container;
+use Forge\Core\Structure\StructureResolver;
 use Forge\Traits\StringHelper;
 
 #[Cli(
@@ -201,12 +203,47 @@ final class GenerateIslandCommand extends Command
     $className = $parsed['filename'];
     $pascalClassName = $this->toPascalCase($className) . 'Controller';
 
+    $container = Container::getInstance();
+    $structureResolver = $container->has(StructureResolver::class)
+      ? $container->get(StructureResolver::class)
+      : null;
+
     if ($this->type === 'app') {
-      $baseDir = BASE_PATH . '/app/Controllers';
-      $namespace = 'App\\Controllers';
+      if ($structureResolver) {
+        try {
+          $appControllersPath = $structureResolver->getAppPath('controllers');
+          $baseDir = BASE_PATH . '/' . $appControllersPath;
+          $relativeFromApp = str_replace('app/', '', $appControllersPath);
+          $namespaceParts = explode('/', $relativeFromApp);
+          $namespaceParts = array_filter($namespaceParts);
+          $namespaceParts = array_map(fn($part) => ucfirst($part), $namespaceParts);
+          $namespace = 'App\\' . implode('\\', $namespaceParts);
+        } catch (\InvalidArgumentException $e) {
+          $baseDir = BASE_PATH . '/app/Controllers';
+          $namespace = 'App\\Controllers';
+        }
+      } else {
+        $baseDir = BASE_PATH . '/app/Controllers';
+        $namespace = 'App\\Controllers';
+      }
     } else {
-      $baseDir = BASE_PATH . "/modules/{$this->module}/src/Controllers";
-      $namespace = "App\\Modules\\{$this->module}\\Controllers";
+      if ($structureResolver) {
+        try {
+          $moduleControllersPath = $structureResolver->getModulePath($this->module, 'controllers');
+          $baseDir = BASE_PATH . "/modules/{$this->module}/{$moduleControllersPath}";
+          $namespacePath = preg_replace('#^src/#', '', $moduleControllersPath);
+          $namespaceParts = explode('/', $namespacePath);
+          $namespaceParts = array_filter($namespaceParts);
+          $namespaceParts = array_map(fn($part) => ucfirst($part), $namespaceParts);
+          $namespace = "App\\Modules\\{$this->module}\\" . implode('\\', $namespaceParts);
+        } catch (\InvalidArgumentException $e) {
+          $baseDir = BASE_PATH . "/modules/{$this->module}/src/Controllers";
+          $namespace = "App\\Modules\\{$this->module}\\Controllers";
+        }
+      } else {
+        $baseDir = BASE_PATH . "/modules/{$this->module}/src/Controllers";
+        $namespace = "App\\Modules\\{$this->module}\\Controllers";
+      }
     }
 
     if ($this->path !== '') {

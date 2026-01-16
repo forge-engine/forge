@@ -88,22 +88,51 @@ final class TestCommand extends Command
 
   private function getTestDirectories(string $type, string|array $module): array
   {
+    $container = \Forge\Core\DI\Container::getInstance();
+    $structureResolver = $container->has(\Forge\Core\Structure\StructureResolver::class)
+      ? $container->get(\Forge\Core\Structure\StructureResolver::class)
+      : null;
+
     return match ($type) {
-      'app' => [BASE_PATH . '/app/tests/'],
+      'app' => $this->getAppTestDir($structureResolver),
       'engine' => [BASE_PATH . '/engine/tests/'],
-      'module' => $this->getModuleTestDirs($module),
+      'module' => $this->getModuleTestDirs($module, $structureResolver),
       default => [],
     };
   }
 
-  private function getModuleTestDirs(string|array $module): array
+  private function getAppTestDir(?\Forge\Core\Structure\StructureResolver $structureResolver): array
+  {
+    if ($structureResolver) {
+      try {
+        $appTestsPath = $structureResolver->getAppPath('tests');
+        return [BASE_PATH . '/' . $appTestsPath];
+      } catch (\InvalidArgumentException $e) {
+        return [BASE_PATH . '/app/tests/'];
+      }
+    }
+    return [BASE_PATH . '/app/tests/'];
+  }
+
+  private function getModuleTestDirs(string|array $module, ?\Forge\Core\Structure\StructureResolver $structureResolver): array
   {
     $dirs = [];
     $modules = is_array($module) ? $module : [$module];
 
     foreach ($modules as $moduleName) {
       $pascalCase = $this->kebabToPascal($moduleName);
-      $path = BASE_PATH . "/modules/{$pascalCase}/src/tests/";
+
+      if ($structureResolver) {
+        try {
+          $moduleTestsPath = $structureResolver->getModulePath($pascalCase, 'tests');
+          $path = BASE_PATH . "/modules/{$pascalCase}/{$moduleTestsPath}";
+        } catch (\InvalidArgumentException $e) {
+          $path = BASE_PATH . "/modules/{$pascalCase}/src/tests/";
+        }
+      } else {
+        $path = BASE_PATH . "/modules/{$pascalCase}/src/tests/";
+      }
+
       if (is_dir($path))
         $dirs[] = $path;
     }

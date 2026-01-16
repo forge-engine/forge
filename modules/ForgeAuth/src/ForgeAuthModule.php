@@ -17,6 +17,7 @@ use App\Modules\ForgeAuth\Services\ForgeAuthService;
 use App\Modules\ForgeSqlOrm\ORM\Cache\QueryCache;
 use Forge\Core\DI\Attributes\Service;
 use Forge\CLI\Traits\OutputHelper;
+use Forge\Core\Module\Attributes\Structure;
 
 #[Service]
 #[Module(
@@ -31,6 +32,20 @@ use Forge\CLI\Traits\OutputHelper;
 )]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
+#[Structure(structure: [
+    'controllers' => 'src/Controllers',
+    'services' => 'src/Services',
+    'migrations' => 'src/Database/Migrations',
+    'views' => 'src/Resources/views',
+    'components' => 'src/Resources/components',
+    'commands' => 'src/Commands',
+    'events' => 'src/Events',
+    'tests' => 'src/tests',
+    'models' => 'src/Models',
+    'dto' => 'src/Dto',
+    'seeders' => 'src/Database/Seeders',
+    'middlewares' => 'src/Middlewares',
+])]
 #[PostInstall(command: 'db:migrate', args: ['--type=', 'module', '--module=', 'ForgeAuth'])]
 #[PostUninstall(command: 'db:migrate', args: ['--type=', 'module', '--module=', 'ForgeAuth'])]
 final class ForgeAuthModule
