@@ -6,6 +6,7 @@ namespace App\Modules\ForgeWire;
 
 use Forge\Core\DI\Container;
 use Forge\Core\Module\Attributes\Compatibility;
+use Forge\Core\Module\Attributes\ConfigDefaults;
 use Forge\Core\Module\Attributes\Module;
 use Forge\Core\Module\Attributes\PostInstall;
 use Forge\Core\Module\Attributes\PostUninstall;
@@ -22,7 +23,7 @@ use Forge\Traits\InjectsAssets;
 
 #[Module(
   name: "ForgeWire",
-  version: "2.3.0",
+  version: "2.4.0",
   description: "A reactive controller rendering protocol for PHP",
   order: 99,
   author: 'Forge Team',
@@ -31,9 +32,14 @@ use Forge\Traits\InjectsAssets;
   tags: ['wire', 'reactive', 'rendering']
 )]
 #[Service]
-#[Provides(ForgeWireModule::class, version: '2.3.0')]
+#[Provides(ForgeWireModule::class, version: '2.4.0')]
 #[Compatibility(framework: ">=0.1.0", php: ">=8.3")]
 #[Repository(type: "git", url: "https://github.com/forge-engine/modules")]
+#[ConfigDefaults(defaults: [
+  'forge_wire' => [
+    'use_minified' => true,
+  ]
+])]
 #[PostInstall(command: 'asset:link', args: ['--type=module', '--module=forge-wire'])]
 #[PostUninstall(command: 'asset:unlink', args: ['--type=module', '--module=forge-wire'])]
 final class ForgeWireModule
@@ -43,6 +49,17 @@ final class ForgeWireModule
 
   public function register(Container $container): void
   {
+    $this->setupConfigDefaults($container);
+  }
+
+  private function setupConfigDefaults(Container $container): void
+  {
+    /** @var Config $config */
+    $config = $container->get(Config::class);
+    $forgeWireConfig = $config->get('forge_wire');
+    if (!$forgeWireConfig || !array_key_exists('use_minified', $forgeWireConfig)) {
+      $config->set('forge_wire.use_minified', env('FORGE_WIRE_USE_MINIFIED', true));
+    }
   }
 
   #[LifecycleHook(hook: LifecycleHookName::AFTER_REQUEST)]
@@ -57,7 +74,7 @@ final class ForgeWireModule
     $css = '<style>[fw\:id] [fw\:loading] { display: none; } [fw\:id][fw\:loading] [fw\:loading], [fw\:id].fw-loading [fw\:loading] { display: block !important; }</style>';
 
     $config = Container::getInstance()->make(Config::class);
-    $useMinified = $config->get('app.forgewire.use_minified', true);
+    $useMinified = $config->get('forge_wire.use_minified', true);
     $jsFile = $useMinified ? 'forgewire.min.js' : 'forgewire.js';
     $assetHtml = '<script src="/assets/modules/forge-wire/js/' . $jsFile . '" async></script>';
 
