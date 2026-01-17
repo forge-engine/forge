@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeHub\Services;
 
-use App\Modules\ForgeNexus\Models\LogEntry;
+use App\Modules\ForgeHub\Models\LogEntry;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Module\Attributes\Requires;
 use Forge\Core\Config\Config;
@@ -30,6 +30,10 @@ final class LogService
   /** @return SplFileInfo[] */
   public function getLogFiles(): array
   {
+    if (!is_dir(self::LOG_PATH)) {
+      return [];
+    }
+
     $iterator = new DirectoryIterator(self::LOG_PATH);
     $files = [];
 
@@ -38,6 +42,9 @@ final class LogService
         $files[] = $file->getFileInfo();
       }
     }
+
+    // Sort by modification time, newest first
+    usort($files, fn($a, $b) => $b->getMTime() <=> $a->getMTime());
 
     return $files;
   }
@@ -75,12 +82,25 @@ final class LogService
   private function readFileLines(SplFileInfo $file): Generator
   {
     $handle = fopen($file->getRealPath(), 'r');
-
-    while (($line = fgets($handle)) !== false) {
-      yield $line;
+    if (!$handle) {
+      return;
     }
 
+    // Read file in reverse (most recent first) for better UX
+    $lines = [];
+    while (($line = fgets($handle)) !== false) {
+      $lines[] = trim($line);
+    }
     fclose($handle);
+
+    // Reverse to show newest first, but limit to last 1000 lines for performance
+    $lines = array_slice(array_reverse($lines), 0, 1000);
+
+    foreach ($lines as $line) {
+      if (!empty($line)) {
+        yield $line;
+      }
+    }
   }
 
   private function matchesFilters(LogEntry $entry, ?string $search, ?string $date): bool

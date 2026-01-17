@@ -1,14 +1,14 @@
 module.exports = {
-	content:[
-		'/app/resources/views/**/*.php',
-		'/app/resources/assets/**/*.js',
-		'/app/resources/assets/**/*.css',
-		'/modules/**/src/resources/views/**/*.php',
-		'/modules/**/src/resources/assets/**/*.js',
-		'/modules/**/src/resources/assets/**/*.css',
-	],
-	theme: {
-		extends: {},
-	},
+  content: [
+    '/app/resources/**/*.php',
+    '/app/resources/**/*.js',
+    '/app/resources/**/*.css',
+    '/modules/**/src/Resources/**/*.php',
+    '/modules/**/src/Resources/**/*.js',
+    '/modules/**/src/Resources/**/*.css',
+  ],
+  theme: {
+    extends: {},
+  },
   plugins: [require("@tailwindcss/forms"), require("@tailwindcss/typography")],
 };

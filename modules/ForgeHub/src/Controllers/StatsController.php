@@ -14,6 +14,8 @@ use Forge\Traits\ControllerHelper;
 
 #[Service]
 #[Middleware('web')]
+#[Middleware('auth')]
+#[Middleware('hub-permissions')]
 final class StatsController
 {
     use ControllerHelper;

@@ -64,5 +64,11 @@ return [
   ],
   'api-auth' => [
     App\Modules\ForgeAuth\Middlewares\ApiJwtMiddleware::class,
+  ],
+  'auth' => [
+    App\Modules\ForgeAuth\Middlewares\AuthMiddleware::class,
+  ],
+  'hub-permissions' => [
+    App\Modules\ForgeHub\Middlewares\HubPermissionMiddleware::class,
   ]
 ];

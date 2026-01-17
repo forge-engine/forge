@@ -1,29 +1,46 @@
 <?php
 
-use App\Modules\ForgeUi\DesignTokens;
+/**
+ * @var array $props
+ * @var string $variant
+ * @var string $size
+ * @var string $text
+ * @var string $children
+ * @var string $class
+ */
 
-$variant = $variant ?? 'primary';
-$size = $size ?? 'md';
-$rounded = $rounded ?? 'md';
+$variant = $props['variant'] ?? 'default';
+$size = $props['size'] ?? 'md';
+$text = $props['text'] ?? '';
+$children = $props['children'] ?? '';
+$class = $props['class'] ?? '';
 
-$baseClasses = DesignTokens::badge($variant, $size);
-$roundedClasses = [
-    'none' => ['rounded-none'],
-    'sm' => ['rounded'],
-    'md' => ['rounded-md'],
-    'lg' => ['rounded-lg'],
-    'full' => ['rounded-full'],
+$colors = [
+    'success' => 'bg-green-100 text-green-800',
+    'error' => 'bg-red-100 text-red-800',
+    'warning' => 'bg-yellow-100 text-yellow-800',
+    'info' => 'bg-blue-100 text-blue-800',
+    'primary' => 'bg-gray-100 text-gray-800',
+    'secondary' => 'bg-gray-100 text-gray-800',
+    'default' => 'bg-gray-100 text-gray-800',
 ];
-$roundedClass = $roundedClasses[$rounded] ?? $roundedClasses['md'];
 
-$classes = class_merge($baseClasses, $roundedClass, $class ?? '');
+$sizeClasses = [
+    'xs' => 'px-1.5 py-0.5 text-xs',
+    'sm' => 'px-2 py-0.5 text-xs',
+    'md' => 'px-2.5 py-0.5 text-sm',
+    'lg' => 'px-3 py-1 text-base',
+];
+
+$colorClass = $colors[$variant] ?? $colors['default'];
+$sizeClass = $sizeClasses[$size] ?? $sizeClasses['md'];
 ?>
-<span class="<?= $classes ?>">
+<span class="inline-flex items-center font-semibold rounded-full <?= $colorClass ?> <?= $sizeClass ?> <?= $class ?>">
     <?php if (isset($slots['icon'])): ?>
-        <span class="fw-badge-icon mr-1"><?= $slots['icon'] ?></span>
+        <span class="mr-1"><?= $slots['icon'] ?></span>
     <?php endif; ?>
-    <?= $slots['default'] ?? $children ?? '' ?>
+    <?= htmlspecialchars($text ?: ($children ?: ($slots['default'] ?? ''))) ?>
     <?php if (isset($slots['iconAfter'])): ?>
-        <span class="fw-badge-icon-after ml-1"><?= $slots['iconAfter'] ?></span>
+        <span class="ml-1"><?= $slots['iconAfter'] ?></span>
     <?php endif; ?>
 </span>

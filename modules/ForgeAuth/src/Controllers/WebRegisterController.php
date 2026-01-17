@@ -22,35 +22,35 @@ use Forge\Traits\SecurityHelper;
 #[Middleware('web')]
 final class WebRegisterController
 {
-    use ControllerHelper;
-    use SecurityHelper;
+  use ControllerHelper;
+  use SecurityHelper;
 
-    public function __construct(private ForgeAuthService $forgeAuthService, private RedirectHandlerService $redirectHandlerService)
-    {
+  public function __construct(private ForgeAuthService $forgeAuthService, private RedirectHandlerService $redirectHandlerService)
+  {
+  }
+
+  #[Route("/auth/register")]
+  public function index(): Response
+  {
+    return $this->view(view: "pages/register");
+  }
+
+  #[Route("/auth/register", "POST")]
+  public function register(Request $request): Response
+  {
+    try {
+      ForgeAuthValidate::register($request->postData);
+      $registerData = $this->sanitize($request->postData);
+
+      $this->forgeAuthService->register($registerData);
+      Flash::set("success", "Registration successful. Please login.");
+      return Redirect::to($this->redirectHandlerService->redirectAfterLogin());
+    } catch (UserRegistrationException) {
+      Flash::set("error", "Registration failed. Please try again.");
+      return Redirect::to('/auth/register');
+    } catch (\Exception $e) {
+      Flash::set("error", $e->getMessage());
+      return Redirect::to('/auth/register');
     }
-
-    #[Route("/auth/register")]
-    public function index(): Response
-    {
-        return $this->view(view: "pages/register");
-    }
-
-    #[Route("/auth/register", "POST")]
-    public function register(Request $request): Response
-    {
-        try {
-            ForgeAuthValidate::register($request->postData);
-            $registerData = $this->sanitize($request->postData);
-
-            $this->forgeAuthService->register($registerData);
-            Flash::set("success", "Registration successful. Please login.");
-            return Redirect::to($this->redirectHandlerService::redirectAfterLogin());
-        } catch (UserRegistrationException) {
-            Flash::set("error", "Registration failed. Please try again.");
-            return Redirect::to('/auth/register');
-        } catch (\Exception $e) {
-            Flash::set("error", $e->getMessage());
-            return Redirect::to('/auth/register');
-        }
-    }
+  }
 }

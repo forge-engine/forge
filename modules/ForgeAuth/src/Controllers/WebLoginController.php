@@ -22,41 +22,42 @@ use Forge\Traits\SecurityHelper;
 #[Middleware('web')]
 final class WebLoginController
 {
-    use ControllerHelper;
-    use SecurityHelper;
+  use ControllerHelper;
+  use SecurityHelper;
 
-    public function __construct(
-        private readonly ForgeAuthService $forgeAuthService,
-        private readonly RedirectHandlerService $redirectHandler
-    ) {
+  public function __construct(
+    private readonly ForgeAuthService $forgeAuthService,
+    private readonly RedirectHandlerService $redirectHandler
+  ) {
+  }
+
+  #[Route("/auth/login")]
+  public function index(): Response
+  {
+    return $this->view(view: "pages/login");
+  }
+
+  #[Route("/auth/login", "POST")]
+  public function login(Request $request): Response
+  {
+    try {
+      ForgeAuthValidate::login($request->postData);
+      $loginCredentials = $this->sanitize($request->postData);
+
+      $this->forgeAuthService->login($loginCredentials);
+
+      // Use instance method to get redirect URL (checks intended URL, module redirects, then config)
+      return Redirect::to($this->redirectHandler->redirectAfterLogin());
+    } catch (LoginException $e) {
+      Flash::set("error", $e->getMessage());
+      return Redirect::to('/auth/login');
     }
+  }
 
-    #[Route("/auth/login")]
-    public function index(): Response
-    {
-        return $this->view(view: "pages/login");
-    }
-
-    #[Route("/auth/login", "POST")]
-    public function login(Request $request): Response
-    {
-        try {
-            ForgeAuthValidate::login($request->postData);
-            $loginCredentials = $this->sanitize($request->postData);
-
-            $this->forgeAuthService->login($loginCredentials);
-
-            return Redirect::to($this->redirectHandler::redirectAfterLogin());
-        } catch (LoginException $e) {
-            Flash::set("error", $e->getMessage());
-            return Redirect::to('/auth/login');
-        }
-    }
-
-    #[Route('/auth/logout', 'POST')]
-    public function logout(): Response
-    {
-        $this->forgeAuthService->logout();
-        return Redirect::to($this->redirectHandler::redirectAfterLogout());
-    }
+  #[Route('/auth/logout', 'POST')]
+  public function logout(): Response
+  {
+    $this->forgeAuthService->logout();
+    return Redirect::to($this->redirectHandler::redirectAfterLogout());
+  }
 }

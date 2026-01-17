@@ -90,16 +90,16 @@ final class ForgeAuthModule
   {
     /** @var Config $config */
     $config = $container->get(Config::class);
-    $config->set('forge_auth.jwt.enabled', env('JWT_ENABLED', false));
-    $config->set('forge_auth.jwt.secret', env('JWT_SECRET', 'your-secure-jwt-secret'));
-    $config->set('forge_auth.jwt.ttl', env('JWT_TTL', 900));
-    $config->set('forge_auth.jwt.refresh_ttl', env('JWT_REFRESH_TTL', 604800));
-    $config->set('forge_auth.password.password_cost', env('PASSWORD_COST', 12));
-    $config->set('forge_auth.password.max_login_attempts', env('MAX_LOGIN_ATTEMPTS', 3));
-    $config->set('forge_auth.password.lockout_time', env('LOCKOUT_TIME', 300));
-    $config->set('forge_auth.password.min_password_length', env('MIN_PASSWORD_LENGTH', 6));
-    $config->set('forge_auth.password.max_password_length', env('MAX_PASSWORD_LENGTH', 256));
-    $config->set('forge_auth.auth.redirect.after_login', env('AFTER_LOGIN_REDIRECT', '/'));
-    $config->set('forge_auth.auth.redirect.after_logout', env('AFTER_LOGOUT_REDIRECT', '/'));
+    $config->set('forge_auth.jwt.enabled', env('FORGE_JWT_ENABLED', false));
+    $config->set('forge_auth.jwt.secret', env('FORGE_JWT_SECRET', 'your-secure-jwt-secret'));
+    $config->set('forge_auth.jwt.ttl', env('FORGE_JWT_TTL', 900));
+    $config->set('forge_auth.jwt.refresh_ttl', env('FORGE_JWT_REFRESH_TTL', 604800));
+    $config->set('forge_auth.password.password_cost', env('FORGE_PASSWORD_COST', 12));
+    $config->set('forge_auth.password.max_login_attempts', env('FORGE_MAX_LOGIN_ATTEMPTS', 3));
+    $config->set('forge_auth.password.lockout_time', env('FORGE_LOCKOUT_TIME', 300));
+    $config->set('forge_auth.password.min_password_length', env('FORGE_MIN_PASSWORD_LENGTH', 6));
+    $config->set('forge_auth.password.max_password_length', env('FORGE_MAX_PASSWORD_LENGTH', 256));
+    $config->set('forge_auth.auth.redirect.after_login', env('FORGE_AFTER_LOGIN_REDIRECT', '/'));
+    $config->set('forge_auth.auth.redirect.after_logout', env('FORGE_AFTER_LOGOUT_REDIRECT', '/'));
   }
 }

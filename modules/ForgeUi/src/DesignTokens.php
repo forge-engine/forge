@@ -18,22 +18,22 @@ final class DesignTokens
         $base = ['inline-flex', 'items-center', 'justify-center', 'font-medium', 'transition-colors', 'focus:outline-none', 'focus:ring-2', 'focus:ring-offset-2', 'disabled:opacity-50', 'disabled:pointer-events-none'];
 
         $variants = [
-            'primary' => ['bg-blue-600', 'text-white', 'hover:bg-blue-700', 'focus:ring-blue-500'],
-            'secondary' => ['bg-gray-600', 'text-white', 'hover:bg-gray-700', 'focus:ring-gray-500'],
+            'primary' => ['bg-gray-900', 'text-white', 'hover:bg-gray-800', 'focus:ring-gray-900'],
+            'secondary' => ['bg-white', 'text-gray-700', 'border', 'border-gray-300', 'hover:bg-gray-50', 'focus:ring-gray-900'],
             'danger' => ['bg-red-600', 'text-white', 'hover:bg-red-700', 'focus:ring-red-500'],
             'success' => ['bg-green-600', 'text-white', 'hover:bg-green-700', 'focus:ring-green-500'],
             'warning' => ['bg-yellow-600', 'text-white', 'hover:bg-yellow-700', 'focus:ring-yellow-500'],
-            'info' => ['bg-blue-500', 'text-white', 'hover:bg-blue-600', 'focus:ring-blue-400'],
+            'info' => ['bg-blue-600', 'text-white', 'hover:bg-blue-700', 'focus:ring-blue-500'],
             'neutral' => ['bg-gray-200', 'text-gray-900', 'hover:bg-gray-300', 'focus:ring-gray-400'],
-            'outline' => ['border', 'border-gray-300', 'bg-white', 'text-gray-700', 'hover:bg-gray-50', 'focus:ring-gray-500'],
-            'ghost' => ['bg-transparent', 'text-gray-700', 'hover:bg-gray-100', 'focus:ring-gray-500'],
+            'outline' => ['border', 'border-gray-300', 'bg-white', 'text-gray-700', 'hover:bg-gray-50', 'focus:ring-gray-900'],
+            'ghost' => ['bg-transparent', 'text-gray-700', 'hover:bg-gray-800/5', 'focus:ring-gray-500'],
         ];
 
         $sizes = [
             'xs' => ['text-xs', 'px-2', 'py-1', 'rounded'],
             'sm' => ['text-sm', 'px-3', 'py-1.5', 'rounded'],
-            'md' => ['text-sm', 'px-4', 'py-2', 'rounded-md'],
-            'lg' => ['text-base', 'px-5', 'py-2.5', 'rounded-md'],
+            'md' => ['text-sm', 'px-4', 'py-2.5', 'rounded-lg'],
+            'lg' => ['text-base', 'px-6', 'py-3', 'rounded-lg'],
             'xl' => ['text-lg', 'px-6', 'py-3', 'rounded-lg'],
         ];
 
@@ -61,15 +61,15 @@ final class DesignTokens
         $base = ['block', 'w-full', 'border', 'transition-colors', 'focus:outline-none', 'focus:ring-2', 'focus:ring-offset-0'];
 
         $variants = [
-            'default' => ['border-gray-300', 'focus:border-blue-500', 'focus:ring-blue-500'],
-            'error' => ['border-red-300', 'focus:border-red-500', 'focus:ring-red-500'],
-            'success' => ['border-green-300', 'focus:border-green-500', 'focus:ring-green-500'],
+            'default' => ['border-gray-300', 'focus:border-transparent', 'focus:ring-gray-900'],
+            'error' => ['border-red-300', 'focus:border-transparent', 'focus:ring-red-500'],
+            'success' => ['border-green-300', 'focus:border-transparent', 'focus:ring-green-500'],
         ];
 
         $sizes = [
-            'sm' => ['text-sm', 'px-3', 'py-1.5', 'rounded'],
-            'md' => ['text-sm', 'px-3', 'py-2', 'rounded-md'],
-            'lg' => ['text-base', 'px-4', 'py-2.5', 'rounded-md'],
+            'sm' => ['text-sm', 'px-3', 'py-1.5', 'rounded-lg'],
+            'md' => ['text-sm', 'px-4', 'py-2.5', 'rounded-lg'],
+            'lg' => ['text-base', 'px-4', 'py-2.5', 'rounded-lg'],
         ];
 
         $result = array_merge($base, $variants[$variant] ?? $variants['default'], $sizes[$size] ?? $sizes['md']);
@@ -84,13 +84,13 @@ final class DesignTokens
             return self::$cache[$key];
         }
 
-        $base = ['bg-white', 'rounded-lg'];
+        $base = ['bg-white', 'rounded-xl', 'shadow-sm', 'border', 'border-gray-200'];
 
         $variants = [
-            'default' => ['shadow', 'border', 'border-gray-200'],
+            'default' => [],
             'elevated' => ['shadow-lg'],
-            'outlined' => ['border', 'border-gray-200'],
-            'flat' => [],
+            'outlined' => [],
+            'flat' => ['shadow-none', 'border-0'],
         ];
 
         $result = array_merge($base, $variants[$variant] ?? $variants['default']);
@@ -253,7 +253,7 @@ final class DesignTokens
             return self::$cache[$key];
         }
 
-        $base = ['p-4', 'rounded-md', 'border'];
+        $base = ['rounded-md', 'border-l-4', 'p-4'];
 
         $variants = [
             'success' => ['bg-green-50', 'border-green-200', 'text-green-800'],

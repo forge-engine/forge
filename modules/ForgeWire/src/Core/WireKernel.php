@@ -61,12 +61,12 @@ final class WireKernel
         if ($action !== null) {
             $ctx["action"] = $action;
             $ctx["args"] = $args;
-            
+
             $isInternalAction = ($action === 'input');
-            
+
             if (!$isInternalAction) {
                 $hasExpectedActions = $this->hasAnyExpectedActions($sessionKey, $session);
-                
+
                 if ($hasExpectedActions && !$this->checksum->isExpectedAction($sessionKey, $session, $action, $args)) {
                     throw new \RuntimeException('ForgeWire security violation: Action or arguments have been tampered with.');
                 }
@@ -169,6 +169,9 @@ final class WireKernel
         $this->parseAndStoreUsesForAllComponents($html, $session, $class);
         $this->discoverAndStoreUsesForRegisteredComponents($html, $session, $class);
 
+        // Track all components found in HTML as active
+        $this->trackComponentsInHtml($html, $session);
+
         $componentHtml = $this->extractComponentHtml($html, $id);
         if ($componentHtml === null) {
             $componentHtml = $html;
@@ -177,7 +180,7 @@ final class WireKernel
         $this->storeExpectedActions($componentHtml, $id, $session, $sessionKey);
 
         $state = $this->hydrator->dehydrate($instance, $session, $sessionKey, $sharedKey);
-        
+
         $stateCtx = $ctx;
         unset($stateCtx['action'], $stateCtx['args']);
         $sig = $this->checksum->sign($sessionKey, $session, $stateCtx);
@@ -189,12 +192,12 @@ final class WireKernel
         $updates = [];
         if (!empty($sharedStateChanges)) {
             $affectedComponents = $this->findAffectedComponents($sharedStateChanges, $session, $class, $id);
-            
+
             foreach ($affectedComponents as $component) {
                 if ($component['id'] === $id) {
                     continue;
                 }
-                
+
                 $update = $this->renderAffectedComponent(
                     $component['id'],
                     $component['class'],
@@ -202,7 +205,7 @@ final class WireKernel
                     $session,
                     $sharedKey
                 );
-                
+
                 if ($update !== null) {
                     $updates[] = $update;
                 }
@@ -298,14 +301,14 @@ final class WireKernel
             if ($v === null) {
                 if (is_array($args)) {
                     $v = $args[$name] ?? $args[$i] ?? $dirty[$name] ?? null;
-                    
+
                     if ($v === null) {
                         $v = $this->findCaseInsensitiveParam($args, $name) ?? $dirty[$name] ?? null;
                     }
                 } else {
                     $v = $dirty[$name] ?? null;
                 }
-                
+
                 if ($typeName !== null && $v !== null) {
                     if ($typeName === "int" && is_string($v))
                         $v = (int) $v;
@@ -340,7 +343,7 @@ final class WireKernel
     private function extractActionsFromHtml(string $html, string $componentId): array
     {
         $actions = [];
-        
+
         if (empty($html)) {
             return $actions;
         }
@@ -353,13 +356,13 @@ final class WireKernel
         foreach ($matches as $match) {
             $fullTag = $match[0][0];
             $actionName = trim($match[1][0] ?? '');
-            
+
             if (empty($actionName)) {
                 continue;
             }
 
             $args = [];
-            
+
             if (preg_match_all('/fw:param-([a-zA-Z0-9_-]+)=["\']([^"\']*)["\']/i', $fullTag, $paramMatches, PREG_SET_ORDER)) {
                 foreach ($paramMatches as $paramMatch) {
                     $paramName = strtolower(trim($paramMatch[1]));
@@ -380,7 +383,7 @@ final class WireKernel
     private function storeExpectedActions(string $html, string $componentId, SessionInterface $session, string $sessionKey): void
     {
         $actions = $this->extractActionsFromHtml($html, $componentId);
-        
+
         $prefix = $sessionKey . ':actions:';
         $allSession = $session->all();
         foreach ($allSession as $key => $value) {
@@ -388,7 +391,7 @@ final class WireKernel
                 $session->remove($key);
             }
         }
-        
+
         foreach ($actions as $actionData) {
             $this->checksum->storeExpectedAction($sessionKey, $session, $actionData['action'], $actionData['args']);
         }
@@ -464,7 +467,7 @@ final class WireKernel
             }
 
             $componentId = $matches[1];
-            
+
             if ($componentId === $triggeringId) {
                 continue;
             }
@@ -493,7 +496,7 @@ final class WireKernel
             }
 
             $componentId = $matches[1];
-            
+
             if ($componentId === $triggeringId) {
                 continue;
             }
@@ -508,7 +511,7 @@ final class WireKernel
                         break;
                     }
                 }
-                
+
                 if (!$alreadyAdded) {
                     $affectedComponents[] = [
                         'id' => $componentId,
@@ -529,10 +532,10 @@ final class WireKernel
         string $sharedKey
     ): ?array {
         $sessionKey = "forgewire:{$componentId}";
-        
+
         $fp = (array) $session->get($sessionKey . ':fp', []);
         $storedPath = (string) ($fp['path'] ?? $request->getPath());
-        
+
         $ctx = [
             "class" => $controllerClass,
             "path" => $storedPath,
@@ -546,7 +549,7 @@ final class WireKernel
         $this->hydrator->hydrate($instance, [], $session, $sessionKey, $sharedKey);
 
         $action = $session->get("forgewire:{$componentId}:action") ?? "index";
-        
+
         $html = "";
         if (method_exists($instance, $action)) {
             $html = $this->callAction($instance, $action, $request, $session, [], [], false, $componentId);
@@ -561,7 +564,7 @@ final class WireKernel
         }
 
         $componentHtml = $this->extractComponentHtml($html, $componentId);
-        
+
         if ($componentHtml === null) {
             return null;
         }
@@ -702,7 +705,7 @@ final class WireKernel
     private function parseAndStoreUses(string $html, string $componentId, SessionInterface $session): void
     {
         $uses = [];
-        
+
         if (preg_match_all('/fw:uses=["\']([^"\']+)["\']/', $html, $matches)) {
             foreach ($matches[1] as $match) {
                 $values = array_map('trim', explode(',', $match));
@@ -713,7 +716,7 @@ final class WireKernel
                 }
             }
         }
-        
+
         $session->set("forgewire:{$componentId}:uses", array_keys($uses));
     }
 
@@ -722,7 +725,7 @@ final class WireKernel
         if (preg_match_all('/fw:id=["\']([^"\']+)["\']/', $html, $idMatches)) {
             foreach ($idMatches[1] as $componentId) {
                 $componentClass = $session->get("forgewire:{$componentId}:class");
-                
+
                 if ($componentClass === null) {
                     if ($controllerClass !== null) {
                         $session->set("forgewire:{$componentId}:class", $controllerClass);
@@ -732,11 +735,11 @@ final class WireKernel
                         continue;
                     }
                 }
-                
+
                 if ($controllerClass !== null && $componentClass !== $controllerClass) {
                     continue;
                 }
-                
+
                 $componentHtml = $this->extractComponentHtml($html, $componentId);
                 if ($componentHtml !== null) {
                     $this->parseAndStoreUses($componentHtml, $componentId, $session);
@@ -752,39 +755,39 @@ final class WireKernel
         $allSessionKeys = array_keys($session->all());
         $foundInHtml = [];
 
-        
+
         if (preg_match_all('/fw:id=["\']([^"\']+)["\']/', $html, $idMatches)) {
             $foundInHtml = array_flip($idMatches[1]);
         }
-        
+
         foreach ($allSessionKeys as $sessionKey) {
             if (!str_starts_with($sessionKey, 'forgewire:')) {
                 continue;
             }
-            
+
             if (str_contains($sessionKey, ':shared:') || str_contains($sessionKey, ':class') || str_contains($sessionKey, ':action') || str_contains($sessionKey, ':fp') || str_contains($sessionKey, ':sig') || str_contains($sessionKey, ':uses')) {
                 continue;
             }
-            
+
             if (!preg_match('/^forgewire:(.+)$/', $sessionKey, $matches)) {
                 continue;
             }
-            
+
             $componentId = $matches[1];
             $componentClass = $session->get("forgewire:{$componentId}:class");
-            
+
             if ($componentClass !== $controllerClass) {
                 continue;
             }
-            
+
             if (isset($foundInHtml[$componentId])) {
                 continue;
             }
-            
+
             if ($session->has("forgewire:{$componentId}:uses")) {
                 continue;
             }
-            
+
             $componentHtml = $this->extractComponentHtml($html, $componentId);
             if ($componentHtml !== null) {
                 $this->parseAndStoreUses($componentHtml, $componentId, $session);
@@ -797,44 +800,44 @@ final class WireKernel
     private function extractComponentHtml(string $fullHtml, string $componentId): ?string
     {
         $escapedId = preg_quote($componentId, '/');
-        
+
         $pattern = '/<([^\s>]+)[^>]*\s+fw:id=["\']' . $escapedId . '["\'][^>]*(?:\/>|>)/i';
-        
+
         if (!preg_match($pattern, $fullHtml, $tagMatch, PREG_OFFSET_CAPTURE)) {
             return null;
         }
-        
+
         $rootTagName = strtolower($tagMatch[1][0]);
         $startPos = $tagMatch[0][1];
         $tagContent = $tagMatch[0][0];
-        
+
         if (substr(trim($tagContent), -2) === '/>') {
             return $tagContent;
         }
-        
+
         $stack = [$rootTagName];
         $pos = $startPos + strlen($tagContent);
         $len = strlen($fullHtml);
         $result = $tagContent;
-        
+
         $selfClosingTags = ['area', 'base', 'br', 'col', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source', 'track', 'wbr'];
-        
+
         while ($pos < $len && !empty($stack)) {
             $nextTag = strpos($fullHtml, '<', $pos);
             if ($nextTag === false) {
                 $result .= substr($fullHtml, $pos);
                 break;
             }
-            
+
             $result .= substr($fullHtml, $pos, $nextTag - $pos);
             $pos = $nextTag;
-            
+
             if ($pos + 1 < $len && $fullHtml[$pos + 1] === '/') {
                 $closeEnd = strpos($fullHtml, '>', $pos);
                 if ($closeEnd === false) {
                     break;
                 }
-                
+
                 $closeTag = substr($fullHtml, $pos, $closeEnd - $pos + 1);
                 if (preg_match('/<\/([^\s>]+)/i', $closeTag, $closeMatch)) {
                     $closeTagName = strtolower($closeMatch[1]);
@@ -858,22 +861,22 @@ final class WireKernel
                 if ($openEnd === false) {
                     break;
                 }
-                
+
                 $openTag = substr($fullHtml, $pos, $openEnd - $pos + 1);
                 $isSelfClosing = substr(trim($openTag), -2) === '/>';
-                
+
                 if (!$isSelfClosing && preg_match('/<([^\s>\/]+)/i', $openTag, $openMatch)) {
                     $openTagName = strtolower($openMatch[1]);
                     if (!in_array($openTagName, $selfClosingTags, true)) {
                         $stack[] = $openTagName;
                     }
                 }
-                
+
                 $result .= $openTag;
                 $pos = $openEnd + 1;
             }
         }
-        
+
         return empty($stack) ? $result : null;
     }
 
@@ -903,18 +906,18 @@ final class WireKernel
 
                 foreach ($componentIds as $componentId) {
                     $componentClass = $session->get("forgewire:{$componentId}:class");
-                    
+
                     if ($componentClass === null && $controllerClass !== null) {
                         $session->set("forgewire:{$componentId}:class", $controllerClass);
                         $session->set("forgewire:{$componentId}:action", "index");
                         $componentClass = $controllerClass;
                     }
-                    
+
                     if ($componentClass !== null) {
                         if ($controllerClass !== null && $componentClass !== $controllerClass) {
                             continue;
                         }
-                        
+
                         if (!isset($groupedByClass[$componentClass])) {
                             $groupedByClass[$componentClass] = [];
                         }
@@ -937,7 +940,7 @@ final class WireKernel
     private function discoverSharedGroupFromRegisteredComponents(SessionInterface $session, string $controllerClass): void
     {
         $groupKey = "forgewire:shared-group:{$controllerClass}:components";
-        
+
         $allSessionKeys = array_keys($session->all());
         $componentIds = [];
         $foundComponentIds = [];
@@ -1147,5 +1150,21 @@ final class WireKernel
 
         $initializedKey = "forgewire:shared-group:{$controllerClass}:initialized";
         $session->set($initializedKey, true);
+    }
+
+    /**
+     * Track components found in HTML as active
+     */
+    private function trackComponentsInHtml(string $html, SessionInterface $session): void
+    {
+        if (!preg_match_all('/fw:id=["\']([^"\']+)["\']/', $html, $matches)) {
+            return;
+        }
+
+        $now = time();
+        foreach ($matches[1] as $componentId) {
+            $activeKey = "forgewire:active:{$componentId}";
+            $session->set($activeKey, $now);
+        }
     }
 }

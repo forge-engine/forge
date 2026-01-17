@@ -36,7 +36,8 @@ final class ForgeAuthService implements ForgeAuthInterface
     private readonly Config $config,
     private readonly SessionInterface $session,
     private readonly JwtService $jwtService,
-    private readonly UserRepository $users
+    private readonly UserRepository $users,
+    private readonly ?PermissionService $permissionService = null
   ) {
   }
 
@@ -92,6 +93,12 @@ final class ForgeAuthService implements ForgeAuthInterface
     $this->session->set('user_email', $user->email);
     $this->resetLoginAttempts();
 
+    // Store user permissions in session
+    if ($this->permissionService !== null) {
+      $permissions = $this->permissionService->getUserPermissions($user);
+      $this->session->set('user_permissions', $permissions);
+    }
+
     return $user;
   }
 
@@ -145,7 +152,31 @@ final class ForgeAuthService implements ForgeAuthInterface
       $this->session->start();
     }
 
+    // Clear permissions cache if service is available
+    if ($this->permissionService !== null) {
+      $this->permissionService->clearCache();
+    }
+
     $this->session->clear();
+  }
+
+  /**
+   * Get permissions for the current user.
+   *
+   * @return array<string> Array of permission strings
+   */
+  public function getUserPermissions(): array
+  {
+    if ($this->permissionService === null) {
+      return [];
+    }
+
+    $user = $this->user();
+    if ($user === null) {
+      return [];
+    }
+
+    return $this->permissionService->getUserPermissions($user);
   }
 
   public function user(): ?User

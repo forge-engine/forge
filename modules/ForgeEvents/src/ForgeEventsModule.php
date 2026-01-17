@@ -6,8 +6,10 @@ namespace App\Modules\ForgeEvents;
 
 use Forge\Core\DI\Container;
 use Forge\Core\Module\Attributes\Compatibility;
+use Forge\Core\Module\Attributes\HubItem;
 use Forge\Core\Module\Attributes\Module;
 use Forge\Core\Module\Attributes\Repository;
+use Forge\Core\Module\ForgeIcon;
 use Forge\Core\DI\Attributes\Service;
 use Forge\CLI\Traits\OutputHelper;
 
@@ -21,6 +23,7 @@ use Forge\CLI\Traits\OutputHelper;
   type: 'communication',
   tags: ['communication', 'event', 'queue', 'event-queue', 'event-dispatcher', 'event-listener']
 )]
+#[HubItem(label: 'Queues', route: '/hub/queues', icon: ForgeIcon::QUEUE, order: 7)]
 #[Service]
 #[Compatibility(framework: ">=0.1.0", php: ">=8.3")]
 #[Repository(type: "git", url: "https://github.com/forge-engine/modules")]

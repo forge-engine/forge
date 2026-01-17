@@ -14,6 +14,8 @@ use Forge\Traits\ControllerHelper;
 
 #[Service]
 #[Middleware('web')]
+#[Middleware('auth')]
+#[Middleware('hub-permissions')]
 final class LogController
 {
     use ControllerHelper;
@@ -25,13 +27,30 @@ final class LogController
     #[Route("/hub/logs")]
     public function index(Request $request): Response
     {
+        $selectedFile = $request->query('file');
+        $entries = [];
+        $error = null;
+
+        if ($selectedFile) {
+            try {
+                // Convert Generator to array for the view
+                foreach ($this->logService->getLogEntries(
+                    $selectedFile,
+                    $request->query('search'),
+                    $request->query('date')
+                ) as $entry) {
+                    $entries[] = $entry;
+                }
+            } catch (\Throwable $e) {
+                $error = $e->getMessage();
+            }
+        }
+
         $data = [
             'files' => $this->logService->getLogFiles(),
-            'entries' => $this->logService->getLogEntries(
-                $request->query('file', 'error.log'),
-                $request->query('search'),
-                $request->query('date')
-            )
+            'entries' => $entries,
+            'error' => $error,
+            'selectedFile' => $selectedFile,
         ];
 
         return $this->view(view: "pages/logs", data: $data);

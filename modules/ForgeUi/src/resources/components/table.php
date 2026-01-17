@@ -1,28 +1,38 @@
 <?php
 
-use App\Modules\ForgeUi\DesignTokens;
+/**
+ * @var array $props
+ * @var string $variant
+ * @var bool $striped
+ * @var bool $hoverable
+ * @var bool $bordered
+ * @var bool $compact
+ * @var string $class
+ */
 
-$variant = $variant ?? 'default';
-$striped = $striped ?? false;
-$hoverable = $hoverable ?? false;
-$bordered = $bordered ?? false;
-$compact = $compact ?? false;
+$variant = $props['variant'] ?? 'default';
+$striped = $props['striped'] ?? false;
+$hoverable = $props['hoverable'] ?? false;
+$bordered = $props['bordered'] ?? false;
+$compact = $props['compact'] ?? false;
+$class = $props['class'] ?? '';
 
-$baseClasses = DesignTokens::table($bordered ? 'bordered' : $variant);
+$baseClasses = 'min-w-full divide-y divide-gray-200';
+if ($bordered) {
+    $baseClasses .= ' border border-gray-200';
+}
 if ($striped) {
-    $baseClasses[] = 'fw-table-striped';
+    $baseClasses .= ' fw-table-striped';
 }
 if ($hoverable) {
-    $baseClasses[] = 'fw-table-hoverable';
+    $baseClasses .= ' fw-table-hoverable';
 }
 if ($compact) {
-    $baseClasses[] = 'fw-table-compact';
+    $baseClasses .= ' fw-table-compact';
 }
-
-$classes = class_merge($baseClasses, $class ?? '');
 ?>
 <div class="overflow-x-auto">
-    <table class="<?= $classes ?>">
+    <table class="<?= $baseClasses ?> <?= $class ?>">
         <?php if (isset($slots['header'])): ?>
             <thead class="bg-gray-50">
                 <?= $slots['header'] ?>
@@ -35,7 +45,7 @@ $classes = class_merge($baseClasses, $class ?? '');
         <?php elseif (isset($slots['empty'])): ?>
             <tbody>
                 <tr>
-                    <td colspan="100%" class="px-6 py-4 text-center text-gray-500">
+                    <td colspan="100%" class="px-6 py-4 text-center text-sm text-gray-500">
                         <?= $slots['empty'] ?>
                     </td>
                 </tr>

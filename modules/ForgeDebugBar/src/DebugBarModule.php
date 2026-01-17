@@ -18,11 +18,13 @@ use Forge\Core\Http\Request;
 use Forge\Core\Http\Response;
 use Forge\Core\Module\Attributes\Compatibility;
 use Forge\Core\Module\Attributes\ConfigDefaults;
+use Forge\Core\Module\Attributes\HubItem;
 use Forge\Core\Module\Attributes\LifecycleHook;
 use Forge\Core\Module\Attributes\Module;
 use Forge\Core\Module\Attributes\PostInstall;
 use Forge\Core\Module\Attributes\PostUninstall;
 use Forge\Core\Module\Attributes\Provides;
+use Forge\Core\Module\ForgeIcon;
 use Forge\Core\Module\LifecycleHookName;
 use Forge\Traits\InjectsAssets;
 
@@ -37,6 +39,7 @@ use Forge\Traits\InjectsAssets;
   type: 'generic',
   tags: ['generic', 'debug', 'debug-bar', 'debug-bar-system', 'debug-bar-library', 'debug-bar-framework']
 )]
+#[HubItem(label: 'Debug Bar', route: '/hub/debugbar', icon: ForgeIcon::COG, order: 6)]
 #[Provides(\App\Modules\ForgeDebugBar\DebugBar::class, version: '1.1.0')]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[ConfigDefaults(defaults: [
@@ -142,6 +145,19 @@ class DebugBarModule
 
     $this->registerDebugBarAssets();
     $this->injectAssets($response);
+    $this->storeLatestDataForHub();
+  }
+
+  private function storeLatestDataForHub(): void
+  {
+    try {
+      $container = Container::getInstance();
+      if ($container->has(\App\Modules\ForgeDebugBar\Services\DebugBarHubService::class)) {
+        $hubService = $container->get(\App\Modules\ForgeDebugBar\Services\DebugBarHubService::class);
+        $hubService->storeLatestData();
+      }
+    } catch (\Throwable) {
+    }
   }
 
   private function registerDebugBarAssets(): void

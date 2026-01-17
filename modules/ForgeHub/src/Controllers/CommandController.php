@@ -15,6 +15,8 @@ use Forge\Traits\ControllerHelper;
 
 #[Service]
 #[Middleware('web')]
+#[Middleware('auth')]
+#[Middleware('hub-permissions')]
 final class CommandController
 {
     use ControllerHelper;
