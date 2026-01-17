@@ -15,7 +15,7 @@ use Forge\CLI\Traits\OutputHelper;
 
 #[Module(
   name: "ForgeEvents",
-  version: "0.3.0",
+  version: "1.0.0",
   description: "An Event Queue system by forge",
   order: 99,
   author: 'Forge Team',
@@ -24,6 +24,7 @@ use Forge\CLI\Traits\OutputHelper;
   tags: ['communication', 'event', 'queue', 'event-queue', 'event-dispatcher', 'event-listener']
 )]
 #[HubItem(label: 'Queues', route: '/hub/queues', icon: ForgeIcon::QUEUE, order: 7)]
+#[HubItem(label: 'Queue Workers', route: '/hub/queue-workers', icon: ForgeIcon::COMMAND, order: 8)]
 #[Service]
 #[Compatibility(framework: ">=0.1.0", php: ">=8.3")]
 #[Repository(type: "git", url: "https://github.com/forge-engine/modules")]
