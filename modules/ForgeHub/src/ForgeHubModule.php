@@ -19,7 +19,7 @@ use Forge\Core\Security\PermissionsEnum;
 
 #[Module(
   name: 'ForgeHub',
-  version: '1.0.0',
+  version: '2.0.0',
   description: 'Administration Hub for Forge Framework',
   order: 6,
   author: 'Forge Team',
@@ -27,11 +27,12 @@ use Forge\Core\Security\PermissionsEnum;
   type: 'generic',
   tags: ['generic', 'hub', 'management', 'system', 'administration-hub']
 )]
-#[HubItem(label: 'CLI Command', route: '/hub/commands', icon: ForgeIcon::COMMAND, order: 4, permissions: [PermissionsEnum::RUN_COMMAND, PermissionsEnum::VIEW_COMMAND])]
+#[HubItem(label: 'CLI Command', route: '/hub/commands', icon: ForgeIcon::COMMAND, order: 4)]
 #[HubItem(label: 'Logs', route: '/hub/logs', icon: ForgeIcon::LOG, order: 3)]
 #[HubItem(label: 'Modules', route: '/hub/modules', icon: ForgeIcon::STORAGE, order: 2)]
 #[HubItem(label: 'Cache', route: '/hub/cache', icon: ForgeIcon::CACHE, order: 5)]
 #[HubItem(label: 'Cron Jobs', route: '/hub/cron-jobs', icon: ForgeIcon::CLOCK, order: 8)]
+#[HubItem(label: 'Monitoring', route: '/hub/monitoring', icon: ForgeIcon::MONITOR, order: 9)]
 #[Service]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
