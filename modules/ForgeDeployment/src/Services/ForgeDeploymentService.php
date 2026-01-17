@@ -44,6 +44,10 @@ final class ForgeDeploymentService
 
     $saveState = function (string $step) use (&$state, $serverIp, $serverConfig, $provisionConfig, $deploymentConfig, $sshPrivateKeyPath) {
       if ($state === null) {
+        $existingState = $this->stateService->load();
+        if ($existingState !== null) {
+          $state = $existingState;
+        } else {
         $state = new DeploymentState(
           $serverIp,
           $serverConfig->name ?? null,
@@ -58,6 +62,7 @@ final class ForgeDeploymentService
             'database_version' => $provisionConfig->databaseVersion,
           ]
         );
+        }
       }
       $state = $state->markStepCompleted($step);
       $this->stateService->save($state);

@@ -60,6 +60,7 @@ final class DeploymentConfigReader
   private function normalizeConfig(array $config): array
   {
     $normalized = [
+      'php_executable' => $config['php_executable'] ?? null,
       'server' => $config['server'] ?? [],
       'provision' => $config['provision'] ?? [],
       'deployment' => $config['deployment'] ?? [],
@@ -109,20 +110,28 @@ return [
     ],
 
     'deployment' => [
-        'domain' => 'example.com',
-        'ssl_email' => 'admin@example.com',
-        'commands' => [
-        ],
+        'domain' => 'domain.com',
+        'ssl_email' => 'email@domain.com',
+        'commands' => [],
         'post_deployment_commands' => [
             'cache:flush',
             'cache:warm',
             'db:migrate --type=all',
             'storage:link',
             'modules:forge-deployment:fix-permissions',
+            'modules:forgewire:minify',
+            'asset:link --type=module --module=forge-wire',
         ],
         'env_vars' => [
             'APP_ENV' => 'production',
-            'APP_DEBUG' => 'false',
+            'APP_DEBUG' => 'true',
+            'CENTRAL_DOMAIN' => 'domain.com',
+            'CORS_ALLOWED_ORIGINS' => [
+            ],
+            'IP_WHITE_LIST' => [
+                '127.0.0.1',
+                '::1'
+            ],
         ],
     ],
 ];

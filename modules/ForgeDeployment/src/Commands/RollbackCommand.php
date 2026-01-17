@@ -34,6 +34,9 @@ final class RollbackCommand extends Command
   #[Arg(name: 'skip-commands', description: 'Skip post-deployment commands', required: false)]
   private bool $skipCommands = false;
 
+  #[Arg(name: 'skip-confirmation', description: 'Skip confirmation prompt (for non-interactive use)', required: false)]
+  private bool $skipConfirmation = false;
+
   public function __construct(
     private readonly DeploymentStateService $stateService,
     private readonly DeploymentService $deploymentService,
@@ -101,7 +104,8 @@ final class RollbackCommand extends Command
         $this->info("Current commit message: {$currentCommitMessage}");
       }
 
-      // Confirm rollback
+      // Confirm rollback (skip if --skip-confirmation is set)
+      if (!$this->skipConfirmation) {
       $confirm = $this->templateGenerator->askQuestion(
         'Are you sure you want to rollback to the previous commit? (y/n)',
         'n'
@@ -110,6 +114,7 @@ final class RollbackCommand extends Command
       if (!in_array(strtolower($confirm), ['y', 'yes', '1', 'true'], true)) {
         $this->info('Rollback cancelled.');
         return 0;
+        }
       }
 
       // Get files that changed between parent and last deployed commit
@@ -164,9 +169,17 @@ final class RollbackCommand extends Command
       if ($fileConfig !== null && isset($fileConfig['deployment'])) {
         $deploymentConfig = \App\Modules\ForgeDeployment\Dto\DeploymentConfig::fromArray($fileConfig['deployment']);
 
+        // Get PHP version from provision config or state
+        $phpVersion = '8.4';
+        if ($fileConfig !== null && isset($fileConfig['provision']['php_version'])) {
+          $phpVersion = $fileConfig['provision']['php_version'];
+        } elseif (isset($state->config['php_version'])) {
+          $phpVersion = $state->config['php_version'];
+        }
+
         if (!$this->skipCommands && !empty($deploymentConfig->postDeploymentCommands)) {
           $this->info('Running post-deployment commands...');
-          $this->deploymentService->runPostDeploymentCommands($remotePath, $deploymentConfig->postDeploymentCommands);
+          $this->deploymentService->runPostDeploymentCommands($remotePath, $deploymentConfig->postDeploymentCommands, $phpVersion);
           $this->success('Post-deployment commands completed');
         } else {
           $this->info('Skipping post-deployment commands');

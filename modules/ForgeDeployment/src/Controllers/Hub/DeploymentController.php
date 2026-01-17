@@ -38,6 +38,7 @@ final class DeploymentController
     $config = $this->deploymentHubService->getDeploymentConfig();
     $hasConfig = $this->deploymentHubService->hasConfig();
     $logs = $this->deploymentHubService->listDeploymentLogs();
+    $phpInfo = $this->executionService->getPhpInfo();
 
     $data = [
       'title' => 'Deployment',
@@ -46,6 +47,7 @@ final class DeploymentController
       'has_config' => $hasConfig,
       'config_path' => $this->deploymentHubService->getConfigPath(),
       'recent_logs' => array_slice($logs, 0, 10),
+      'php_info' => $phpInfo,
     ];
 
     return $this->view(view: "pages/hub/deployment", data: $data);
@@ -237,7 +239,7 @@ final class DeploymentController
     $data = $request->json();
     $args = $data['args'] ?? [];
 
-    $result = $this->executionService->executeDeployment('forge-deployment:deploy', $args);
+    $result = $this->executionService->executeDeployment('modules:forge-deployment:deploy', $args);
 
     return $this->jsonResponse([
       'success' => $result['success'],
@@ -253,7 +255,7 @@ final class DeploymentController
     $data = $request->json();
     $args = $data['args'] ?? [];
 
-    $result = $this->executionService->executeDeployment('forge-deployment:deploy-app', $args);
+    $result = $this->executionService->executeDeployment('modules:forge-deployment:deploy-app', $args);
 
     return $this->jsonResponse([
       'success' => $result['success'],
@@ -269,7 +271,7 @@ final class DeploymentController
     $data = $request->json();
     $args = $data['args'] ?? [];
 
-    $result = $this->executionService->executeDeployment('forge-deployment:update', $args);
+    $result = $this->executionService->executeDeployment('modules:forge-deployment:update', $args);
 
     return $this->jsonResponse([
       'success' => $result['success'],
@@ -285,12 +287,28 @@ final class DeploymentController
     $data = $request->json();
     $args = $data['args'] ?? [];
 
-    $result = $this->executionService->executeDeployment('forge-deployment:rollback', $args);
+    $result = $this->executionService->executeDeployment('modules:forge-deployment:rollback', $args);
 
     return $this->jsonResponse([
       'success' => $result['success'],
       'deployment_id' => $result['deployment_id'],
       'message' => $result['success'] ? 'Rollback started successfully' : 'Rollback failed',
+      'output' => $result['output'] ?? '',
+    ], $result['success'] ? 200 : 500);
+  }
+
+  #[Route("/hub/deployment/deploy-env", "POST")]
+  public function deployEnv(Request $request): Response
+  {
+    $data = $request->json();
+    $args = $data['args'] ?? [];
+
+    $result = $this->executionService->executeDeployment('modules:forge-deployment:deploy-env', $args);
+
+    return $this->jsonResponse([
+      'success' => $result['success'],
+      'deployment_id' => $result['deployment_id'],
+      'message' => $result['success'] ? 'Environment file deployment started successfully' : 'Environment file deployment failed',
       'output' => $result['output'] ?? '',
     ], $result['success'] ? 200 : 500);
   }
@@ -307,9 +325,11 @@ final class DeploymentController
       ], 404);
     }
 
+    $cleanLogs = preg_replace('/\x1b\[[0-9;]*m/', '', $logs);
+
     return $this->jsonResponse([
       'success' => true,
-      'logs' => $logs,
+      'logs' => $cleanLogs,
       'deployment_id' => $deploymentId,
     ]);
   }
@@ -447,5 +467,51 @@ PHP;
     $lines[] = "{$spaces}]";
 
     return implode("\n", $lines);
+  }
+
+  #[Route("/hub/deployment/php-binaries", "GET")]
+  public function getPhpBinaries(Request $request): Response
+  {
+    $binaries = $this->executionService->getAvailablePhpBinaries();
+
+    return $this->jsonResponse([
+      'success' => true,
+      'binaries' => $binaries,
+    ]);
+  }
+
+  #[Route("/hub/deployment/php-executable", "POST")]
+  public function setPhpExecutable(Request $request): Response
+  {
+    $data = $request->json();
+    $path = $data['path'] ?? null;
+
+    if ($path === null || !is_string($path)) {
+      return $this->jsonResponse([
+        'success' => false,
+        'message' => 'PHP executable path is required',
+      ], 400);
+    }
+
+    if (!file_exists($path) || !is_executable($path)) {
+      return $this->jsonResponse([
+        'success' => false,
+        'message' => 'PHP executable not found or not executable',
+      ], 400);
+    }
+
+    $result = $this->deploymentHubService->setPhpExecutable($path);
+    if (!$result) {
+      return $this->jsonResponse([
+        'success' => false,
+        'message' => 'Failed to save PHP executable preference',
+      ], 500);
+    }
+
+    return $this->jsonResponse([
+      'success' => true,
+      'message' => 'PHP executable preference saved successfully',
+      'php_info' => $this->executionService->getPhpInfo(),
+    ]);
   }
 }

@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Modules\ForgeDebugbar\Listeners;
+namespace App\Modules\ForgeDebugBar\Listeners;
 
 use Forge\Core\Contracts\DebugBarInterface;
 use Forge\Core\DI\Container;
-use Forge\Modules\ForgeDebugbar\Collectors\RequestCollector;
+use App\Modules\ForgeDebugBar\Collectors\RequestCollector;
 
 class RequestCollectorListener
 {

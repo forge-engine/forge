@@ -132,6 +132,8 @@ final class ResumeCommand extends Command
         $state
       );
 
+      $state = $this->stateService->load();
+
       if ($state->isStepCompleted('dns_configured') && $state->isStepCompleted('ssl_configured') && $state->isStepCompleted('post_deployment_completed')) {
         $this->success('Deployment resumed and completed successfully!');
       } else {
@@ -199,9 +201,9 @@ final class ResumeCommand extends Command
               if ($outputCallback !== null) {
                 $outputCallback("      {$message}");
               }
-            }, $provisionConfig->toArray());
+            }, $provisionConfig->toArray(), $provisionConfig->phpVersion);
 
-            $this->deploymentService->runPostDeploymentCommands($remotePath, $deploymentConfig->postDeploymentCommands, $outputCallback);
+            $this->deploymentService->runPostDeploymentCommands($remotePath, $deploymentConfig->postDeploymentCommands, $provisionConfig->phpVersion, $outputCallback);
             $state = $state->markStepCompleted('post_deployment_completed');
             $this->stateService->save($state);
           }

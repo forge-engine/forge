@@ -31,6 +31,11 @@ final class CommandService
         'up',
     ];
 
+    public function clearCache(): void
+    {
+        $this->cachedCommands = null;
+    }
+
     public function getAvailableCommands(): array
     {
         if ($this->cachedCommands !== null) {

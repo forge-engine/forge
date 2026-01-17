@@ -3,7 +3,7 @@
  * @var array $data
  */
 
-use App\Modules\ForgeDebugbar\Collectors\TimeCollector;
+use App\Modules\ForgeDebugBar\Collectors\TimeCollector;
 
 $startTime = TimeCollector::getStartTime();
 ?>

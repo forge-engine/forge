@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Modules\ForgeDebugbar\Collectors;
+namespace App\Modules\ForgeDebugBar\Collectors;
 
 use Forge\Core\Helpers\Debuger;
 

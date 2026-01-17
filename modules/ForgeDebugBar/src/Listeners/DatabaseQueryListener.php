@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Modules\ForgeDebugbar\Listeners;
+namespace App\Modules\ForgeDebugBar\Listeners;
 
 use Forge\Core\Contracts\DebugBarInterface;
 

@@ -248,6 +248,8 @@ final class DeployCommand extends Command
         $state
       );
 
+      $state = $this->stateService->load();
+
       $dnsConfigured = false;
       if ($state === null || !$state->isStepCompleted('dns_configured')) {
         $this->info('Configuring DNS...');
@@ -329,7 +331,7 @@ final class DeployCommand extends Command
         if ($outputCallback !== null) {
           $outputCallback("      {$message}");
         }
-      }, $provisionConfig->toArray());
+      }, $provisionConfig->toArray(), $provisionConfig->phpVersion);
 
       if (!empty($deploymentConfig->postDeploymentCommands)) {
         if ($state === null || !$state->isStepCompleted('post_deployment_completed')) {
@@ -344,7 +346,7 @@ final class DeployCommand extends Command
           );
 
           if ($connected) {
-            $this->deploymentService->runPostDeploymentCommands($remotePath, $deploymentConfig->postDeploymentCommands, $outputCallback);
+            $this->deploymentService->runPostDeploymentCommands($remotePath, $deploymentConfig->postDeploymentCommands, $provisionConfig->phpVersion, $outputCallback);
             if ($state !== null) {
               $state = $state->markStepCompleted('post_deployment_completed');
               $this->stateService->save($state);

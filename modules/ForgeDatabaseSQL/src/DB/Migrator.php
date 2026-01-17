@@ -558,7 +558,16 @@ final class Migrator
     [, $type, $module, $group] = $this->extractMigrationMetadata($path);
 
     $migration = $this->resolveMigration($path);
-    $migration->up();
+
+    try {
+      $migration->up();
+    } catch (\Throwable $e) {
+      throw new \RuntimeException(
+        "Migration failed: {$migrationName}. Error: " . $e->getMessage(),
+        0,
+        $e
+      );
+    }
 
     $stmt = $this->connection->prepare(
       "INSERT INTO " .

@@ -20,7 +20,7 @@ final class SshService
 
   public function connect(string $host, int $port, string $username, ?string $privateKeyPath = null, ?string $publicKeyPath = null, ?string $passphrase = null): bool
   {
-    if (!function_exists('ssh2_connect')) {
+    if (!function_exists('ssh2_connect') && !extension_loaded('ssh2')) {
       throw new \RuntimeException('SSH2 extension is not available. Install php-ssh2 extension.');
     }
 

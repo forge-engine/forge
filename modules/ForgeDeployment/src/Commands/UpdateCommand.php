@@ -91,6 +91,14 @@ final class UpdateCommand extends Command
         return 1;
       }
 
+      // Get PHP version from provision config or state
+      $phpVersion = '8.4';
+      if ($fileConfig !== null && isset($fileConfig['provision']['php_version'])) {
+        $phpVersion = $fileConfig['provision']['php_version'];
+      } elseif (isset($state->config['php_version'])) {
+        $phpVersion = $state->config['php_version'];
+      }
+
       $sshPrivateKeyPath = $this->expandPath($state->sshKeyPath ?? '~/.ssh/id_rsa');
 
       $this->info('Connecting to server...');
@@ -273,7 +281,7 @@ final class UpdateCommand extends Command
 
       if (!$this->skipCommands && !empty($deploymentConfig->postDeploymentCommands)) {
         $this->info('Running post-deployment commands...');
-        $this->deploymentService->runPostDeploymentCommands($remotePath, $deploymentConfig->postDeploymentCommands);
+        $this->deploymentService->runPostDeploymentCommands($remotePath, $deploymentConfig->postDeploymentCommands, $phpVersion);
         $this->success('Post-deployment commands completed');
       } else {
         $this->info('Skipping post-deployment commands');

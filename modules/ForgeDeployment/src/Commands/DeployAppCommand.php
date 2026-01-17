@@ -113,7 +113,7 @@ final class DeployAppCommand extends Command
 
       if (!empty($deploymentConfig->postDeploymentCommands)) {
         $this->info('Running post-deployment commands...');
-        $this->deploymentService->runPostDeploymentCommands($remotePath, $deploymentConfig->postDeploymentCommands);
+        $this->deploymentService->runPostDeploymentCommands($remotePath, $deploymentConfig->postDeploymentCommands, $this->phpVersion);
       }
 
       // Save commit hash after successful deployment (if using deployment state)

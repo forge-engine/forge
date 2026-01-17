@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 
 use App\Modules\ForgeDatabaseSQL\DB\Attributes\Column;
+use App\Modules\ForgeDatabaseSQL\DB\Attributes\GroupMigration;
 use App\Modules\ForgeDatabaseSQL\DB\Attributes\Index;
+use App\Modules\ForgeDatabaseSQL\DB\Attributes\Table;
 use App\Modules\ForgeDatabaseSQL\DB\Attributes\Timestamps;
 use App\Modules\ForgeDatabaseSQL\DB\Enums\ColumnType;
 use App\Modules\ForgeDatabaseSQL\DB\Migrations\Migration;
-use App\Modules\ForgeSqlOrm\ORM\Attributes\Table;
 
+#[GroupMigration(name: 'queues')]
 #[Table(name: 'queue_jobs')]
 #[Index(columns: ['queue', 'process_at'], name: 'idx_queue_process_at')]
 #[Index(columns: ['attempts'], name: 'idx_attempts')]

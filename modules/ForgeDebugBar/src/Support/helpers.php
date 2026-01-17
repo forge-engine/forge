@@ -1,8 +1,8 @@
 <?php
 
-use App\Modules\ForgeDebugbar\Collectors\TimelineCollector;
-use App\Modules\ForgeDebugbar\Collectors\ViewCollector;
-use App\Modules\ForgeDebugbar\DebugBar;
+use App\Modules\ForgeDebugBar\Collectors\TimelineCollector;
+use App\Modules\ForgeDebugBar\Collectors\ViewCollector;
+use App\Modules\ForgeDebugBar\DebugBar;
 use Forge\Core\DI\Container;
 use Forge\Exceptions\MissingServiceException;
 use Forge\Exceptions\ResolveParameterException;

@@ -41,6 +41,14 @@ final class CommandController
         return new ApiResponse(['commands' => $commands]);
     }
 
+    #[Route("/hub/commands/refresh", "POST")]
+    public function refreshCommands(): Response
+    {
+        $this->commandService->clearCache();
+        $commands = $this->commandService->getAvailableCommands();
+        return new ApiResponse(['commands' => $commands, 'message' => 'Commands refreshed successfully']);
+    }
+
     #[Route("/hub/commands/arguments")]
     public function getCommandArguments(Request $request): Response
     {

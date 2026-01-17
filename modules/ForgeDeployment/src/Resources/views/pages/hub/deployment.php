@@ -42,7 +42,22 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
             <div>
               <dt class="text-sm font-medium text-gray-500">Domain</dt>
               <dd class="mt-1 text-sm font-semibold text-gray-900" id="status-domain">
-                <?= htmlspecialchars($status['domain']) ?>
+                <?php
+                $isComplete = !empty($status['completed_steps']) && in_array('post_deployment_completed', $status['completed_steps']);
+                if ($isComplete):
+                  $domainUrl = 'https://' . htmlspecialchars($status['domain']);
+                  ?>
+                  <a href="<?= $domainUrl ?>" target="_blank" rel="noopener noreferrer"
+                    class="text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1">
+                    <?= htmlspecialchars($status['domain']) ?>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                    </svg>
+                  </a>
+                <?php else: ?>
+                  <?= htmlspecialchars($status['domain']) ?>
+                <?php endif; ?>
               </dd>
             </div>
           <?php endif; ?>
@@ -117,7 +132,39 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
     </div>
 
     <div class="bg-white rounded-xl border border-gray-200 p-6">
-      <h2 class="text-lg font-semibold text-gray-900 mb-4">Deployment Actions</h2>
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-lg font-semibold text-gray-900">Deployment Actions</h2>
+        <button id="viewDeploymentOutputBtn" onclick="openDeploymentOutputModalFromButton()"
+          class="hidden px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors flex items-center gap-1.5">
+          <i class="fa-solid fa-terminal"></i>
+          <span>View Console</span>
+        </button>
+      </div>
+      <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
+        <p class="font-medium mb-1">PHP Command Info:</p>
+        <p class="text-blue-700" id="phpInfoDisplay">
+          <?php if (isset($php_info) && !empty($php_info)): ?>
+            <?php if ($php_info['is_default'] ?? false): ?>
+              Using default PHP CLI command (<code class="bg-blue-100 px-1 rounded">php</code>).
+            <?php else: ?>
+              Using PHP at <code class="bg-blue-100 px-1 rounded"><?= htmlspecialchars($php_info['path'] ?? 'php') ?></code>
+              <?php if (!empty($php_info['version'] ?? '')): ?>
+                (version <?= htmlspecialchars($php_info['version']) ?>)
+              <?php endif; ?>
+            <?php endif; ?>
+          <?php else: ?>
+            Loading PHP information...
+          <?php endif; ?>
+        </p>
+        <div class="mt-2">
+          <label for="phpExecutableSelect" class="block text-xs font-medium text-blue-900 mb-1">Select PHP
+            Executable:</label>
+          <select id="phpExecutableSelect"
+            class="w-full px-2 py-1.5 text-xs border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white">
+            <option value="">Loading...</option>
+          </select>
+        </div>
+      </div>
       <div class="space-y-3">
         <button id="deployBtn"
           class="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors flex items-center justify-center gap-2">
@@ -125,19 +172,28 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
           <span>Deploy</span>
         </button>
         <button id="deployAppBtn"
-          class="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors flex items-center justify-center gap-2">
+          class="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors flex items-center justify-center gap-2 opacity-50 cursor-not-allowed"
+          disabled>
           <i class="fa-solid fa-upload"></i>
           <span>Deploy App</span>
         </button>
         <button id="updateBtn"
-          class="w-full px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium transition-colors flex items-center justify-center gap-2">
+          class="w-full px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium transition-colors flex items-center justify-center gap-2 opacity-50 cursor-not-allowed"
+          disabled>
           <i class="fa-solid fa-arrow-up"></i>
           <span>Update</span>
         </button>
         <button id="rollbackBtn"
-          class="w-full px-4 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium transition-colors flex items-center justify-center gap-2">
+          class="w-full px-4 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium transition-colors flex items-center justify-center gap-2 opacity-50 cursor-not-allowed"
+          disabled>
           <i class="fa-solid fa-undo"></i>
           <span>Rollback</span>
+        </button>
+        <button id="deployEnvBtn"
+          class="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium transition-colors flex items-center justify-center gap-2 opacity-50 cursor-not-allowed"
+          disabled>
+          <i class="fa-solid fa-file-code"></i>
+          <span>Deploy Env</span>
         </button>
       </div>
     </div>
@@ -234,11 +290,16 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
         <?php if (!empty($config['deployment']['env_vars'])): ?>
           <div class="space-y-2 max-h-64 overflow-y-auto pr-2" id="envVarsDisplay">
             <?php foreach ($config['deployment']['env_vars'] as $key => $value): ?>
+              <?php
+              $displayValue = is_array($value)
+                ? '[' . implode(', ', array_map(fn($v) => '"' . addslashes((string) $v) . '"', $value)) . ']'
+                : (string) $value;
+              ?>
               <div class="flex items-center justify-between p-2 bg-gray-50 rounded border border-gray-200">
                 <div class="flex items-center gap-2 flex-1 min-w-0">
                   <span class="text-sm font-medium text-gray-700"><?= htmlspecialchars($key) ?></span>
                   <span class="text-sm text-gray-400">=</span>
-                  <span class="text-sm text-gray-900 font-mono truncate"><?= htmlspecialchars($value) ?></span>
+                  <span class="text-sm text-gray-900 font-mono truncate"><?= htmlspecialchars($displayValue) ?></span>
                 </div>
               </div>
             <?php endforeach; ?>
@@ -292,19 +353,37 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
     }
 
     try {
-      const response = await fetch('/hub/deployment/status', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': window.csrfToken || ''
-        }
-      });
+      const [statusResponse, configResponse] = await Promise.all([
+        fetch('/hub/deployment/status', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': window.csrfToken || ''
+          }
+        }),
+        fetch('/hub/deployment/config', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': window.csrfToken || ''
+          }
+        })
+      ]);
 
-      const data = await response.json();
-      if (data.success) {
-        updateStatus(data.status);
+      const statusData = await statusResponse.json();
+      if (statusData.success) {
+        updateStatus(statusData.status);
       }
+
+      const configData = await configResponse.json();
+      if (configData.success) {
+        await refreshPostCommandsDisplay();
+        await refreshEnvVarsDisplay();
+      }
+
+      showNotification('success', 'Refreshed', 'Deployment status and configuration refreshed');
     } catch (error) {
+      showNotification('error', 'Refresh Failed', 'Failed to refresh: ' + (error.message || 'Unknown error'));
     } finally {
       button.disabled = false;
       if (icon) {
@@ -317,6 +396,7 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
   document.getElementById('deployAppBtn')?.addEventListener('click', () => executeDeployment('deploy-app'));
   document.getElementById('updateBtn')?.addEventListener('click', () => executeDeployment('update'));
   document.getElementById('rollbackBtn')?.addEventListener('click', () => executeDeployment('rollback'));
+  document.getElementById('deployEnvBtn')?.addEventListener('click', () => executeDeployment('deploy-env'));
   document.getElementById('editConfigBtn')?.addEventListener('click', () => editConfig());
   document.getElementById('manageSecretsBtn')?.addEventListener('click', () => manageSecrets());
   document.getElementById('editPostCommandsBtn')?.addEventListener('click', () => editPostCommands());
@@ -333,7 +413,21 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
     }
     if (status.domain) {
       const el = document.getElementById('status-domain');
-      if (el) el.textContent = status.domain;
+      if (el) {
+        const isComplete = status.completed_steps && status.completed_steps.includes('post_deployment_completed');
+        if (isComplete) {
+          const domainUrl = 'https://' + status.domain;
+          el.innerHTML = `<a href="${domainUrl}" target="_blank" rel="noopener noreferrer"
+            class="text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1">
+            ${status.domain}
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+            </svg>
+          </a>`;
+        } else {
+          el.textContent = status.domain;
+        }
+      }
     }
     if (status.progress_percentage !== undefined) {
       const el = document.getElementById('status-progress');
@@ -358,6 +452,79 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
           : 'px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800';
       }
     }
+
+    const isComplete = status.completed_steps && status.completed_steps.includes('post_deployment_completed');
+    const deployBtn = document.getElementById('deployBtn');
+    const deployAppBtn = document.getElementById('deployAppBtn');
+    const updateBtn = document.getElementById('updateBtn');
+    const rollbackBtn = document.getElementById('rollbackBtn');
+    const deployEnvBtn = document.getElementById('deployEnvBtn');
+
+    if (deployBtn) {
+      if (isComplete) {
+        deployBtn.disabled = true;
+        deployBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        const span = deployBtn.querySelector('span');
+        if (span) {
+          span.textContent = 'Deployed';
+        }
+      } else {
+        deployBtn.disabled = false;
+        deployBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        const span = deployBtn.querySelector('span');
+        if (span) {
+          span.textContent = 'Deploy';
+        }
+      }
+    }
+
+    if (deployAppBtn) {
+      if (isComplete) {
+        deployAppBtn.disabled = false;
+        deployAppBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        const span = deployAppBtn.querySelector('span');
+        if (span) {
+          span.textContent = 'Deploy App';
+        }
+      } else {
+        deployAppBtn.disabled = true;
+        deployAppBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        const span = deployAppBtn.querySelector('span');
+        if (span) {
+          span.textContent = 'Deploy App';
+        }
+      }
+    }
+
+    if (updateBtn) {
+      if (isComplete) {
+        updateBtn.disabled = false;
+        updateBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      } else {
+        updateBtn.disabled = true;
+        updateBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+    }
+
+    if (rollbackBtn) {
+      if (isComplete) {
+        rollbackBtn.disabled = false;
+        rollbackBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      } else {
+        rollbackBtn.disabled = true;
+        rollbackBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+    }
+
+    if (deployEnvBtn) {
+      if (isComplete) {
+        deployEnvBtn.disabled = false;
+        deployEnvBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      } else {
+        deployEnvBtn.disabled = true;
+        deployEnvBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+    }
   }
 
   async function executeDeployment(type) {
@@ -371,8 +538,31 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
   }
 
   async function performDeployment(type) {
-
     const endpoint = `/hub/deployment/${type}`;
+
+    const args = {};
+    if (type === 'rollback') {
+      args['skip-confirmation'] = true;
+    } else if (type === 'deploy-app') {
+      const statusResponse = await fetch('/hub/deployment/status', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': window.csrfToken || ''
+        }
+      });
+      if (statusResponse.ok) {
+        const statusData = await statusResponse.json();
+        if (statusData.success && statusData.status && statusData.status.has_state) {
+          if (statusData.status.server_ip) {
+            args['host'] = statusData.status.server_ip;
+          }
+          if (statusData.status.domain) {
+            args['domain'] = statusData.status.domain;
+          }
+        }
+      }
+    }
 
     try {
       const response = await fetch(endpoint, {
@@ -381,14 +571,28 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
           'Content-Type': 'application/json',
           'X-CSRF-Token': window.csrfToken || ''
         },
-        body: JSON.stringify({ args: {} })
+        body: JSON.stringify({ args: args })
       });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error occurred' }));
+        showNotification('error', 'Deployment Failed', errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        return;
+      }
 
       const data = await response.json();
       if (data.success) {
         currentDeploymentId = data.deployment_id;
+        const viewBtn = document.getElementById('viewDeploymentOutputBtn');
+        if (viewBtn) {
+          viewBtn.classList.remove('hidden');
+        }
         showNotification('success', 'Deployment Started', `Deployment started successfully. ID: ${data.deployment_id}`);
-        setTimeout(() => viewLogs(data.deployment_id), 1000);
+        setTimeout(() => {
+          if (data.deployment_id) {
+            openDeploymentOutputModal(data.deployment_id, type);
+          }
+        }, 500);
       } else {
         showNotification('error', 'Deployment Failed', data.message || 'Unknown error occurred');
       }
@@ -499,15 +703,18 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
 
       if (data.success && data.config?.deployment?.env_vars && Object.keys(data.config.deployment.env_vars).length > 0) {
         display.className = 'space-y-2 max-h-64 overflow-y-auto pr-2';
-        display.innerHTML = Object.entries(data.config.deployment.env_vars).map(([key, value]) => `
+        display.innerHTML = Object.entries(data.config.deployment.env_vars).map(([key, value]) => {
+          const stringValue = convertArrayToString(value);
+          return `
           <div class="flex items-center justify-between p-2 bg-gray-50 rounded border border-gray-200">
             <div class="flex items-center gap-2 flex-1 min-w-0">
               <span class="text-sm font-medium text-gray-700">${escapeHtml(key)}</span>
               <span class="text-sm text-gray-400">=</span>
-              <span class="text-sm text-gray-900 font-mono truncate">${escapeHtml(value)}</span>
+              <span class="text-sm text-gray-900 font-mono truncate">${escapeHtml(stringValue)}</span>
             </div>
           </div>
-        `).join('');
+        `;
+        }).join('');
       } else {
         display.className = 'text-center py-4';
         display.innerHTML = '<p class="text-sm text-gray-500">No environment variables configured</p>';
@@ -520,6 +727,19 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  function escapeHtmlAttribute(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML.replace(/"/g, '&quot;');
+  }
+
+  function convertArrayToString(value) {
+    if (Array.isArray(value)) {
+      return '[' + value.map(item => '"' + String(item).replace(/"/g, '\\"') + '"').join(', ') + ']';
+    }
+    return String(value);
   }
 
   async function loadEnvVars() {
@@ -537,7 +757,8 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
 
       if (data.success && data.config?.deployment?.env_vars) {
         Object.entries(data.config.deployment.env_vars).forEach(([key, value]) => {
-          addEnvVarRow(key, value);
+          const stringValue = convertArrayToString(value);
+          addEnvVarRow(key, stringValue);
         });
       }
 
@@ -555,11 +776,11 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
     const row = document.createElement('div');
     row.className = 'flex items-center gap-2';
     row.innerHTML = `
-      <input type="text" placeholder="Variable name" value="${key}"
+      <input type="text" placeholder="Variable name" value="${escapeHtmlAttribute(key)}"
         class="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
         required>
       <span class="text-gray-400">=</span>
-      <input type="text" placeholder="Variable value" value="${value}"
+      <input type="text" placeholder="Variable value" value="${escapeHtmlAttribute(value)}"
         class="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
         required>
       <button type="button" onclick="removeEnvVarRow(this)"
@@ -793,19 +1014,33 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
   </div>
 </div>
 
-<div id="logsModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
-  <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" onclick="closeLogsModal()">
-  </div>
-  <div class="relative min-h-screen flex items-center justify-center p-4 sm:p-6">
-    <div class="relative w-full max-w-4xl bg-white rounded-lg shadow-xl" onclick="event.stopPropagation()">
+<div id="deploymentOutputModal" class="hidden fixed inset-0 z-[60] overflow-y-auto">
+  <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity"
+    onclick="closeDeploymentOutputModal()"></div>
+  <div class="relative flex items-center justify-center p-4 sm:p-6 py-12">
+    <div class="relative w-full max-w-5xl h-[85vh] bg-white rounded-lg shadow-xl flex flex-col"
+      onclick="event.stopPropagation()">
       <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-        <h3 class="text-xl font-semibold text-gray-900">Deployment Logs</h3>
+        <h3 class="text-xl font-semibold text-gray-900" id="deploymentOutputTitle">Deployment Output</h3>
         <div class="flex items-center gap-2">
-          <button id="refreshLogsBtn" onclick="refreshLogs()"
-            class="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors">
-            <i class="fa-solid fa-rotate"></i> Refresh
+          <select id="autoRefreshInterval" onchange="updateAutoRefresh()"
+            class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+            <option value="0">Auto-refresh: OFF</option>
+            <option value="5">Auto-refresh: 5s</option>
+            <option value="10">Auto-refresh: 10s</option>
+            <option value="30">Auto-refresh: 30s</option>
+            <option value="60">Auto-refresh: 1m</option>
+          </select>
+          <button id="refreshDeploymentOutputBtn" onclick="refreshDeploymentOutput()"
+            class="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors flex items-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+              </path>
+            </svg>
+            Refresh
           </button>
-          <button onclick="closeLogsModal()"
+          <button id="closeDeploymentOutputBtn" onclick="closeDeploymentOutputModal()"
             class="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 rounded-lg p-1">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -813,12 +1048,14 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
           </button>
         </div>
       </div>
-      <div class="px-6 py-6">
-        <div id="logsContent"
-          class="bg-gray-900 text-gray-100 font-mono text-sm p-4 rounded-lg max-h-96 overflow-y-auto whitespace-pre-wrap"
-          style="min-height: 200px;">
-          Loading logs...
+      <div class="px-6 py-6 flex-1 overflow-hidden flex flex-col min-h-0">
+        <div
+          class="bg-gray-900 text-gray-100 rounded-lg p-4 flex-1 overflow-y-auto overflow-x-hidden font-mono text-xs border border-gray-700 min-h-0">
+          <pre id="deploymentOutputContent" class="whitespace-pre-wrap break-words">Loading output...</pre>
         </div>
+        <p class="mt-2 text-xs text-gray-500 flex-shrink-0">Deployment output is updated as the process runs. Use the
+          refresh button
+          or enable auto-refresh to see the latest output.</p>
       </div>
     </div>
   </div>
@@ -1002,9 +1239,9 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
   </div>
 </div>
 
-<div id="confirmationModal" class="hidden fixed inset-0 z-[60] overflow-y-auto">
+<div id="confirmationModal" class="hidden fixed inset-0 z-[100] overflow-y-auto">
   <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity -z-10" aria-hidden="true"
       onclick="closeConfirmationModal()"></div>
     <div
       class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
@@ -1102,6 +1339,11 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
   let confirmationCallback = null;
 
   function showConfirmation(title, message, onConfirm) {
+    const deploymentOutputModal = document.getElementById('deploymentOutputModal');
+    if (deploymentOutputModal && !deploymentOutputModal.classList.contains('hidden')) {
+      closeDeploymentOutputModal();
+    }
+
     const modal = document.getElementById('confirmationModal');
     const titleEl = document.getElementById('confirmationTitle');
     const messageEl = document.getElementById('confirmationMessage');
@@ -1236,27 +1478,81 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
     });
   }
 
-  let currentLogsDeploymentId = null;
+  let currentDeploymentOutputId = null;
+  let currentDeploymentType = 'deploy';
+  let autoRefreshInterval = null;
+  let autoRefreshTimer = null;
 
-  function closeLogsModal() {
-    const modal = document.getElementById('logsModal');
+  function openDeploymentOutputModal(deploymentId, deploymentType = 'deploy') {
+    if (!deploymentId) {
+      console.error('openDeploymentOutputModal: No deployment ID provided');
+      return;
+    }
+    currentDeploymentOutputId = deploymentId;
+    currentDeploymentType = deploymentType;
+    const modal = document.getElementById('deploymentOutputModal');
+    const title = document.getElementById('deploymentOutputTitle');
+    const viewBtn = document.getElementById('viewDeploymentOutputBtn');
+
+    if (!modal) {
+      console.error('openDeploymentOutputModal: Modal element not found');
+      return;
+    }
+
+    if (!title) {
+      console.error('openDeploymentOutputModal: Title element not found');
+      return;
+    }
+
+    const typeLabels = {
+      'deploy': 'Deploy',
+      'deploy-app': 'Deploy App',
+      'update': 'Update',
+      'rollback': 'Rollback'
+    };
+    title.textContent = `${typeLabels[deploymentType] || 'Deployment'} Output`;
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+
+    if (viewBtn) {
+      viewBtn.classList.remove('hidden');
+    }
+
+    loadDeploymentOutput(deploymentId);
+    updateAutoRefresh();
+  }
+
+  function openDeploymentOutputModalFromButton() {
+    if (currentDeploymentOutputId) {
+      openDeploymentOutputModal(currentDeploymentOutputId, currentDeploymentType);
+    }
+  }
+
+  function closeDeploymentOutputModal() {
+    const modal = document.getElementById('deploymentOutputModal');
     if (modal) {
       modal.classList.add('hidden');
-      currentLogsDeploymentId = null;
+      document.body.style.overflow = '';
+      stopAutoRefresh();
     }
   }
 
-  function refreshLogs() {
-    if (currentLogsDeploymentId) {
-      loadLogs(currentLogsDeploymentId);
+  function refreshDeploymentOutput() {
+    if (currentDeploymentOutputId) {
+      loadDeploymentOutput(currentDeploymentOutputId);
     }
   }
 
-  async function loadLogs(deploymentId) {
-    currentLogsDeploymentId = deploymentId;
-    const logsContent = document.getElementById('logsContent');
-    if (!logsContent) return;
-    logsContent.textContent = 'Loading logs...';
+  function stripAnsiCodes(text) {
+    return text.replace(/\u001b\[[0-9;]*m/g, '');
+  }
+
+  async function loadDeploymentOutput(deploymentId) {
+    const outputContent = document.getElementById('deploymentOutputContent');
+    if (!outputContent) return;
+
+    outputContent.textContent = 'Loading output...';
+
     try {
       const response = await fetch(`/hub/deployment/logs/${deploymentId}`, {
         method: 'GET',
@@ -1264,26 +1560,180 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
       });
       const data = await response.json();
       if (data.success) {
-        logsContent.textContent = data.logs || 'No logs available';
-        logsContent.scrollTop = logsContent.scrollHeight;
+        if (data.logs && data.logs.trim() !== '') {
+          const cleanLogs = stripAnsiCodes(data.logs);
+          outputContent.textContent = cleanLogs;
+          const container = outputContent.parentElement;
+          if (container) {
+            setTimeout(() => {
+              container.scrollTop = container.scrollHeight;
+            }, 100);
+          }
+        } else {
+          outputContent.textContent = 'No output available yet. The deployment is starting...';
+        }
       } else {
-        logsContent.textContent = 'Failed to load logs: ' + (data.message || 'Unknown error');
+        outputContent.textContent = 'Failed to load output: ' + (data.message || 'Unknown error');
       }
     } catch (error) {
-      logsContent.textContent = 'Error loading logs: ' + error.message;
+      outputContent.textContent = 'Error loading output: ' + error.message;
     }
   }
 
-  document.getElementById('logsModal')?.addEventListener('click', function (e) {
-    if (e.target === this) closeLogsModal();
+  function updateAutoRefresh() {
+    stopAutoRefresh();
+    const select = document.getElementById('autoRefreshInterval');
+    if (!select) return;
+
+    const interval = parseInt(select.value, 10);
+    if (interval > 0 && currentDeploymentOutputId) {
+      autoRefreshTimer = setInterval(() => {
+        if (currentDeploymentOutputId) {
+          loadDeploymentOutput(currentDeploymentOutputId);
+        }
+      }, interval * 1000);
+    }
+  }
+
+  function stopAutoRefresh() {
+    if (autoRefreshTimer) {
+      clearInterval(autoRefreshTimer);
+      autoRefreshTimer = null;
+    }
+  }
+
+  let availablePhpBinaries = [];
+  let currentPhpPath = '<?= htmlspecialchars($php_info['path'] ?? '') ?>';
+
+  async function loadPhpBinaries() {
+    try {
+      const response = await fetch('/hub/deployment/php-binaries', {
+        method: 'GET',
+        headers: { 'X-CSRF-Token': window.csrfToken || '' }
+      });
+      const data = await response.json();
+      if (data.success && data.binaries) {
+        availablePhpBinaries = data.binaries;
+        updatePhpSelector();
+      }
+    } catch (error) {
+      console.error('Error loading PHP binaries:', error);
+    }
+  }
+
+  function updatePhpSelector() {
+    const select = document.getElementById('phpExecutableSelect');
+    if (!select) return;
+
+    select.innerHTML = '';
+
+    if (availablePhpBinaries.length === 0) {
+      const option = document.createElement('option');
+      option.value = '';
+      option.textContent = 'No PHP binaries found';
+      select.appendChild(option);
+      return;
+    }
+
+    availablePhpBinaries.forEach(binary => {
+      const option = document.createElement('option');
+      option.value = binary.path;
+      option.textContent = `${binary.path}${binary.version ? ' (PHP ' + binary.version + ')' : ''}${binary.has_ssh2 ? ' ✓ SSH2' : ' ✗ No SSH2'}`;
+      if (binary.path === currentPhpPath) {
+        option.selected = true;
+      }
+      select.appendChild(option);
+    });
+  }
+
+  document.getElementById('phpExecutableSelect')?.addEventListener('change', async function () {
+    const selectedPath = this.value;
+    if (!selectedPath || selectedPath === currentPhpPath) {
+      return;
+    }
+
+    try {
+      const response = await fetch('/hub/deployment/php-executable', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': window.csrfToken || ''
+        },
+        body: JSON.stringify({ path: selectedPath })
+      });
+      const data = await response.json();
+      if (data.success) {
+        currentPhpPath = selectedPath;
+        if (data.php_info) {
+          updatePhpInfoDisplay(data.php_info);
+        }
+        showNotification('success', 'PHP Executable Updated', 'PHP executable preference saved successfully');
+      } else {
+        showNotification('error', 'Update Failed', data.message || 'Failed to update PHP executable preference');
+        this.value = currentPhpPath;
+      }
+    } catch (error) {
+      showNotification('error', 'Error', 'Error updating PHP executable: ' + error.message);
+      this.value = currentPhpPath;
+    }
+  });
+
+  function updatePhpInfoDisplay(phpInfo) {
+    const display = document.getElementById('phpInfoDisplay');
+    if (!display) return;
+
+    if (phpInfo.is_default) {
+      display.innerHTML = 'Using default PHP CLI command (<code class="bg-blue-100 px-1 rounded">php</code>).';
+    } else {
+      display.innerHTML = `Using PHP at <code class="bg-blue-100 px-1 rounded">${escapeHtml(phpInfo.path)}</code>${phpInfo.version ? ' (version ' + escapeHtml(phpInfo.version) + ')' : ''}`;
+    }
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function initializePage() {
+    loadPhpBinaries();
+
+    // Initialize status on page load
+    const initialStatus = <?= json_encode($status) ?>;
+    if (initialStatus && initialStatus.has_state) {
+      updateStatus(initialStatus);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializePage);
+  } else {
+    initializePage();
+  }
+
+  const deploymentOutputModal = document.getElementById('deploymentOutputModal');
+  if (deploymentOutputModal) {
+    const backdrop = deploymentOutputModal.querySelector('.backdrop') || deploymentOutputModal.firstElementChild;
+    if (backdrop) {
+      backdrop.addEventListener('click', function (e) {
+        if (e.target === this) {
+          closeDeploymentOutputModal();
+        }
+      });
+    }
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      const modal = document.getElementById('deploymentOutputModal');
+      if (modal && !modal.classList.contains('hidden')) {
+        closeDeploymentOutputModal();
+      }
+    }
   });
 
   window.viewLogs = function (deploymentId) {
-    const modal = document.getElementById('logsModal');
-    if (modal) {
-      modal.classList.remove('hidden');
-      loadLogs(deploymentId);
-    }
+    openDeploymentOutputModal(deploymentId, 'deploy');
   };
 
   async function loadSecrets() {

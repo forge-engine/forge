@@ -37,17 +37,25 @@ final class DeploymentService
     return $this->sshService->connect($host, $port, $username, $privateKeyPath, $publicKeyPath, $passphrase);
   }
 
-  public function runPostDeploymentCommands(string $remotePath, array $commands, ?callable $outputCallback = null): void
+  public function runPostDeploymentCommands(string $remotePath, array $commands, string $phpVersion, ?callable $outputCallback = null): void
   {
     if (empty($commands)) {
       return;
     }
 
+    // Convert PHP version format: 8.4 -> php8.4 (keep dot)
+    $phpBinary = 'php' . $phpVersion;
+
     foreach ($commands as $command) {
       if (str_starts_with($command, 'php forge.php')) {
+        // Replace generic 'php' with specific version
+        $command = str_replace('php forge.php', "{$phpBinary} forge.php", $command);
+        $fullCommand = "cd {$remotePath} && {$command}";
+      } elseif (str_starts_with($command, $phpBinary . ' forge.php')) {
+        // Already has specific version, use as-is
         $fullCommand = "cd {$remotePath} && {$command}";
       } else {
-        $fullCommand = "cd {$remotePath} && php forge.php {$command}";
+        $fullCommand = "cd {$remotePath} && {$phpBinary} forge.php {$command}";
       }
 
       $result = $this->sshService->execute($fullCommand, $outputCallback, null, 1200);
@@ -137,28 +145,28 @@ final class DeploymentService
     }
   }
 
-  public function configureEnvironment(string $localPath, string $remotePath, array $envVars, ?callable $progressCallback = null, array $dbConfig = []): void
+  private function convertEnvValueToString(mixed $value): string
+  {
+    if (is_array($value)) {
+      $items = array_map(function ($item) {
+        return '"' . addslashes((string) $item) . '"';
+      }, $value);
+      return '[' . implode(', ', $items) . ']';
+    }
+
+    if (is_bool($value)) {
+      return $value ? 'true' : 'false';
+    }
+
+    return (string) $value;
+  }
+
+  public function configureEnvironment(string $localPath, string $remotePath, array $envVars, ?callable $progressCallback = null, array $dbConfig = [], ?string $phpVersion = null): void
   {
     $localEnv = $localPath . '/.env';
     $localExample = $localPath . '/env-example';
     $remoteEnv = $remotePath . '/.env';
 
-    if (file_exists($localEnv)) {
-      if ($progressCallback !== null) {
-        $progressCallback('Uploading local .env file...');
-      }
-      $this->sshService->upload($localEnv, $remoteEnv);
-    } else {
-      if ($progressCallback !== null) {
-        $progressCallback('Local .env missing, using env-example and generating key...');
-      }
-      if (file_exists($localExample)) {
-        $this->sshService->upload($localExample, $remoteEnv);
-        $this->sshService->execute("cd {$remotePath} && php forge.php key:generate", $progressCallback);
-      }
-    }
-
-    // Merge DB config into envVars
     if (!empty($dbConfig)) {
       $type = $dbConfig['database_type'] ?? 'mysql';
       if ($type === 'sqlite') {
@@ -177,39 +185,178 @@ final class DeploymentService
       }
     }
 
-    if (!empty($envVars)) {
+    $envContent = '';
+    if (file_exists($localEnv)) {
       if ($progressCallback !== null) {
-        $progressCallback('Applying environment variables...');
+        $progressCallback('Reading local .env file...');
       }
-
-      // Read current .env content from server
-      $result = $this->sshService->execute("cat {$remoteEnv}", null, null, 10);
-      $envContent = $result['success'] ? $result['output'] : '';
-      $lines = explode("\n", $envContent);
-      $envMap = [];
-      foreach ($lines as $line) {
-        $line = trim($line);
-        if ($line === '' || str_starts_with($line, '#'))
-          continue;
-        if (strpos($line, '=') !== false) {
-          list($key, $val) = explode('=', $line, 2);
-          $envMap[trim($key)] = trim($val);
-        }
+      $envContent = file_get_contents($localEnv);
+    } else {
+      if ($progressCallback !== null) {
+        $progressCallback('Local .env missing, using env-example...');
       }
-
-      // Update with deployment and DB variables
-      foreach ($envVars as $key => $value) {
-        $envMap[$key] = $value;
+      if (file_exists($localExample)) {
+        $envContent = file_get_contents($localExample);
       }
-
-      // Rebuild content
-      $newContent = "";
-      foreach ($envMap as $key => $value) {
-        $newContent .= "{$key}={$value}\n";
-      }
-
-      $this->sshService->uploadString($newContent, $remoteEnv, $progressCallback);
     }
+
+    $parsedEnv = $this->parseEnvFile($envContent);
+
+    foreach ($envVars as $key => $value) {
+      $parsedEnv['vars'][$key] = $this->convertEnvValueToString($value);
+    }
+
+    $mergedContent = $this->buildEnvContent($parsedEnv);
+
+    $tempFile = sys_get_temp_dir() . '/forge-deployment-env-' . uniqid() . '.env';
+
+    try {
+      file_put_contents($tempFile, $mergedContent);
+
+      if ($progressCallback !== null) {
+        $progressCallback('Uploading merged .env file...');
+      }
+
+      $uploaded = $this->sshService->uploadString($mergedContent, $remoteEnv, $progressCallback);
+      if (!$uploaded) {
+        throw new \RuntimeException('Failed to upload .env file to server');
+      }
+
+      if (!file_exists($localEnv) && file_exists($localExample)) {
+        $phpBinary = $phpVersion ? 'php' . $phpVersion : 'php';
+        $this->sshService->execute("cd {$remotePath} && {$phpBinary} forge.php key:generate", $progressCallback);
+      }
+    } finally {
+      if (file_exists($tempFile)) {
+        @unlink($tempFile);
+      }
+    }
+  }
+
+  private function parseEnvFile(string $content): array
+  {
+    $lines = explode("\n", $content);
+    $vars = [];
+    $structure = [];
+
+    foreach ($lines as $line) {
+      $originalLine = $line;
+      $trimmed = trim($line);
+
+      if ($trimmed === '') {
+        $structure[] = ['type' => 'empty', 'content' => ''];
+        continue;
+      }
+
+      if (str_starts_with($trimmed, '#')) {
+        $structure[] = ['type' => 'comment', 'content' => $originalLine];
+        continue;
+      }
+
+      if (strpos($trimmed, '=') !== false) {
+        $commentPos = strpos($trimmed, ' #');
+        if ($commentPos !== false) {
+          $lineWithoutComment = substr($trimmed, 0, $commentPos);
+          $comment = substr($trimmed, $commentPos);
+        } else {
+          $lineWithoutComment = $trimmed;
+          $comment = '';
+        }
+
+        list($key, $val) = explode('=', $lineWithoutComment, 2);
+        $key = trim($key);
+        $val = trim($val);
+
+        $isArray = str_starts_with($val, '[') && str_ends_with($val, ']');
+        $isBoolean = in_array(strtolower($val), ['true', 'false'], true);
+
+        if (!$isArray && !$isBoolean) {
+          if (
+            (str_starts_with($val, '"') && str_ends_with($val, '"')) ||
+            (str_starts_with($val, "'") && str_ends_with($val, "'"))
+          ) {
+            $val = substr($val, 1, -1);
+          }
+        }
+
+        $vars[$key] = $val;
+        $structure[] = [
+          'type' => 'var',
+          'key' => $key,
+          'value' => $val,
+          'comment' => $comment,
+          'original' => $originalLine
+        ];
+      } else {
+        $structure[] = ['type' => 'unknown', 'content' => $originalLine];
+      }
+    }
+
+    return [
+      'vars' => $vars,
+      'structure' => $structure
+    ];
+  }
+
+  /**
+   * Format environment variable value for .env file
+   */
+  private function formatEnvValue(string $value): string
+  {
+    $trimmed = trim($value);
+
+    if (str_starts_with($trimmed, '[') && str_ends_with($trimmed, ']')) {
+      return $trimmed;
+    }
+
+    if (in_array(strtolower($trimmed), ['true', 'false'], true)) {
+      return strtolower($trimmed);
+    }
+
+    if (preg_match('/[\s"\'=#]/', $value)) {
+      return '"' . str_replace('"', '\\"', $value) . '"';
+    }
+
+    return $value;
+  }
+
+  /**
+   * Build .env file content from parsed structure
+   */
+  private function buildEnvContent(array $parsedEnv): string
+  {
+    $content = '';
+    $vars = $parsedEnv['vars'];
+    $structure = $parsedEnv['structure'];
+    $writtenVars = [];
+
+    foreach ($structure as $item) {
+      if ($item['type'] === 'empty') {
+        $content .= "\n";
+      } elseif ($item['type'] === 'comment') {
+        $content .= $item['content'] . "\n";
+      } elseif ($item['type'] === 'var') {
+        $key = $item['key'];
+        $value = $vars[$key] ?? $item['value'];
+        $comment = $item['comment'] ?? '';
+
+        $value = $this->formatEnvValue($value);
+
+        $content .= "{$key}={$value}{$comment}\n";
+        $writtenVars[$key] = true;
+      } elseif ($item['type'] === 'unknown') {
+        $content .= $item['content'] . "\n";
+      }
+    }
+
+    foreach ($vars as $key => $value) {
+      if (!isset($writtenVars[$key])) {
+        $value = $this->formatEnvValue($value);
+        $content .= "{$key}={$value}\n";
+      }
+    }
+
+    return $content;
   }
 
   private function setPermissions(string $remotePath): void
