@@ -115,7 +115,10 @@ return [
         ],
         'post_deployment_commands' => [
             'cache:flush',
-            'migrate',
+            'cache:warm',
+            'db:migrate --type=all',
+            'storage:link',
+            'modules:forge-deployment:fix-permissions',
         ],
         'env_vars' => [
             'APP_ENV' => 'production',

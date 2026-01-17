@@ -42,6 +42,11 @@ final class DeploymentHubService
         return $this->maskSecrets($config);
     }
 
+    public function getRawDeploymentConfig(?string $configPath = null): ?array
+    {
+        return $this->configReader->readConfig($configPath);
+    }
+
     public function getDeploymentStatus(): array
     {
         $state = $this->stateService->load();
@@ -206,6 +211,123 @@ final class DeploymentHubService
         }
 
         return null;
+    }
+
+    public function saveDeploymentConfig(array $config): bool
+    {
+        $configPath = $this->getConfigPath();
+        if ($configPath === null) {
+            $configPath = BASE_PATH . '/forge-deployment.php';
+        }
+
+        $configContent = $this->generateConfigFile($config);
+        $result = file_put_contents($configPath, $configContent);
+
+        return $result !== false;
+    }
+
+    private function generateConfigFile(array $config): string
+    {
+        $server = $config['server'] ?? [];
+        $provision = $config['provision'] ?? [];
+        $deployment = $config['deployment'] ?? [];
+
+        $serverConfig = $this->formatArray($server, 'server');
+        $provisionConfig = $this->formatArray($provision, 'provision');
+        $deploymentConfig = $this->formatArray($deployment, 'deployment');
+
+        return <<<PHP
+<?php
+
+declare(strict_types=1);
+
+return [
+{$serverConfig}
+{$provisionConfig}
+{$deploymentConfig}
+];
+PHP;
+    }
+
+    private function formatArray(array $data, string $key): string
+    {
+        if (empty($data)) {
+            return "    '{$key}' => [],";
+        }
+
+        $lines = ["    '{$key}' => ["];
+
+        foreach ($data as $k => $v) {
+            if (is_array($v)) {
+                $subArray = $this->formatSubArray($v, 2);
+                $lines[] = "        '{$k}' => {$subArray},";
+            } elseif (is_bool($v)) {
+                $lines[] = "        '{$k}' => " . ($v ? 'true' : 'false') . ',';
+            } elseif (is_numeric($v)) {
+                $lines[] = "        '{$k}' => {$v},";
+            } elseif ($v === null) {
+                $lines[] = "        '{$k}' => null,";
+            } else {
+                $escaped = addslashes((string)$v);
+                $lines[] = "        '{$k}' => '{$escaped}',";
+            }
+        }
+
+        $lines[] = '    ],';
+
+        return implode("\n", $lines);
+    }
+
+    private function formatSubArray(array $data, int $indent): string
+    {
+        if (empty($data)) {
+            return '[]';
+        }
+
+        $spaces = str_repeat(' ', $indent * 4);
+        $lines = ['['];
+        $isNumeric = array_keys($data) === range(0, count($data) - 1);
+
+        foreach ($data as $k => $v) {
+            if (is_array($v)) {
+                $subArray = $this->formatSubArray($v, $indent + 1);
+                if ($isNumeric) {
+                    $lines[] = "{$spaces}    {$subArray},";
+                } else {
+                    $lines[] = "{$spaces}    '{$k}' => {$subArray},";
+                }
+            } elseif (is_bool($v)) {
+                $value = $v ? 'true' : 'false';
+                if ($isNumeric) {
+                    $lines[] = "{$spaces}    {$value},";
+                } else {
+                    $lines[] = "{$spaces}    '{$k}' => {$value},";
+                }
+            } elseif (is_numeric($v)) {
+                if ($isNumeric) {
+                    $lines[] = "{$spaces}    {$v},";
+                } else {
+                    $lines[] = "{$spaces}    '{$k}' => {$v},";
+                }
+            } elseif ($v === null) {
+                if ($isNumeric) {
+                    $lines[] = "{$spaces}    null,";
+                } else {
+                    $lines[] = "{$spaces}    '{$k}' => null,";
+                }
+            } else {
+                $escaped = addslashes((string)$v);
+                if ($isNumeric) {
+                    $lines[] = "{$spaces}    '{$escaped}',";
+                } else {
+                    $lines[] = "{$spaces}    '{$k}' => '{$escaped}',";
+                }
+            }
+        }
+
+        $lines[] = "{$spaces}]";
+
+        return implode("\n", $lines);
     }
 
     private function isSensitiveKey(mixed $key): bool

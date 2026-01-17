@@ -79,6 +79,72 @@ final class DeploymentController
     public function saveConfig(Request $request): Response
     {
         $data = $request->json();
+        $updateType = $data['update'] ?? null;
+
+        if ($updateType === 'post_deployment_commands') {
+            $commands = $data['post_deployment_commands'] ?? [];
+            if (!is_array($commands)) {
+                return $this->jsonResponse([
+                    'success' => false,
+                    'message' => 'Invalid commands data',
+                ], 400);
+            }
+
+            $currentConfig = $this->deploymentHubService->getRawDeploymentConfig();
+            if ($currentConfig === null) {
+                $currentConfig = [];
+            }
+            if (!isset($currentConfig['deployment'])) {
+                $currentConfig['deployment'] = [];
+            }
+            $currentConfig['deployment']['post_deployment_commands'] = $commands;
+
+            $result = $this->deploymentHubService->saveDeploymentConfig($currentConfig);
+            if (!$result) {
+                return $this->jsonResponse([
+                    'success' => false,
+                    'message' => 'Failed to save commands',
+                ], 500);
+            }
+
+            return $this->jsonResponse([
+                'success' => true,
+                'message' => 'Post-deployment commands saved successfully',
+            ]);
+        }
+
+        if ($updateType === 'env_vars') {
+            $envVars = $data['env_vars'] ?? [];
+            if (!is_array($envVars)) {
+                return $this->jsonResponse([
+                    'success' => false,
+                    'message' => 'Invalid environment variables data',
+                ], 400);
+            }
+
+            $currentConfig = $this->deploymentHubService->getRawDeploymentConfig();
+            if ($currentConfig === null) {
+                $currentConfig = [];
+            }
+            if (!isset($currentConfig['deployment'])) {
+                $currentConfig['deployment'] = [];
+            }
+            $currentConfig['deployment']['env_vars'] = $envVars;
+
+            $result = $this->deploymentHubService->saveDeploymentConfig($currentConfig);
+            if (!$result) {
+                return $this->jsonResponse([
+                    'success' => false,
+                    'message' => 'Failed to save environment variables',
+                ], 500);
+            }
+
+            return $this->jsonResponse([
+                'success' => true,
+                'message' => 'Environment variables saved successfully',
+            ]);
+        }
+
         $config = $data['config'] ?? null;
 
         if ($config === null || !is_array($config)) {
@@ -97,15 +163,8 @@ final class DeploymentController
             ], 400);
         }
 
-        $configPath = $this->deploymentHubService->getConfigPath();
-        if ($configPath === null) {
-            $configPath = BASE_PATH . '/forge-deployment.php';
-        }
-
-        $configContent = $this->generateConfigFile($config);
-        $result = file_put_contents($configPath, $configContent);
-
-        if ($result === false) {
+        $result = $this->deploymentHubService->saveDeploymentConfig($config);
+        if (!$result) {
             return $this->jsonResponse([
                 'success' => false,
                 'message' => 'Failed to save configuration file',
