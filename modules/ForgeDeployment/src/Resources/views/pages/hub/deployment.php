@@ -9,17 +9,18 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
       <p class="text-sm text-gray-500 mt-1">Manage and monitor your deployments</p>
     </div>
     <div class="flex items-center gap-2">
+      <?php $isProduction = $is_production ?? false; ?>
       <button id="refreshStatusBtn"
         class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium transition-colors flex items-center gap-2">
         <i class="fa-solid fa-rotate" id="refreshIcon"></i>
         <span>Refresh</span>
       </button>
-      <button id="editConfigBtn"
-        class="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 text-sm font-medium transition-colors">
+      <button id="editConfigBtn" <?= $isProduction ? 'disabled' : '' ?>
+        class="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 text-sm font-medium transition-colors <?= $isProduction ? 'opacity-50 cursor-not-allowed' : '' ?>">
         Edit Config
       </button>
-      <button id="manageSecretsBtn"
-        class="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 text-sm font-medium transition-colors">
+      <button id="manageSecretsBtn" <?= $isProduction ? 'disabled' : '' ?>
+        class="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 text-sm font-medium transition-colors <?= $isProduction ? 'opacity-50 cursor-not-allowed' : '' ?>">
         Manage Secrets
       </button>
     </div>
@@ -166,30 +167,35 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
         </div>
       </div>
       <div class="space-y-3">
-        <button id="deployBtn"
-          class="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors flex items-center justify-center gap-2">
+        <?php
+        $isProduction = $is_production ?? false;
+        $deployDisabled = $isProduction ? 'disabled' : '';
+        $deployDisabledClass = $isProduction ? 'opacity-50 cursor-not-allowed' : '';
+        ?>
+        <button id="deployBtn" <?= $deployDisabled ?>
+          class="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors flex items-center justify-center gap-2 <?= $deployDisabledClass ?>">
           <i class="fa-solid fa-rocket"></i>
-          <span>Deploy</span>
+          <span><?= $isProduction ? 'Deployed' : 'Deploy' ?></span>
         </button>
-        <button id="deployAppBtn"
+        <button id="deployAppBtn" <?= $deployDisabled ?>
           class="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors flex items-center justify-center gap-2 opacity-50 cursor-not-allowed"
           disabled>
           <i class="fa-solid fa-upload"></i>
           <span>Deploy App</span>
         </button>
-        <button id="updateBtn"
+        <button id="updateBtn" <?= $deployDisabled ?>
           class="w-full px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium transition-colors flex items-center justify-center gap-2 opacity-50 cursor-not-allowed"
           disabled>
           <i class="fa-solid fa-arrow-up"></i>
           <span>Update</span>
         </button>
-        <button id="rollbackBtn"
+        <button id="rollbackBtn" <?= $deployDisabled ?>
           class="w-full px-4 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium transition-colors flex items-center justify-center gap-2 opacity-50 cursor-not-allowed"
           disabled>
           <i class="fa-solid fa-undo"></i>
           <span>Rollback</span>
         </button>
-        <button id="deployEnvBtn"
+        <button id="deployEnvBtn" <?= $deployDisabled ?>
           class="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium transition-colors flex items-center justify-center gap-2 opacity-50 cursor-not-allowed"
           disabled>
           <i class="fa-solid fa-file-code"></i>
@@ -258,8 +264,9 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
       <div class="bg-white rounded-xl border border-gray-200 p-6">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-semibold text-gray-900">Post-Deployment Commands</h2>
-          <button id="editPostCommandsBtn"
-            class="px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors">
+          <?php $isProduction = $is_production ?? false; ?>
+          <button id="editPostCommandsBtn" <?= $isProduction ? 'disabled' : '' ?>
+            class="px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors <?= $isProduction ? 'opacity-50 cursor-not-allowed' : '' ?>">
             <i class="fa-solid fa-edit"></i> Edit
           </button>
         </div>
@@ -282,8 +289,9 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
       <div class="bg-white rounded-xl border border-gray-200 p-6">
         <div class="flex items-center justify-between mb-4">
           <h2 class="text-lg font-semibold text-gray-900">Environment Variables</h2>
-          <button id="editEnvVarsBtn"
-            class="px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors">
+          <?php $isProduction = $is_production ?? false; ?>
+          <button id="editEnvVarsBtn" <?= $isProduction ? 'disabled' : '' ?>
+            class="px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors <?= $isProduction ? 'opacity-50 cursor-not-allowed' : '' ?>">
             <i class="fa-solid fa-edit"></i> Edit
           </button>
         </div>
@@ -341,6 +349,7 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
 
 <script>
   let currentDeploymentId = null;
+  const isProduction = <?= ($is_production ?? false) ? 'true' : 'false' ?>;
 
   document.getElementById('refreshStatusBtn')?.addEventListener('click', async function () {
     const button = this;
@@ -392,15 +401,69 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
     }
   });
 
-  document.getElementById('deployBtn')?.addEventListener('click', () => executeDeployment('deploy'));
-  document.getElementById('deployAppBtn')?.addEventListener('click', () => executeDeployment('deploy-app'));
-  document.getElementById('updateBtn')?.addEventListener('click', () => executeDeployment('update'));
-  document.getElementById('rollbackBtn')?.addEventListener('click', () => executeDeployment('rollback'));
-  document.getElementById('deployEnvBtn')?.addEventListener('click', () => executeDeployment('deploy-env'));
-  document.getElementById('editConfigBtn')?.addEventListener('click', () => editConfig());
-  document.getElementById('manageSecretsBtn')?.addEventListener('click', () => manageSecrets());
-  document.getElementById('editPostCommandsBtn')?.addEventListener('click', () => editPostCommands());
-  document.getElementById('editEnvVarsBtn')?.addEventListener('click', () => editEnvVars());
+  document.getElementById('deployBtn')?.addEventListener('click', () => {
+    if (isProduction) {
+      showNotification('error', 'Production Mode', 'Deployment actions are disabled in production mode');
+      return;
+    }
+    executeDeployment('deploy');
+  });
+  document.getElementById('deployAppBtn')?.addEventListener('click', () => {
+    if (isProduction) {
+      showNotification('error', 'Production Mode', 'Deployment actions are disabled in production mode');
+      return;
+    }
+    executeDeployment('deploy-app');
+  });
+  document.getElementById('updateBtn')?.addEventListener('click', () => {
+    if (isProduction) {
+      showNotification('error', 'Production Mode', 'Deployment actions are disabled in production mode');
+      return;
+    }
+    executeDeployment('update');
+  });
+  document.getElementById('rollbackBtn')?.addEventListener('click', () => {
+    if (isProduction) {
+      showNotification('error', 'Production Mode', 'Deployment actions are disabled in production mode');
+      return;
+    }
+    executeDeployment('rollback');
+  });
+  document.getElementById('deployEnvBtn')?.addEventListener('click', () => {
+    if (isProduction) {
+      showNotification('error', 'Production Mode', 'Deployment actions are disabled in production mode');
+      return;
+    }
+    executeDeployment('deploy-env');
+  });
+  document.getElementById('editConfigBtn')?.addEventListener('click', () => {
+    if (isProduction) {
+      showNotification('error', 'Production Mode', 'Edit functionality is disabled in production mode');
+      return;
+    }
+    editConfig();
+  });
+  document.getElementById('manageSecretsBtn')?.addEventListener('click', () => {
+    if (isProduction) {
+      showNotification('error', 'Production Mode', 'Edit functionality is disabled in production mode');
+      return;
+    }
+    manageSecrets();
+  });
+  document.getElementById('editPostCommandsBtn')?.addEventListener('click', () => {
+    if (isProduction) {
+      showNotification('error', 'Production Mode', 'Edit functionality is disabled in production mode');
+      return;
+    }
+    editPostCommands();
+  });
+  document.getElementById('editEnvVarsBtn')?.addEventListener('click', () => {
+    if (isProduction) {
+      showNotification('error', 'Production Mode', 'Edit functionality is disabled in production mode');
+      return;
+    }
+    editEnvVars();
+  });
 
   function updateStatus(status) {
     if (!status.has_state) {
@@ -459,6 +522,35 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
     const updateBtn = document.getElementById('updateBtn');
     const rollbackBtn = document.getElementById('rollbackBtn');
     const deployEnvBtn = document.getElementById('deployEnvBtn');
+
+    // In production mode, all deploy buttons should remain disabled
+    if (isProduction) {
+      if (deployBtn) {
+        deployBtn.disabled = true;
+        deployBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        const span = deployBtn.querySelector('span');
+        if (span) {
+          span.textContent = 'Deployed';
+        }
+      }
+      if (deployAppBtn) {
+        deployAppBtn.disabled = true;
+        deployAppBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+      if (updateBtn) {
+        updateBtn.disabled = true;
+        updateBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+      if (rollbackBtn) {
+        rollbackBtn.disabled = true;
+        rollbackBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+      if (deployEnvBtn) {
+        deployEnvBtn.disabled = true;
+        deployEnvBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+      return;
+    }
 
     if (deployBtn) {
       if (isComplete) {
@@ -528,6 +620,10 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
   }
 
   async function executeDeployment(type) {
+    if (isProduction) {
+      showNotification('error', 'Production Mode', 'Deployment actions are disabled in production mode');
+      return;
+    }
     showConfirmation(
       'Confirm Deployment',
       `Are you sure you want to ${type}? This may take several minutes.`,
@@ -538,6 +634,10 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
   }
 
   async function performDeployment(type) {
+    if (isProduction) {
+      showNotification('error', 'Production Mode', 'Deployment actions are disabled in production mode');
+      return;
+    }
     const endpoint = `/hub/deployment/${type}`;
 
     const args = {};
@@ -602,6 +702,10 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
   }
 
   function editConfig() {
+    if (isProduction) {
+      showNotification('error', 'Production Mode', 'Edit functionality is disabled in production mode');
+      return;
+    }
     const modal = document.getElementById('configModal');
     if (modal) {
       modal.classList.remove('hidden');
@@ -609,6 +713,10 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
   }
 
   function manageSecrets() {
+    if (isProduction) {
+      showNotification('error', 'Production Mode', 'Edit functionality is disabled in production mode');
+      return;
+    }
     const modal = document.getElementById('secretsModal');
     if (modal) {
       modal.classList.remove('hidden');
@@ -616,6 +724,10 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
   }
 
   function editPostCommands() {
+    if (isProduction) {
+      showNotification('error', 'Production Mode', 'Edit functionality is disabled in production mode');
+      return;
+    }
     const modal = document.getElementById('postCommandsModal');
     if (modal) {
       modal.classList.remove('hidden');
@@ -624,6 +736,10 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
   }
 
   function editEnvVars() {
+    if (isProduction) {
+      showNotification('error', 'Production Mode', 'Edit functionality is disabled in production mode');
+      return;
+    }
     const modal = document.getElementById('envVarsModal');
     if (modal) {
       modal.classList.remove('hidden');

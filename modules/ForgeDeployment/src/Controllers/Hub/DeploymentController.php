@@ -8,6 +8,7 @@ use App\Modules\ForgeDeployment\Services\DeploymentHubService;
 use App\Modules\ForgeDeployment\Services\DeploymentExecutionService;
 use App\Modules\ForgeDeployment\Services\DeploymentConfigReader;
 use Forge\Core\Config\Config;
+use Forge\Core\Config\Environment;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Http\Attributes\Middleware;
 use Forge\Core\Http\Request;
@@ -39,6 +40,7 @@ final class DeploymentController
     $hasConfig = $this->deploymentHubService->hasConfig();
     $logs = $this->deploymentHubService->listDeploymentLogs();
     $phpInfo = $this->executionService->getPhpInfo();
+    $isProduction = Environment::getInstance()->get('APP_ENV') === 'production';
 
     $data = [
       'title' => 'Deployment',
@@ -48,6 +50,7 @@ final class DeploymentController
       'config_path' => $this->deploymentHubService->getConfigPath(),
       'recent_logs' => array_slice($logs, 0, 10),
       'php_info' => $phpInfo,
+      'is_production' => $isProduction,
     ];
 
     return $this->view(view: "pages/hub/deployment", data: $data);

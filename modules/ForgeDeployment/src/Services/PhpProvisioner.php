@@ -79,6 +79,7 @@ final class PhpProvisioner
       'intl',
       'opcache',
       'sqlite3',
+      'pcntl',
     ];
 
     foreach ($extensions as $ext) {
