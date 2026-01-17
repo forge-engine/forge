@@ -2,12 +2,12 @@
 
 namespace App\Modules\ForgeDebugBar;
 
-use App\Modules\ForgeDebugbar\Collectors\MemoryCollector;
-use App\Modules\ForgeDebugbar\Collectors\MessageCollector;
-use App\Modules\ForgeDebugbar\Collectors\RequestCollector;
-use App\Modules\ForgeDebugbar\Collectors\RouteCollector;
-use App\Modules\ForgeDebugbar\Collectors\SessionCollector;
-use App\Modules\ForgeDebugbar\Collectors\TimeCollector;
+use App\Modules\ForgeDebugBar\Collectors\MemoryCollector;
+use App\Modules\ForgeDebugBar\Collectors\MessageCollector;
+use App\Modules\ForgeDebugBar\Collectors\RequestCollector;
+use App\Modules\ForgeDebugBar\Collectors\RouteCollector;
+use App\Modules\ForgeDebugBar\Collectors\SessionCollector;
+use App\Modules\ForgeDebugBar\Collectors\TimeCollector;
 use Forge\Core\Collectors\DatabaseCollector;
 use Forge\Core\Collectors\ExceptionCollector;
 use Forge\Core\Collectors\TimelineCollector;
@@ -31,7 +31,7 @@ use Forge\Traits\InjectsAssets;
 #[Service]
 #[Module(
   name: 'ForgeDebugBar',
-  version: '1.1.0',
+  version: '1.2.0',
   description: 'A debug bar by Forge',
   order: 3,
   author: 'Forge Team',
@@ -40,7 +40,7 @@ use Forge\Traits\InjectsAssets;
   tags: ['generic', 'debug', 'debug-bar', 'debug-bar-system', 'debug-bar-library', 'debug-bar-framework']
 )]
 #[HubItem(label: 'Debug Bar', route: '/hub/debugbar', icon: ForgeIcon::COG, order: 6)]
-#[Provides(\App\Modules\ForgeDebugBar\DebugBar::class, version: '1.1.0')]
+#[Provides(\App\Modules\ForgeDebugBar\DebugBar::class, version: '1.2.0')]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[ConfigDefaults(defaults: [
   'forge_debug_bar' => [
