@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeAuth;
 
+use Forge\Core\Config\Config;
 use Forge\Core\DI\Container;
 use Forge\Core\Module\Attributes\Compatibility;
+use Forge\Core\Module\Attributes\ConfigDefaults;
 use Forge\Core\Module\Attributes\Module;
 use Forge\Core\Module\Attributes\PostInstall;
 use Forge\Core\Module\Attributes\PostUninstall;
@@ -22,7 +24,7 @@ use Forge\Core\Module\Attributes\Structure;
 #[Service]
 #[Module(
   name: 'ForgeAuth',
-  version: '0.5.0',
+  version: '0.6.0',
   description: 'An Auth module by forge.',
   order: 99,
   author: 'Forge Team',
@@ -32,19 +34,42 @@ use Forge\Core\Module\Attributes\Structure;
 )]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
+#[ConfigDefaults(defaults: [
+  'forge_auth' => [
+    'jwt' => [
+      'enabled' => false,
+      'secret' => 'your-secure-jwt-secret',
+      'ttl' => 900,
+      'refresh_ttl' => 604800,
+    ],
+    'password' => [
+      'password_cost' => 12,
+      'max_login_attempts' => 3,
+      'lockout_time' => 300,
+      'min_password_length' => 6,
+      'max_password_length' => 256,
+    ],
+    'auth' => [
+      'redirect' => [
+        'after_login' => '/',
+        'after_logout' => '/',
+      ],
+    ],
+  ],
+])]
 #[Structure(structure: [
-    'controllers' => 'src/Controllers',
-    'services' => 'src/Services',
-    'migrations' => 'src/Database/Migrations',
-    'views' => 'src/Resources/views',
-    'components' => 'src/Resources/components',
-    'commands' => 'src/Commands',
-    'events' => 'src/Events',
-    'tests' => 'src/tests',
-    'models' => 'src/Models',
-    'dto' => 'src/Dto',
-    'seeders' => 'src/Database/Seeders',
-    'middlewares' => 'src/Middlewares',
+  'controllers' => 'src/Controllers',
+  'services' => 'src/Services',
+  'migrations' => 'src/Database/Migrations',
+  'views' => 'src/Resources/views',
+  'components' => 'src/Resources/components',
+  'commands' => 'src/Commands',
+  'events' => 'src/Events',
+  'tests' => 'src/tests',
+  'models' => 'src/Models',
+  'dto' => 'src/Dto',
+  'seeders' => 'src/Database/Seeders',
+  'middlewares' => 'src/Middlewares',
 ])]
 #[PostInstall(command: 'db:migrate', args: ['--type=', 'module', '--module=', 'ForgeAuth'])]
 #[PostUninstall(command: 'db:migrate', args: ['--type=', 'module', '--module=', 'ForgeAuth'])]
@@ -54,9 +79,27 @@ final class ForgeAuthModule
 
   public function register(Container $container): void
   {
+    $this->setupConfigDefaults($container);
     $container->bind(ForgeAuthInterface::class, ForgeAuthService::class);
     $container->bind(UserRepositoryInterface::class, function ($c) {
       return new UserRepository($c->get(QueryCache::class));
     });
+  }
+
+  private function setupConfigDefaults(Container $container): void
+  {
+    /** @var Config $config */
+    $config = $container->get(Config::class);
+    $config->set('forge_auth.jwt.enabled', env('JWT_ENABLED', false));
+    $config->set('forge_auth.jwt.secret', env('JWT_SECRET', 'your-secure-jwt-secret'));
+    $config->set('forge_auth.jwt.ttl', env('JWT_TTL', 900));
+    $config->set('forge_auth.jwt.refresh_ttl', env('JWT_REFRESH_TTL', 604800));
+    $config->set('forge_auth.password.password_cost', env('PASSWORD_COST', 12));
+    $config->set('forge_auth.password.max_login_attempts', env('MAX_LOGIN_ATTEMPTS', 3));
+    $config->set('forge_auth.password.lockout_time', env('LOCKOUT_TIME', 300));
+    $config->set('forge_auth.password.min_password_length', env('MIN_PASSWORD_LENGTH', 6));
+    $config->set('forge_auth.password.max_password_length', env('MAX_PASSWORD_LENGTH', 256));
+    $config->set('forge_auth.auth.redirect.after_login', env('AFTER_LOGIN_REDIRECT', '/'));
+    $config->set('forge_auth.auth.redirect.after_logout', env('AFTER_LOGOUT_REDIRECT', '/'));
   }
 }
