@@ -1,18 +1,18 @@
 # APP
-APP_NAME="Forge Engine"
+APP_NAME="Forge Kernel"
 APP_ENV=development
 APP_DEBUG=true
-APP_HMR=true
-APP_KEY=your-app-key
+APP_HMR=false
+APP_KEY=your-secret-key
 VIEW_CACHE=
-CENTRAL_DOMAIN=forge-v3.test
 
 # CACHE
 CACHE_DRIVER=sqlite
 
 # Security
+CSP_ENABLED=true
 IP_WHITE_LIST=[127.0.0.1, ::1]
-CORS_ALLOWED_ORIGINS=["http://localhost:8000", "https://forge-v3.test"]
+CORS_ALLOWED_ORIGINS=["http://localhost:8000"]
 CORS_ALLOWED_METHODS=['GET, POST, PUT, PATCH, DELETE, OPTIONS']
 CORS_ALLOWED_HEADERS=['Content-Type', 'Authorization']
 
@@ -24,20 +24,19 @@ TRUST_PROXIES=true
 #Queue
 #drivers=Database|in-memory|file
 QUEUE_DRIVER=database
-QUEUE_LIST=[emails,cache_refresh,page_visits]
+QUEUE_LIST=[notifications,default]
 
 #Database
 DB_DRIVER=sqlite
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_NAME=forge_v3
+DB_NAME=forge
 DB_USER=root
 DB_PASS=root
 SQLITE_PATH=/storage/database
 SQLITE_DB=/database.sqlite
 
 # Session Configuration
-SESSION_ENABLED=true
 SESSION_DRIVER=memory
 SESSION_DB_PATH=/storage/framework/security.sqlite
 SESSION_NAME=FORGE_SESSID
@@ -54,57 +53,47 @@ COOKIE_DOMAIN=
 COOKIE_SECURE=true
 COOKIE_HTTPONLY=true
 COOKIE_SAMESITE=Lax
+SESSION_ENABLED=false
 
 # Rate Limit Configuration
-# Set RATE_LIMIT_ENABLED=false to completely disable rate limiting (useful for benchmarks)
-RATE_LIMIT_ENABLED=true
 RATE_LIMIT_DRIVER=sqlite
 RATE_LIMIT_DB_PATH=/storage/framework/security.sqlite
 RATE_LIMIT_MAX_REQUESTS=100
 RATE_LIMIT_TIME_WINDOW=60
+RATE_LIMIT_DISABLE_IN_DEV=true
+RATE_LIMIT_ENABLED=false
 
 # Circuit Breaker Configuration
-# Set CIRCUIT_BREAKER_ENABLED=false to completely disable circuit breaker (useful for benchmarks)
-CIRCUIT_BREAKER_ENABLED=true
 CIRCUIT_BREAKER_DRIVER=sqlite
 CIRCUIT_BREAKER_DB_PATH=/storage/framework/security.sqlite
 CIRCUIT_BREAKER_MAX_FAILURES=50
 CIRCUIT_BREAKER_RESET_TIME=300
+CIRCUIT_BREAKER_DISABLE_IN_DE=true
 
 # Customize logging
 LOG_DRIVER=file
 LOG_PATH=/storage/logs/forge.log
 
-# Forge UI
-FORGE_UI_ENABLED=true
-FORGE_UI_USE_RANDOM_KEY=true
-FORGE_UI_API_KEY=your-secure-key
-FORGE_UI_URL=/secure-url-endpoint
-FORGE_UI_URL_PREFIX=/secure-admin
-FORGE_UI_USER=my-username
-FORGE_UI_PASSWORD=my-secure-password
-FORGE_UI_ADMIN_EMAIL=myemail@domain.com
-
-# SMS Configuration
-TWILIO_ACCOUNT_SID=your-twilio-account-sid
-TWILIO_AUTH_TOKEN=your-twilio-auth-token
-TWILIO_FROM=+1234567890
-
 # Mail configuration
-MAIL_DRIVER="smtp" # Options: smtp, sendmail, mailgun, etc.
-MAIL_HOST="localhost"
-MAIL_PORT=1025
-MAIL_USERNAME=
-MAIL_PASSWORD=
-MAIL_FROM="no-reply@forge.com"
-MAIL_ENCRYPTION="none" # Options: tls, ssl, none
+SMTP_HOST=localhost
+SMTP_PORT=1025
+SMTP_ENCRYPTION=none
+SMTP_FROM_ADDRESS=noreply@forge.test
+SMTP_FROM_NAME=Forge Application
 
 # File Storage
 FILE_STORAGE_PATH=public/storage/files
-FILE_STORAGE_DRIVER=local # Options: local
+STORAGE_PROVIDER=local # Options: local
 
 #Package Manager Github Access Token
-GITHUB_TOKEN=your-token
-
-# Developer Mode (enables dev:* commands)
+GITHUB_TOKEN=your-github-access-token
 FORGE_DEVELOPER_MODE=false
+
+#Forge Wire
+FORGEWIRE_MINIFIED=true
+
+#Forge Deployment
+DIGITALOCEAN_API_TOKEN=your-digitalocean-api-token
+CLOUDFLARE_API_TOKEN=your-cloudflare-api-token
+
+DISABLED_MODULES=[]

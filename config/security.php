@@ -16,25 +16,6 @@ return [
     'reset_time' => env('CIRCUIT_BREAKER_RESET_TIME', 300),
     'disable_in_dev' => env('CIRCUIT_BREAKER_DISABLE_IN_DEV', true),
   ],
-  'jwt' => [
-    'enabled' => env('JWT_ENABLED', false),
-    'secret' => env('JWT_SECRET', 'your-secure-jwt-secret'),
-    'ttl' => env('JWT_TTL', 900),
-    'refresh_ttl' => env('JWT_REFRESH_TTL', 604800),
-  ],
-  'password' => [
-    'password_cost' => env('PASSWORD_COST', 12),
-    'max_login_attempts' => env('MAX_LOGIN_ATTEMPTS', 3),
-    'lockout_time' => env('LOCKOUT_TIME', 300),
-    'min_password_length' => env('MIN_PASSWORD_LENGTH', 6),
-    'max_password_length' => env('MAX_PASSWORD_LENGTH', 256)
-  ],
-  'auth' => [
-    'redirect' => [
-      'after_login' => '/',
-      'after_logout' => '/',
-    ],
-  ],
   'csp' => [
     'enabled' => env('CSP_ENABLED', true),
     'directives' => [

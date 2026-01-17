@@ -50,22 +50,6 @@
                 "debug": false
             }
         },
-        "forge-wire": {
-            "version": "1.0.9",
-            "registry": "forge-engine-modules",
-            "module_path": "forge-wire/1.0.9",
-            "integrity": "51f6b970b13c07c23387068d6e8cc1f368288505738f025f7a06ff36f2c8f6ee",
-            "source_type": "git",
-            "source_config": {
-                "name": "forge-engine-modules",
-                "type": "git",
-                "url": "https://github.com/forge-engine/modules",
-                "branch": "main",
-                "private": false,
-                "description": "Forge Kernel Official Modules",
-                "debug": false
-            }
-        },
         "forge-multi-tenant": {
             "version": "0.1.4",
             "registry": "forge-engine-modules",
@@ -124,6 +108,22 @@
             "registry": "forge-engine-modules",
             "module_path": "forge-welcome/1.1.0",
             "integrity": "dc0ad9f75cdb28df463faa554f5f93b99ae63e75b58b16c6404ebf936cd51bcb",
+            "source_type": "git",
+            "source_config": {
+                "name": "forge-engine-modules",
+                "type": "git",
+                "url": "https://github.com/forge-engine/modules",
+                "branch": "main",
+                "private": false,
+                "description": "Forge Kernel Official Modules",
+                "debug": false
+            }
+        },
+        "forge-wire": {
+            "version": "2.4.0",
+            "registry": "forge-engine-modules",
+            "module_path": "forge-wire/2.4.0",
+            "integrity": "487460b153dc93fa3e908114d9242e3d0835bc52b377fc73e24519476b81d947",
             "source_type": "git",
             "source_config": {
                 "name": "forge-engine-modules",

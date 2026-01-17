@@ -7,13 +7,6 @@ return [
     'allowed_methods' => env('CORS_ALLOWED_METHODS', ['GET, POST, PUT, DELETE, OPTIONS']),
     'allowed_headers' => env('CORS_ALLOWED_HEADERS', ['Content-Type', 'Authorization']),
   ],
-  "log" => [
-    'driver' => env("LOG_DRIVER", "syslog"),
-    'path' => BASE_PATH . "/storage/logs/forge.log"
-  ],
   'env' => env('APP_ENV', 'development'),
-  'forgewire' => [
-    'use_minified' => env('FORGEWIRE_MINIFIED', true),
-  ],
   'disabled_modules' => env('DISABLED_MODULES', []),
 ];

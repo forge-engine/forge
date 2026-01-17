@@ -40,8 +40,10 @@ final class PackageManagerService implements PackageManagerInterface
   private string $trustedSourcesPath;
   private bool $debugEnabled = false;
 
-  public function __construct(private readonly Config $config)
-  {
+  public function __construct(
+    private readonly Config $config,
+    private readonly ConfigGeneratorService $configGenerator
+  ) {
     $this->registries = $this->config->get('source_list.registry', []);
     $cacheTtlValue = $this->config->get('source_list.cache_ttl', 3600);
     $this->cacheTtl = is_array($cacheTtlValue) ? 3600 : (int) $cacheTtlValue;
@@ -648,7 +650,7 @@ final class PackageManagerService implements PackageManagerInterface
   /**
    * @throws ReflectionException
    */
-  public function installModule(string $moduleName, ?string $version = null, ?string $forceCache = null, ?string $preservedPath = null): void
+  public function installModule(string $moduleName, ?string $version = null, ?string $forceCache = null, ?string $preservedPath = null, bool $autoTrustSource = false, ?string $configMode = null): void
   {
     $this->info("Installing module: {$moduleName}" . ($version ? " version {$version}" : " (latest)"));
 
@@ -734,14 +736,17 @@ final class PackageManagerService implements PackageManagerInterface
     $executedCommands = $this->runPostInstallAttributes($moduleInstallPath, $this->toPascalCase($moduleName), $registryName);
 
     if (!empty($executedCommands) && !$this->isSourceTrusted($registryName)) {
-      if ($this->promptTrustSource($registryName)) {
+      if ($autoTrustSource) {
+        $this->trustSource($registryName);
+        $this->success("Source '{$registryName}' has been automatically trusted.");
+      } elseif ($this->promptTrustSource($registryName)) {
         $this->trustSource($registryName);
         $this->success("Source '{$registryName}' has been trusted for future installations.");
       }
     }
 
-    // Only show success message if we reached this point without early returns
-    // This means: module info was found, download succeeded, extraction succeeded
+    $this->configGenerator->generateConfigFromModule($moduleInstallPath, $moduleName, $configMode);
+
     $this->success("Module {$moduleName} version {$versionToInstall} installed successfully.");
   }
 

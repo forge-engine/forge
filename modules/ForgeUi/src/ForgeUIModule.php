@@ -34,6 +34,5 @@ final class ForgeUIModule
 
   public function register(Container $container): void
   {
-    add_timeline_event("forge_ui_module_register");
   }
 }

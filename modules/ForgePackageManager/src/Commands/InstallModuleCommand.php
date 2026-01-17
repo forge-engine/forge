@@ -55,6 +55,46 @@ final class InstallModuleCommand extends Command
   )]
   private bool $debug = false;
 
+  #[Arg(
+    name: 'non-interactive',
+    description: 'Skip all interactive prompts, use defaults (useful for automation)',
+    default: false,
+    required: false
+  )]
+  private bool $nonInteractive = false;
+
+  #[Arg(
+    name: 'auto',
+    description: 'Alias for --non-interactive',
+    default: false,
+    required: false
+  )]
+  private bool $auto = false;
+
+  #[Arg(
+    name: 'trust-source',
+    description: 'Automatically trust sources without prompting',
+    default: false,
+    required: false
+  )]
+  private bool $trustSource = false;
+
+  #[Arg(
+    name: 'replace',
+    description: 'Automatically replace existing modules without confirmation',
+    default: false,
+    required: false
+  )]
+  private bool $replace = false;
+
+  #[Arg(
+    name: 'config-mode',
+    description: 'Set config generation mode: defaults, publish, or env',
+    validate: 'defaults|publish|env',
+    required: false
+  )]
+  private ?string $configMode = null;
+
   public function __construct(
     private readonly PackageManagerService $packageManagerService,
     private readonly TemplateGenerator $templateGenerator,
@@ -80,11 +120,16 @@ final class InstallModuleCommand extends Command
     $successCount = 0;
     $errorCount = 0;
 
+    $nonInteractive = $this->nonInteractive || $this->auto;
+    $autoTrust = $nonInteractive || $this->trustSource;
+    $autoReplace = $nonInteractive || $this->replace;
+    $configMode = $this->configMode ?? ($nonInteractive ? 'env' : null);
+
     foreach ($modulesToInstall as $moduleData) {
       [$moduleName, $version] = $moduleData;
 
       $preservedPath = null;
-      if (!$this->force && !$this->confirmReinstallModule($moduleName, $version)) {
+      if (!$autoReplace && !$this->force && !$this->confirmReinstallModule($moduleName, $version, $autoReplace)) {
         $this->warning("Module installation aborted for '{$moduleName}'.");
         $errorCount++;
         continue;
@@ -95,7 +140,7 @@ final class InstallModuleCommand extends Command
           $preservedPath = $this->preservedModulePath;
           $this->preservedModulePath = null;
         }
-        $this->packageManagerService->installModule($moduleName, $version, $force, $preservedPath);
+        $this->packageManagerService->installModule($moduleName, $version, $force, $preservedPath, $autoTrust, $configMode);
         $this->comparisonService->cleanupExtractedPath();
         $successCount++;
       } catch (Throwable $e) {
@@ -182,7 +227,10 @@ final class InstallModuleCommand extends Command
       }
     }
 
-    if (!$this->force && !$this->confirmReinstallModule($moduleName, $version)) {
+    $nonInteractive = $this->nonInteractive || $this->auto;
+    $autoReplace = $nonInteractive || $this->replace;
+
+    if (!$autoReplace && !$this->force && !$this->confirmReinstallModule($moduleName, $version, $autoReplace)) {
       $this->warning('Module installation aborted.');
       return;
     }
@@ -195,6 +243,10 @@ final class InstallModuleCommand extends Command
 
     $force = $forceChoice === 'Yes' ? 'force' : '';
 
+    $nonInteractive = $this->nonInteractive || $this->auto;
+    $autoTrust = $nonInteractive || $this->trustSource;
+    $configMode = $this->configMode ?? ($nonInteractive ? 'env' : null);
+
     $preservedPath = null;
     if ($this->preservedModulePath !== null && is_dir($this->preservedModulePath)) {
       $preservedPath = $this->preservedModulePath;
@@ -202,7 +254,7 @@ final class InstallModuleCommand extends Command
     }
 
     try {
-      $this->packageManagerService->installModule($moduleName, $version, $force, $preservedPath);
+      $this->packageManagerService->installModule($moduleName, $version, $force, $preservedPath, $autoTrust, $configMode);
       $this->comparisonService->cleanupExtractedPath();
     } catch (Throwable $e) {
       $this->error("Error installing module: " . $e->getMessage());
@@ -308,8 +360,13 @@ final class InstallModuleCommand extends Command
 
     $version = $selectedVersion === 'latest' ? null : $this->extractVersionFromOption($selectedVersion);
 
+    $nonInteractive = $this->nonInteractive || $this->auto;
+    $autoReplace = $nonInteractive || $this->replace;
+    $autoTrust = $nonInteractive || $this->trustSource;
+    $configMode = $this->configMode ?? ($nonInteractive ? 'env' : null);
+
     $preservedPath = null;
-    if (!$this->force && !$this->confirmReinstallModule($selectedModuleName, $version)) {
+    if (!$autoReplace && !$this->force && !$this->confirmReinstallModule($selectedModuleName, $version, $autoReplace)) {
       $this->warning('Module installation aborted.');
       return;
     }
@@ -328,7 +385,7 @@ final class InstallModuleCommand extends Command
     $force = $forceChoice === 'Yes' ? 'force' : '';
 
     try {
-      $this->packageManagerService->installModule($selectedModuleName, $version, $force, $preservedPath);
+      $this->packageManagerService->installModule($selectedModuleName, $version, $force, $preservedPath, $autoTrust, $configMode);
       $this->comparisonService->cleanupExtractedPath();
     } catch (Throwable $e) {
       $this->error("Error installing module: " . $e->getMessage());
@@ -365,15 +422,20 @@ final class InstallModuleCommand extends Command
     $successCount = 0;
     $errorCount = 0;
 
+    $nonInteractive = $this->nonInteractive || $this->auto;
+    $autoReplace = $nonInteractive || $this->replace;
+    $autoTrust = $nonInteractive || $this->trustSource;
+    $configMode = $this->configMode ?? ($nonInteractive ? 'env' : null);
+
     foreach ($selectedModuleNames as $moduleName) {
-      if (!$this->force && !$this->confirmReinstallModule($moduleName, null)) {
+      if (!$autoReplace && !$this->force && !$this->confirmReinstallModule($moduleName, null, $autoReplace)) {
         $this->warning("Skipping '{$moduleName}'.");
         $errorCount++;
         continue;
       }
 
       try {
-        $this->packageManagerService->installModule($moduleName, null, $force);
+        $this->packageManagerService->installModule($moduleName, null, $force, null, $autoTrust, $configMode);
         $successCount++;
       } catch (Throwable $e) {
         $this->error("Error installing module '{$moduleName}': " . $e->getMessage());
@@ -530,8 +592,12 @@ final class InstallModuleCommand extends Command
     return $version;
   }
 
-  private function confirmReinstallModule(string $moduleName, ?string $versionToInstall): bool
+  private function confirmReinstallModule(string $moduleName, ?string $versionToInstall, bool $autoReplace = false): bool
   {
+    if ($autoReplace) {
+      return true;
+    }
+
     $installedVersion = $this->getInstalledModuleVersion($moduleName);
     if ($installedVersion === null) {
       return true;
