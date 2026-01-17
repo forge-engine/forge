@@ -12,12 +12,14 @@ use Forge\Core\Module\Attributes\Module;
 use Forge\Core\Module\Attributes\Repository;
 use Forge\Core\Module\Attributes\LifecycleHook;
 use Forge\Core\Module\LifecycleHookName;
+use Forge\Core\Module\Attributes\HubItem;
+use Forge\Core\Module\ForgeIcon;
 use Forge\Core\DI\Attributes\Service;
 use Forge\CLI\Traits\OutputHelper;
 
 #[Module(
   name: 'ForgeDeployment',
-  version: '1.2.0',
+  version: '2.0.0',
   description: 'Deploy applications to cloud providers with automated provisioning',
   order: 99,
   isCli: true,
@@ -26,6 +28,7 @@ use Forge\CLI\Traits\OutputHelper;
   type: 'deployment',
   tags: ['deployment', 'cloud', 'provider', 'automated', 'provisioning', 'deployment-system', 'deployment-library', 'deployment-framework']
 )]
+#[HubItem(label: 'Deployment', route: '/hub/deployment', icon: ForgeIcon::DEPLOY, order: 10)]
 #[Service]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
