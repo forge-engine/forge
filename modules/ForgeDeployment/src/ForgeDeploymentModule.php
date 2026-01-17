@@ -19,10 +19,9 @@ use Forge\CLI\Traits\OutputHelper;
 
 #[Module(
   name: 'ForgeDeployment',
-  version: '2.1.0',
+  version: '2.2.0',
   description: 'Deploy applications to cloud providers with automated provisioning',
   order: 99,
-  isCli: true,
   author: 'Forge Team',
   license: 'MIT',
   type: 'deployment',
