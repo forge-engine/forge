@@ -124,7 +124,7 @@ return array (
         ),
       ),
     ),
-    'mtime' => 1768672794,
+    'mtime' => 1768673684,
     'modulePath' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/modules/ForgeHub',
   ),
   'App\\Modules\\ForgeMarkDown\\ForgeMarkDownModule' => 

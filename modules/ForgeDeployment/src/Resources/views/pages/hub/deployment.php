@@ -33,19 +33,25 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
           <?php if ($status['server_ip']): ?>
             <div>
               <dt class="text-sm font-medium text-gray-500">Server IP</dt>
-              <dd class="mt-1 text-sm font-semibold text-gray-900" id="status-server-ip"><?= htmlspecialchars($status['server_ip']) ?></dd>
+              <dd class="mt-1 text-sm font-semibold text-gray-900" id="status-server-ip">
+                <?= htmlspecialchars($status['server_ip']) ?>
+              </dd>
             </div>
           <?php endif; ?>
           <?php if ($status['domain']): ?>
             <div>
               <dt class="text-sm font-medium text-gray-500">Domain</dt>
-              <dd class="mt-1 text-sm font-semibold text-gray-900" id="status-domain"><?= htmlspecialchars($status['domain']) ?></dd>
+              <dd class="mt-1 text-sm font-semibold text-gray-900" id="status-domain">
+                <?= htmlspecialchars($status['domain']) ?>
+              </dd>
             </div>
           <?php endif; ?>
           <div>
             <div class="flex items-center justify-between mb-2">
               <dt class="text-sm font-medium text-gray-500">Progress</dt>
-              <dd class="text-sm font-semibold text-gray-900" id="status-progress"><?= htmlspecialchars((string) $status['progress_percentage']) ?>%</dd>
+              <dd class="text-sm font-semibold text-gray-900" id="status-progress">
+                <?= htmlspecialchars((string) $status['progress_percentage']) ?>%
+              </dd>
             </div>
             <div class="w-full bg-gray-200 rounded-full h-2">
               <div class="bg-blue-600 h-2 rounded-full transition-all" id="status-progress-bar"
@@ -72,22 +78,28 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
           <?php if ($status['current_step']): ?>
             <div>
               <dt class="text-sm font-medium text-gray-500">Current Step</dt>
-              <dd class="mt-1 text-sm font-semibold text-blue-600" id="status-current-step"><?= htmlspecialchars($status['current_step']) ?></dd>
+              <dd class="mt-1 text-sm font-semibold text-blue-600" id="status-current-step">
+                <?= htmlspecialchars($status['current_step']) ?>
+              </dd>
             </div>
           <?php endif; ?>
           <?php if ($status['last_updated']): ?>
             <div>
               <dt class="text-sm font-medium text-gray-500">Last Updated</dt>
-              <dd class="mt-1 text-sm text-gray-900" id="status-last-updated"><?= htmlspecialchars($status['last_updated']) ?></dd>
+              <dd class="mt-1 text-sm text-gray-900" id="status-last-updated">
+                <?= htmlspecialchars($status['last_updated']) ?>
+              </dd>
             </div>
           <?php endif; ?>
           <div>
             <dt class="text-sm font-medium text-gray-500">Server Status</dt>
             <dd class="mt-1">
               <?php if ($status['is_accessible']): ?>
-                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800" id="status-accessible">Accessible</span>
+                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800"
+                  id="status-accessible">Accessible</span>
               <?php else: ?>
-                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800" id="status-accessible">Not Accessible</span>
+                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800"
+                  id="status-accessible">Not Accessible</span>
               <?php endif; ?>
             </dd>
           </div>
@@ -180,7 +192,8 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
       <?php else: ?>
         <div class="text-center py-8">
           <p class="text-sm text-gray-500">No configuration found</p>
-          <button onclick="editConfig()" class="mt-2 text-sm text-blue-600 hover:text-blue-800">Create Configuration</button>
+          <button onclick="editConfig()" class="mt-2 text-sm text-blue-600 hover:text-blue-800">Create
+            Configuration</button>
         </div>
       <?php endif; ?>
     </div>
@@ -195,7 +208,7 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
           </button>
         </div>
         <?php if (!empty($config['deployment']['post_deployment_commands'])): ?>
-          <div class="space-y-2" id="postCommandsDisplay">
+          <div class="space-y-2 max-h-64 overflow-y-auto pr-2" id="postCommandsDisplay">
             <?php foreach ($config['deployment']['post_deployment_commands'] as $cmd): ?>
               <div class="flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-200">
                 <i class="fa-solid fa-terminal text-gray-400 text-xs"></i>
@@ -204,7 +217,7 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
             <?php endforeach; ?>
           </div>
         <?php else: ?>
-          <div class="text-center py-4">
+          <div class="text-center py-4" id="postCommandsDisplay">
             <p class="text-sm text-gray-500">No post-deployment commands configured</p>
           </div>
         <?php endif; ?>
@@ -219,7 +232,7 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
           </button>
         </div>
         <?php if (!empty($config['deployment']['env_vars'])): ?>
-          <div class="space-y-2" id="envVarsDisplay">
+          <div class="space-y-2 max-h-64 overflow-y-auto pr-2" id="envVarsDisplay">
             <?php foreach ($config['deployment']['env_vars'] as $key => $value): ?>
               <div class="flex items-center justify-between p-2 bg-gray-50 rounded border border-gray-200">
                 <div class="flex items-center gap-2 flex-1 min-w-0">
@@ -231,7 +244,7 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
             <?php endforeach; ?>
           </div>
         <?php else: ?>
-          <div class="text-center py-4">
+          <div class="text-center py-4" id="envVarsDisplay">
             <p class="text-sm text-gray-500">No environment variables configured</p>
           </div>
         <?php endif; ?>
@@ -292,7 +305,6 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
         updateStatus(data.status);
       }
     } catch (error) {
-      console.error('Error refreshing status:', error);
     } finally {
       button.disabled = false;
       if (icon) {
@@ -444,8 +456,70 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
         }
       }
     } catch (error) {
-      console.error('Error loading post-deployment commands:', error);
     }
+  }
+
+  async function refreshPostCommandsDisplay() {
+    try {
+      const response = await fetch('/hub/deployment/config', {
+        headers: {
+          'X-CSRF-Token': window.csrfToken || ''
+        }
+      });
+      const data = await response.json();
+      const display = document.getElementById('postCommandsDisplay');
+      if (!display) return;
+
+      if (data.success && data.config?.deployment?.post_deployment_commands && data.config.deployment.post_deployment_commands.length > 0) {
+        display.className = 'space-y-2 max-h-64 overflow-y-auto pr-2';
+        display.innerHTML = data.config.deployment.post_deployment_commands.map(cmd => `
+          <div class="flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-200">
+            <i class="fa-solid fa-terminal text-gray-400 text-xs"></i>
+            <span class="text-sm text-gray-900 font-mono">${escapeHtml(cmd)}</span>
+          </div>
+        `).join('');
+      } else {
+        display.className = 'text-center py-4';
+        display.innerHTML = '<p class="text-sm text-gray-500">No post-deployment commands configured</p>';
+      }
+    } catch (error) {
+    }
+  }
+
+  async function refreshEnvVarsDisplay() {
+    try {
+      const response = await fetch('/hub/deployment/config', {
+        headers: {
+          'X-CSRF-Token': window.csrfToken || ''
+        }
+      });
+      const data = await response.json();
+      const display = document.getElementById('envVarsDisplay');
+      if (!display) return;
+
+      if (data.success && data.config?.deployment?.env_vars && Object.keys(data.config.deployment.env_vars).length > 0) {
+        display.className = 'space-y-2 max-h-64 overflow-y-auto pr-2';
+        display.innerHTML = Object.entries(data.config.deployment.env_vars).map(([key, value]) => `
+          <div class="flex items-center justify-between p-2 bg-gray-50 rounded border border-gray-200">
+            <div class="flex items-center gap-2 flex-1 min-w-0">
+              <span class="text-sm font-medium text-gray-700">${escapeHtml(key)}</span>
+              <span class="text-sm text-gray-400">=</span>
+              <span class="text-sm text-gray-900 font-mono truncate">${escapeHtml(value)}</span>
+            </div>
+          </div>
+        `).join('');
+      } else {
+        display.className = 'text-center py-4';
+        display.innerHTML = '<p class="text-sm text-gray-500">No environment variables configured</p>';
+      }
+    } catch (error) {
+    }
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
   }
 
   async function loadEnvVars() {
@@ -471,7 +545,6 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
         addEnvVarRow();
       }
     } catch (error) {
-      console.error('Error loading environment variables:', error);
     }
   }
 
@@ -501,79 +574,93 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
     button.closest('div').remove();
   }
 
-  document.getElementById('postCommandsForm')?.addEventListener('submit', async function (e) {
-    e.preventDefault();
-    const textarea = document.getElementById('postCommandsTextarea');
-    const commands = textarea.value.split('\n').map(cmd => cmd.trim()).filter(cmd => cmd.length > 0);
+  function attachFormListeners() {
+    const postCommandsForm = document.getElementById('postCommandsForm');
+    if (postCommandsForm) {
+      postCommandsForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const textarea = document.getElementById('postCommandsTextarea');
+        const commands = textarea.value.split('\n').map(cmd => cmd.trim()).filter(cmd => cmd.length > 0);
 
-    try {
-      const response = await fetch('/hub/deployment/config', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': window.csrfToken || ''
-        },
-        body: JSON.stringify({
-          update: 'post_deployment_commands',
-          post_deployment_commands: commands
-        })
-      });
+        try {
+          const response = await fetch('/hub/deployment/config', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': window.csrfToken || ''
+            },
+            body: JSON.stringify({
+              update: 'post_deployment_commands',
+              post_deployment_commands: commands
+            })
+          });
 
-      const data = await response.json();
-      if (data.success) {
-        showNotification('success', 'Commands Saved', 'Post-deployment commands saved successfully');
-        closePostCommandsModal();
-        setTimeout(() => location.reload(), 1500);
-      } else {
-        showNotification('error', 'Save Failed', 'Failed to save commands: ' + (data.message || 'Unknown error'));
-      }
-    } catch (error) {
-      showNotification('error', 'Error', 'Error saving commands: ' + error.message);
-    }
-  });
-
-  document.getElementById('envVarsForm')?.addEventListener('submit', async function (e) {
-    e.preventDefault();
-    const container = document.getElementById('envVarsContainer');
-    const rows = container.querySelectorAll('div');
-    const envVars = {};
-
-    rows.forEach(row => {
-      const inputs = row.querySelectorAll('input');
-      if (inputs.length >= 2) {
-        const key = inputs[0].value.trim();
-        const value = inputs[1].value.trim();
-        if (key) {
-          envVars[key] = value;
+          const data = await response.json();
+          if (data.success) {
+            showNotification('success', 'Commands Saved', 'Post-deployment commands saved successfully');
+            closePostCommandsModal();
+            await refreshPostCommandsDisplay();
+          } else {
+            showNotification('error', 'Save Failed', 'Failed to save commands: ' + (data.message || 'Unknown error'));
+          }
+        } catch (error) {
+          showNotification('error', 'Error', 'Error saving commands: ' + error.message);
         }
-      }
-    });
-
-    try {
-      const response = await fetch('/hub/deployment/config', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': window.csrfToken || ''
-        },
-        body: JSON.stringify({
-          update: 'env_vars',
-          env_vars: envVars
-        })
       });
-
-      const data = await response.json();
-      if (data.success) {
-        showNotification('success', 'Variables Saved', 'Environment variables saved successfully');
-        closeEnvVarsModal();
-        setTimeout(() => location.reload(), 1500);
-      } else {
-        showNotification('error', 'Save Failed', 'Failed to save variables: ' + (data.message || 'Unknown error'));
-      }
-    } catch (error) {
-      showNotification('error', 'Error', 'Error saving variables: ' + error.message);
     }
-  });
+
+    const envVarsForm = document.getElementById('envVarsForm');
+    if (envVarsForm) {
+      envVarsForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+        const container = document.getElementById('envVarsContainer');
+        const rows = container.querySelectorAll('div');
+        const envVars = {};
+
+        rows.forEach(row => {
+          const inputs = row.querySelectorAll('input');
+          if (inputs.length >= 2) {
+            const key = inputs[0].value.trim();
+            const value = inputs[1].value.trim();
+            if (key) {
+              envVars[key] = value;
+            }
+          }
+        });
+
+        try {
+          const response = await fetch('/hub/deployment/config', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'X-CSRF-Token': window.csrfToken || ''
+            },
+            body: JSON.stringify({
+              update: 'env_vars',
+              env_vars: envVars
+            })
+          });
+
+          const data = await response.json();
+          if (data.success) {
+            showNotification('success', 'Variables Saved', 'Environment variables saved successfully');
+            closeEnvVarsModal();
+            await refreshEnvVarsDisplay();
+          } else {
+            showNotification('error', 'Save Failed', 'Failed to save variables: ' + (data.message || 'Unknown error'));
+          }
+        } catch (error) {
+          showNotification('error', 'Error', 'Error saving variables: ' + error.message);
+        }
+      });
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attachFormListeners);
+  } else {
+    attachFormListeners();
+  }
 
   function viewLogs(deploymentId) {
     currentDeploymentId = deploymentId;
@@ -610,7 +697,8 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
 </script>
 
 <div id="configModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
-  <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" onclick="closeConfigModal()"></div>
+  <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" onclick="closeConfigModal()">
+  </div>
   <div class="relative min-h-screen flex items-center justify-center p-4 sm:p-6">
     <div class="relative w-full max-w-4xl bg-white rounded-lg shadow-xl" onclick="event.stopPropagation()">
       <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
@@ -706,7 +794,8 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
 </div>
 
 <div id="logsModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
-  <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" onclick="closeLogsModal()"></div>
+  <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" onclick="closeLogsModal()">
+  </div>
   <div class="relative min-h-screen flex items-center justify-center p-4 sm:p-6">
     <div class="relative w-full max-w-4xl bg-white rounded-lg shadow-xl" onclick="event.stopPropagation()">
       <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
@@ -736,7 +825,8 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
 </div>
 
 <div id="secretsModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
-  <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" onclick="closeSecretsModal()"></div>
+  <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" onclick="closeSecretsModal()">
+  </div>
   <div class="relative min-h-screen flex items-center justify-center p-4 sm:p-6">
     <div class="relative w-full max-w-2xl bg-white rounded-lg shadow-xl" onclick="event.stopPropagation()">
       <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
@@ -781,7 +871,8 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
               <i class="fa-solid fa-exclamation-triangle text-yellow-600 mt-0.5"></i>
               <div class="text-sm text-yellow-800">
                 <p class="font-medium mb-1">Security Notice</p>
-                <p>Secrets are stored securely. Only enter new values if you need to update them. Existing values are masked for security.</p>
+                <p>Secrets are stored securely. Only enter new values if you need to update them. Existing values are
+                  masked for security.</p>
               </div>
             </div>
           </div>
@@ -802,7 +893,8 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
 </div>
 
 <div id="postCommandsModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
-  <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" onclick="closePostCommandsModal()"></div>
+  <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity"
+    onclick="closePostCommandsModal()"></div>
   <div class="relative min-h-screen flex items-center justify-center p-4 sm:p-6">
     <div class="relative w-full max-w-3xl bg-white rounded-lg shadow-xl" onclick="event.stopPropagation()">
       <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
@@ -821,7 +913,8 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
             <textarea id="postCommandsTextarea" rows="10"
               class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm font-mono"
               placeholder="cache:flush&#10;migrate&#10;queue:restart"></textarea>
-            <p class="mt-1 text-xs text-gray-500">Enter one command per line. These commands will run after deployment completes.</p>
+            <p class="mt-1 text-xs text-gray-500">Enter one command per line. These commands will run after deployment
+              completes.</p>
           </div>
           <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
             <button type="button" onclick="closePostCommandsModal()"
@@ -840,7 +933,8 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
 </div>
 
 <div id="envVarsModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
-  <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" onclick="closeEnvVarsModal()"></div>
+  <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" onclick="closeEnvVarsModal()">
+  </div>
   <div class="relative min-h-screen flex items-center justify-center p-4 sm:p-6">
     <div class="relative w-full max-w-3xl bg-white rounded-lg shadow-xl" onclick="event.stopPropagation()">
       <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
@@ -879,11 +973,14 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
 <div id="notificationModal" class="hidden fixed inset-0 z-[60] overflow-y-auto pointer-events-none">
   <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
     <div class="fixed inset-0 bg-transparent transition-opacity" aria-hidden="true"></div>
-    <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full pointer-events-auto"
+    <div
+      class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full pointer-events-auto"
       id="notificationContent">
       <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
         <div class="sm:flex sm:items-start">
-          <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full sm:mx-0 sm:h-10 sm:w-10" id="notificationIcon">
+          <div
+            class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full sm:mx-0 sm:h-10 sm:w-10"
+            id="notificationIcon">
           </div>
           <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left flex-1">
             <h3 class="text-lg leading-6 font-medium text-gray-900" id="notificationTitle">
@@ -907,14 +1004,19 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
 
 <div id="confirmationModal" class="hidden fixed inset-0 z-[60] overflow-y-auto">
   <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onclick="closeConfirmationModal()"></div>
-    <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"
+      onclick="closeConfirmationModal()"></div>
+    <div
+      class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
       onclick="event.stopPropagation()">
       <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
         <div class="sm:flex sm:items-start">
-          <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10">
+          <div
+            class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10">
             <svg class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
+              </path>
             </svg>
           </div>
           <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left flex-1">
@@ -1075,7 +1177,6 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
         }
       }
     } catch (error) {
-      console.error('Error loading config:', error);
     }
   }
 
@@ -1203,7 +1304,6 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
         }
       }
     } catch (error) {
-      console.error('Error loading secrets:', error);
     }
   }
 

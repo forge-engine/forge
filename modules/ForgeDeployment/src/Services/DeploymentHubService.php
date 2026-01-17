@@ -221,9 +221,46 @@ final class DeploymentHubService
         }
 
         $configContent = $this->generateConfigFile($config);
-        $result = file_put_contents($configPath, $configContent);
 
-        return $result !== false;
+        if (empty($configContent)) {
+            return false;
+        }
+
+        $dir = dirname($configPath);
+        if (!is_dir($dir)) {
+            if (!@mkdir($dir, 0755, true)) {
+                return false;
+            }
+        }
+
+        if (!is_writable($dir)) {
+            return false;
+        }
+
+        if (file_exists($configPath) && !is_writable($configPath)) {
+            return false;
+        }
+
+        $result = @file_put_contents($configPath, $configContent, LOCK_EX);
+
+        if ($result === false) {
+            return false;
+        }
+
+        if (!file_exists($configPath)) {
+            return false;
+        }
+
+        $writtenContent = @file_get_contents($configPath);
+        if ($writtenContent === false) {
+            return false;
+        }
+
+        if (strlen($writtenContent) !== strlen($configContent)) {
+            return false;
+        }
+
+        return true;
     }
 
     private function generateConfigFile(array $config): string
@@ -286,7 +323,15 @@ PHP;
 
         $spaces = str_repeat(' ', $indent * 4);
         $lines = ['['];
-        $isNumeric = array_keys($data) === range(0, count($data) - 1);
+
+        $keys = array_keys($data);
+        $isNumeric = true;
+        foreach ($keys as $i => $key) {
+            if (!is_int($key) || $key !== $i) {
+                $isNumeric = false;
+                break;
+            }
+        }
 
         foreach ($data as $k => $v) {
             if (is_array($v)) {
