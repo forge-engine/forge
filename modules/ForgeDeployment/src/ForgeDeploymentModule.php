@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeDeployment;
 
+use Forge\Core\Config\Config;
 use Forge\Core\DI\Container;
 use Forge\Core\Module\Attributes\Compatibility;
 use Forge\Core\Module\Attributes\ConfigDefaults;
@@ -16,9 +17,10 @@ use Forge\CLI\Traits\OutputHelper;
 
 #[Module(
   name: 'ForgeDeployment',
-  version: '1.1.0',
+  version: '1.2.0',
   description: 'Deploy applications to cloud providers with automated provisioning',
   order: 99,
+  isCli: true,
   author: 'Forge Team',
   license: 'MIT',
   type: 'deployment',
@@ -28,19 +30,30 @@ use Forge\CLI\Traits\OutputHelper;
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
 #[ConfigDefaults(defaults: [
-  "forge_deployment" => []
+  'forge_deployment' => [
+    'digitalocean' => [
+      'api_token' => '',
+    ],
+    'cloudflare' => [
+      'api_token' => '',
+    ],
+  ]
 ])]
 final class ForgeDeploymentModule
 {
   use OutputHelper;
   public function register(Container $container): void
   {
-
+    $this->setupConfigDefaults($container);
   }
 
-  #[LifecycleHook(hook: LifecycleHookName::AFTER_MODULE_REGISTER)]
-  public function onAfterModuleRegister(): void
+  private function setupConfigDefaults(Container $container): void
   {
-    //error_log("ForgeDeployment:  registered!");
+    /** @var Config $config */
+    $config = $container->get(Config::class);
+    $config->set('forge_deployment.digitalocean.api_token', env('FORGE_DEPLOYMENT_DIGITALOCEAN_API_TOKEN'));
+    $config->set('forge_deployment.cloudflare.api_token', env('FORGE_DEPLOYMENT_CLOUDFLARE_API_TOKEN'));
   }
+
+
 }
