@@ -34,37 +34,109 @@ final class CommandController
         return $this->view(view: "pages/commands", data: ['whoami' => $whoami, 'pwd' => $pwd]);
     }
 
+    #[Route("/hub/commands/list")]
+    public function getCommands(): Response
+    {
+        $commands = $this->commandService->getAvailableCommands();
+        return new ApiResponse(['commands' => $commands]);
+    }
+
+    #[Route("/hub/commands/arguments")]
+    public function getCommandArguments(Request $request): Response
+    {
+        $commandName = $request->query('command') ?? '';
+        if (empty($commandName)) {
+            return new ApiResponse(['arguments' => []], 400);
+        }
+
+        $arguments = $this->commandService->getCommandArguments($commandName);
+        return new ApiResponse(['arguments' => $arguments]);
+    }
+
     #[Route("/hub/commands/execute", "POST")]
     public function execute(Request $request): Response
     {
-        $command = $request->postData['command'];
-        $processId = uniqid('cmd_');
-        $_SESSION['commands'][$processId] = ['command' => $command, 'history' => $this->updateCommandHistory($command)];
+        $command = trim($request->postData['command'] ?? '');
+
+        if (empty($command)) {
+            return new ApiResponse([
+                'output' => 'Command cannot be empty',
+                'needsInput' => false,
+                'prompt' => '',
+                'status' => 'error',
+                'command' => '',
+                'commandHistory' => $this->updateCommandHistory('')
+            ], 400);
+        }
+
+        if (!$this->commandService->isCommandAllowed($command)) {
+            return new ApiResponse([
+                'output' => 'Command is not allowed',
+                'needsInput' => false,
+                'prompt' => '',
+                'status' => 'error',
+                'command' => $command,
+                'commandHistory' => $this->updateCommandHistory($command)
+            ], 403);
+        }
+
+        $commandParts = explode(' ', $command, 2);
+        $commandName = $commandParts[0];
+        $providedArgs = isset($commandParts[1]) ? explode(' ', $commandParts[1]) : [];
+
+        $validation = $this->commandService->validateCommandArguments($command, $providedArgs);
+        if (!$validation['valid']) {
+            return new ApiResponse([
+                'output' => 'Missing required arguments: ' . implode(', ', $validation['errors']),
+                'needsInput' => false,
+                'prompt' => '',
+                'status' => 'error',
+                'command' => $command,
+                'commandHistory' => $this->updateCommandHistory($command)
+            ], 400);
+        }
+
+        $processId = uniqid('cmd_', true);
+        $this->updateCommandHistory($command);
 
         $result = $this->commandService->startCommand($command, $processId);
-        $_SESSION['commands'][$processId] = array_merge($_SESSION['commands'][$processId], $result);
 
-        return $this->buildResponse($_SESSION['commands'][$processId], $processId);
+        return new ApiResponse([
+            'output' => $result['output'] ?? '',
+            'needsInput' => $result['needsInput'] ?? false,
+            'prompt' => $result['prompt'] ?? '',
+            'processId' => $processId,
+            'status' => $result['status'] ?? 'error',
+            'command' => $command,
+            'commandHistory' => $_SESSION['command_history'] ?? []
+        ]);
     }
 
     #[Route("/hub/commands/send-input", "POST")]
     public function sendInput(Request $request): Response
     {
-        $processId = $request->postData['process_id'];
-        $input = $request->postData['input'];
+        $processId = $request->postData['process_id'] ?? '';
+        $input = $request->postData['input'] ?? '';
 
-        if (!isset($_SESSION['commands'][$processId])) {
-            return new Response('Invalid process session.', 400);
+        if (empty($processId)) {
+            return new ApiResponse([
+                'output' => 'Process ID is required',
+                'needsInput' => false,
+                'prompt' => '',
+                'status' => 'error'
+            ], 400);
         }
 
         $result = $this->commandService->sendInput($processId, $input);
-        $_SESSION['commands'][$processId] = array_merge($_SESSION['commands'][$processId], $result);
 
-        if ($result['status'] === 'completed' || $result['status'] === 'timeout') {
-            unset($_SESSION['commands'][$processId]);
-        }
-
-        return $this->buildResponse($_SESSION['commands'][$processId], $processId);
+        return new ApiResponse([
+            'output' => $result['output'] ?? '',
+            'needsInput' => $result['needsInput'] ?? false,
+            'prompt' => $result['prompt'] ?? '',
+            'processId' => $processId,
+            'status' => $result['status'] ?? 'error',
+            'commandHistory' => $_SESSION['command_history'] ?? []
+        ]);
     }
 
     #[Route("/hub/commands/status")]
@@ -72,23 +144,14 @@ final class CommandController
     {
         $processId = $request->query('process_id') ?? null;
 
-        if (!$processId || !isset($_SESSION['commands'][$processId])) {
-            return new ApiResponse(['status' => 'not_found']);
+        if (!$processId) {
+            return new ApiResponse(['status' => 'not_found'], 404);
         }
 
-        return new ApiResponse($_SESSION['commands'][$processId]);
-    }
-
-    private function buildResponse(array $result, string $processId): Response
-    {
         return new ApiResponse([
-                'output' => $result['output'],
-                'needsInput' => $result['needsInput'],
-                'prompt' => $result['prompt'],
-                'processId' => $processId,
-                'command' => $_SESSION['commands'][$processId]['command'] ?? '',
-                'commandHistory' => $_SESSION['commands'][$processId]['history'] ?? []
-            ]);
+            'status' => 'running',
+            'processId' => $processId
+        ]);
     }
 
     private function updateCommandHistory(string $command): array

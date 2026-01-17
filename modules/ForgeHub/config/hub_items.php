@@ -71,8 +71,6 @@ return array (
         'order' => 4,
         'permissions' => 
         array (
-          0 => 'run:command',
-          1 => 'view:command',
         ),
       ),
       1 => 
@@ -105,8 +103,28 @@ return array (
         array (
         ),
       ),
+      4 => 
+      array (
+        'label' => 'Cron Jobs',
+        'route' => '/hub/cron-jobs',
+        'icon' => 'clock',
+        'order' => 8,
+        'permissions' => 
+        array (
+        ),
+      ),
+      5 => 
+      array (
+        'label' => 'Monitoring',
+        'route' => '/hub/monitoring',
+        'icon' => 'chart-line',
+        'order' => 9,
+        'permissions' => 
+        array (
+        ),
+      ),
     ),
-    'mtime' => 1768621950,
+    'mtime' => 1768671448,
     'modulePath' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/modules/ForgeHub',
   ),
   'App\\Modules\\ForgeMarkDown\\ForgeMarkDownModule' => 
@@ -145,8 +163,18 @@ return array (
   array (
     'hubItems' => 
     array (
+      0 => 
+      array (
+        'label' => 'Deployment',
+        'route' => '/hub/deployment',
+        'icon' => 'rocket',
+        'order' => 10,
+        'permissions' => 
+        array (
+        ),
+      ),
     ),
-    'mtime' => 1768611208,
+    'mtime' => 1768672275,
     'modulePath' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/modules/ForgeDeployment',
   ),
   'App\\Modules\\ForgeEvents\\ForgeEventsModule' => 
@@ -163,8 +191,18 @@ return array (
         array (
         ),
       ),
+      1 => 
+      array (
+        'label' => 'Queue Workers',
+        'route' => '/hub/queue-workers',
+        'icon' => 'terminal',
+        'order' => 8,
+        'permissions' => 
+        array (
+        ),
+      ),
     ),
-    'mtime' => 1768621938,
+    'mtime' => 1768671270,
     'modulePath' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/modules/ForgeEvents',
   ),
   'App\\Modules\\ForgeNotification\\ForgeNotificationModule' => 

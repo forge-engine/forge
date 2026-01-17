@@ -4,35 +4,245 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeHub\Services;
 
+use Forge\CLI\Application;
+use Forge\CLI\Attributes\Arg;
+use Forge\Core\Bootstrap\AppCommandSetup;
 use Forge\Core\DI\Attributes\Service;
+use Forge\Core\DI\Container;
+use ReflectionClass;
 
 #[Service]
 final class CommandService
 {
-    private const PROCESS_TIMEOUT = 30; // seconds
+    private const PROCESS_TIMEOUT = 30;
     private const BUFFER_READ_SIZE = 4096;
 
-    public mixed $process = null;
-    public array $pipes = [];
-    public string $outputBuffer = '';
-    public ?string $processId = null;
+    private ?array $cachedCommands = null;
     private array $processes = [];
+
+    private const DISALLOWED_PATTERNS = [
+        'dev:',
+        'maintenance:down',
+        'maintenance:up',
+        'structure:',
+        'asset:unlink',
+        'serve',
+        'down',
+        'up',
+    ];
+
+    public function getAvailableCommands(): array
+    {
+        if ($this->cachedCommands !== null) {
+            return $this->cachedCommands;
+        }
+
+        try {
+            $container = Container::getInstance();
+
+            AppCommandSetup::getInstance($container);
+
+            $app = Application::getInstance($container);
+            $allCommands = $app->getCommands();
+
+            if (empty($allCommands)) {
+                error_log('CommandService: No commands found in Application. Instance ID: ' . $app->getInstanceId());
+                return [];
+            }
+
+            error_log('CommandService: Found ' . count($allCommands) . ' commands');
+
+            $filtered = [];
+            foreach ($allCommands as $name => $commandInfo) {
+                $isDisallowed = false;
+                foreach (self::DISALLOWED_PATTERNS as $pattern) {
+                    if (str_starts_with($name, $pattern)) {
+                        $isDisallowed = true;
+                        break;
+                    }
+                }
+                if (!$isDisallowed) {
+                    $filtered[$name] = $commandInfo;
+                }
+            }
+
+            if (!isset($filtered['help'])) {
+                $filtered['help'] = ['', 'Displays help for available commands.'];
+            }
+
+            $grouped = [];
+            foreach ($filtered as $name => $commandInfo) {
+                $parts = explode(':', $name, 2);
+                $category = count($parts) > 1 ? ucfirst($parts[0]) : 'General';
+                if (!isset($grouped[$category])) {
+                    $grouped[$category] = [];
+                }
+                $grouped[$category][$name] = is_array($commandInfo) ? ($commandInfo[1] ?? '') : '';
+            }
+
+            ksort($grouped);
+            foreach ($grouped as $category => $commands) {
+                ksort($grouped[$category]);
+            }
+
+            $this->cachedCommands = $grouped;
+            return $this->cachedCommands;
+        } catch (\Throwable $e) {
+            error_log('CommandService::getAvailableCommands error: ' . $e->getMessage());
+            error_log('CommandService::getAvailableCommands trace: ' . $e->getTraceAsString());
+            return [];
+        }
+    }
+
+    public function getCommandArguments(string $commandName): array
+    {
+        try {
+            $container = Container::getInstance();
+            AppCommandSetup::getInstance($container);
+
+            if (!$container->has(Application::class)) {
+                $container->singleton(Application::class, function () use ($container) {
+                    return Application::getInstance($container);
+                });
+            }
+
+            $app = $container->get(Application::class);
+            $allCommands = $app->getCommands();
+
+            if (!isset($allCommands[$commandName])) {
+                return [];
+            }
+
+            $commandClass = $allCommands[$commandName][0];
+            $reflection = new ReflectionClass($commandClass);
+
+            $arguments = [];
+            foreach ($reflection->getProperties() as $property) {
+                $argAttributes = $property->getAttributes(Arg::class);
+                if (empty($argAttributes)) {
+                    continue;
+                }
+
+                $arg = $argAttributes[0]->newInstance();
+                $arguments[] = [
+                    'name' => $arg->name,
+                    'description' => $arg->description,
+                    'required' => $arg->required,
+                    'default' => $arg->default,
+                ];
+            }
+
+            return $arguments;
+        } catch (\Throwable $e) {
+            error_log('CommandService::getCommandArguments error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    public function validateCommandArguments(string $command, array $arguments): array
+    {
+        $commandParts = explode(' ', $command, 2);
+        $commandName = $commandParts[0];
+        $requiredArgs = $this->getCommandArguments($commandName);
+
+        if (empty($requiredArgs)) {
+            return ['valid' => true, 'errors' => []];
+        }
+
+        $errors = [];
+        $argString = isset($commandParts[1]) ? $commandParts[1] : '';
+        $providedArgs = [];
+
+        if (!empty($argString)) {
+            preg_match_all('/--([^=]+)=([^\s]+)/', $argString, $matches, PREG_SET_ORDER);
+            foreach ($matches as $match) {
+                $providedArgs[$match[1]] = $match[2];
+            }
+        }
+
+        foreach ($requiredArgs as $arg) {
+            if ($arg['required'] && !isset($providedArgs[$arg['name']])) {
+                $errors[] = "Required argument --{$arg['name']} is missing";
+            }
+        }
+
+        return ['valid' => empty($errors), 'errors' => $errors];
+    }
+
+    public function isCommandAllowed(string $command): bool
+    {
+        $command = trim($command);
+        if (empty($command)) {
+            return false;
+        }
+
+        $parts = explode(' ', $command, 2);
+        $commandName = $parts[0];
+
+        if ($commandName === 'help') {
+            return true;
+        }
+
+        foreach (self::DISALLOWED_PATTERNS as $pattern) {
+            if (str_starts_with($commandName, $pattern)) {
+                return false;
+            }
+        }
+
+        $availableCommands = $this->getAvailableCommands();
+        if (empty($availableCommands)) {
+            return false;
+        }
+
+        foreach ($availableCommands as $category => $commands) {
+            if (isset($commands[$commandName])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     public function startCommand(string $command, string $processId): array
     {
-        $this->processId = $processId;
+        $command = trim($command);
+        if (empty($command)) {
+            return [
+                'output' => 'Command cannot be empty',
+                'needsInput' => false,
+                'prompt' => '',
+                'status' => 'error'
+            ];
+        }
+
+        if (!$this->isCommandAllowed($command)) {
+            return [
+                'output' => 'Command is not allowed',
+                'needsInput' => false,
+                'prompt' => '',
+                'status' => 'error'
+            ];
+        }
+
+        $phpExecutable = $this->getPhpExecutable();
         $forgePath = BASE_PATH . '/forge.php';
-        $fullCommand = "php {$forgePath} " . escapeshellcmd($command);
+
+        $fullCommand = sprintf(
+            'cd %s && %s %s %s',
+            escapeshellarg(BASE_PATH),
+            escapeshellarg($phpExecutable),
+            escapeshellarg($forgePath),
+            $this->escapeCommand($command)
+        );
+
         $descriptorspec = [
-            0 => ['pipe', 'r'], // stdin
-            1 => ['pipe', 'w'], // stdout
-            2 => ['pipe', 'w'], // stderr
+            0 => ['pipe', 'r'],
+            1 => ['pipe', 'w'],
+            2 => ['pipe', 'w'],
         ];
 
-        $this->process = proc_open($fullCommand, $descriptorspec, $this->pipes);
-        $this->outputBuffer = '';
-
-        if (!is_resource($this->process)) {
+        $process = @proc_open($fullCommand, $descriptorspec, $pipes);
+        if (!is_resource($process)) {
             return [
                 'output' => 'Error starting process',
                 'needsInput' => false,
@@ -41,10 +251,99 @@ final class CommandService
             ];
         }
 
-        stream_set_blocking($this->pipes[1], false);
-        stream_set_blocking($this->pipes[2], false);
+        stream_set_blocking($pipes[1], false);
+        stream_set_blocking($pipes[2], false);
 
-        return $this->readProcessOutput();
+        $this->processes[$processId] = [
+            'process' => $process,
+            'pipes' => $pipes,
+            'command' => $command,
+            'startTime' => time(),
+        ];
+
+        return $this->readProcessOutput($processId, $process, $pipes);
+    }
+
+    private function getPhpExecutable(): string
+    {
+        static $phpPath = null;
+
+        if ($phpPath !== null) {
+            return $phpPath;
+        }
+
+        $possiblePaths = [];
+
+        $whichOutput = [];
+        $whichReturnCode = 0;
+        @exec('which php 2>/dev/null', $whichOutput, $whichReturnCode);
+        if ($whichReturnCode === 0 && !empty($whichOutput[0])) {
+            $whichPath = trim($whichOutput[0]);
+            if ($whichPath && !str_contains($whichPath, 'fpm') && file_exists($whichPath)) {
+                $possiblePaths[] = $whichPath;
+            }
+        }
+
+        if (defined('PHP_BINARY') && PHP_BINARY) {
+            $phpBinary = PHP_BINARY;
+            if (!str_contains(strtolower($phpBinary), 'fpm') && file_exists($phpBinary)) {
+                $possiblePaths[] = $phpBinary;
+            }
+        }
+
+        $envPhpBinary = $_ENV['PHP_BINARY'] ?? getenv('PHP_BINARY');
+        if ($envPhpBinary && file_exists($envPhpBinary) && !str_contains(strtolower($envPhpBinary), 'fpm')) {
+            $possiblePaths[] = $envPhpBinary;
+        }
+
+        $commonPaths = ['/usr/bin/php', '/usr/local/bin/php', '/opt/homebrew/bin/php'];
+        foreach ($commonPaths as $path) {
+            if (file_exists($path) && is_executable($path) && !str_contains($path, 'fpm')) {
+                $possiblePaths[] = $path;
+            }
+        }
+
+        foreach ($possiblePaths as $path) {
+            if ($path && file_exists($path) && is_executable($path)) {
+                if (str_contains(strtolower($path), 'fpm')) {
+                    continue;
+                }
+
+                $testOutput = [];
+                $testReturnCode = 0;
+                @exec(escapeshellarg($path) . ' -v 2>/dev/null', $testOutput, $testReturnCode);
+                if ($testReturnCode === 0 && !empty($testOutput[0])) {
+                    if (str_contains($testOutput[0], 'cli')) {
+                        $phpPath = $path;
+                        return $phpPath;
+                    }
+                }
+            }
+        }
+
+        foreach ($possiblePaths as $path) {
+            if ($path && file_exists($path) && is_executable($path)) {
+                if (str_contains(strtolower($path), 'fpm')) {
+                    continue;
+                }
+                $phpPath = $path;
+                return $phpPath;
+            }
+        }
+
+        error_log('CommandService: Could not find PHP CLI executable, falling back to "php" command');
+        $phpPath = 'php';
+        return $phpPath;
+    }
+
+    private function escapeCommand(string $command): string
+    {
+        $parts = preg_split('/\s+/', $command, -1, PREG_SPLIT_NO_EMPTY);
+        $escaped = [];
+        foreach ($parts as $part) {
+            $escaped[] = escapeshellarg($part);
+        }
+        return implode(' ', $escaped);
     }
 
     public function sendInput(string $processId, string $input): array
@@ -62,7 +361,7 @@ final class CommandService
         $process = $processInfo['process'];
         $pipes = $processInfo['pipes'];
 
-        if (is_resource($process) && is_resource($pipes[0])) {
+        if (is_resource($process) && isset($pipes[0]) && is_resource($pipes[0])) {
             fwrite($pipes[0], $input . PHP_EOL);
             fflush($pipes[0]);
             return $this->readProcessOutput($processId, $process, $pipes);
@@ -76,16 +375,18 @@ final class CommandService
         ];
     }
 
-    private function readProcessOutput(): array
+    private function readProcessOutput(string $processId, $process, array $pipes): array
     {
         $needsInput = false;
         $prompt = '';
-        $startTime = time();
         $outputBuffer = '';
         $lastOutputTime = time();
+        $maxIterations = 500;
+        $iteration = 0;
 
-        while (true) {
-            $read = [$this->pipes[1], $this->pipes[2]];
+        while ($iteration < $maxIterations) {
+            $iteration++;
+            $read = [$pipes[1], $pipes[2]];
             $write = null;
             $except = null;
 
@@ -93,26 +394,22 @@ final class CommandService
 
             if ($numStreams > 0) {
                 $lastOutputTime = time();
-                if (in_array($this->pipes[1], $read)) {
-                    $output = stream_get_contents($this->pipes[1]);
-                    if ($output !== false) {
-                        error_log("STDOUT for process {$this->processId}: " . trim($output));
+                if (in_array($pipes[1], $read)) {
+                    $output = stream_get_contents($pipes[1], self::BUFFER_READ_SIZE);
+                    if ($output !== false && $output !== '') {
                         $outputBuffer .= $output;
                     }
                 }
-                if (in_array($this->pipes[2], $read)) {
-                    $errorOutput = stream_get_contents($this->pipes[2]);
-                    if ($errorOutput !== false) {
-                        error_log("STDERR for process {$this->processId}: " . trim($errorOutput));
+                if (in_array($pipes[2], $read)) {
+                    $errorOutput = stream_get_contents($pipes[2], self::BUFFER_READ_SIZE);
+                    if ($errorOutput !== false && $errorOutput !== '') {
                         $outputBuffer .= $errorOutput;
                     }
                 }
 
-                // Check for prompt
                 if (!$needsInput) {
                     $detectedPrompt = $this->detectPrompt($outputBuffer);
                     if ($detectedPrompt !== null) {
-                        error_log("Detected Prompt for process {$this->processId}: " . $detectedPrompt);
                         $prompt = $detectedPrompt;
                         $needsInput = true;
                         return $this->buildResponse($needsInput, $prompt, 'waiting_for_input', $outputBuffer);
@@ -120,23 +417,68 @@ final class CommandService
                 }
             }
 
-            $status = proc_get_status($this->process);
+            $status = proc_get_status($process);
             if (!$status['running']) {
-                $this->cleanupProcess();
+                stream_set_blocking($pipes[1], true);
+                stream_set_blocking($pipes[2], true);
+
+                $remainingOutput = stream_get_contents($pipes[1]);
+                if ($remainingOutput !== false) {
+                    $outputBuffer .= $remainingOutput;
+                }
+
+                $remainingError = stream_get_contents($pipes[2]);
+                if ($remainingError !== false) {
+                    $outputBuffer .= $remainingError;
+                }
+
+                $this->cleanupProcess($processId, $process, $pipes);
                 return $this->buildResponse($needsInput, $prompt, 'completed', $outputBuffer);
             }
 
-            // Inactivity timeout check
             if (time() - $lastOutputTime > self::PROCESS_TIMEOUT) {
-                proc_terminate($this->process);
+                proc_terminate($process);
+                stream_set_blocking($pipes[1], true);
+                stream_set_blocking($pipes[2], true);
+
+                $remainingOutput = stream_get_contents($pipes[1]);
+                if ($remainingOutput !== false) {
+                    $outputBuffer .= $remainingOutput;
+                }
+
+                $remainingError = stream_get_contents($pipes[2]);
+                if ($remainingError !== false) {
+                    $outputBuffer .= $remainingError;
+                }
+
                 $outputBuffer .= "\nProcess timed out due to inactivity.";
-                $this->cleanupProcess();
+                $this->cleanupProcess($processId, $process, $pipes);
                 return $this->buildResponse(false, '', 'timeout', $outputBuffer);
             }
 
-            // Add a small sleep here to reduce CPU usage if no output
             usleep(100000);
         }
+
+        $status = proc_get_status($process);
+        if (!$status['running']) {
+            stream_set_blocking($pipes[1], true);
+            stream_set_blocking($pipes[2], true);
+
+            $remainingOutput = stream_get_contents($pipes[1]);
+            if ($remainingOutput !== false) {
+                $outputBuffer .= $remainingOutput;
+            }
+
+            $remainingError = stream_get_contents($pipes[2]);
+            if ($remainingError !== false) {
+                $outputBuffer .= $remainingError;
+            }
+
+            $this->cleanupProcess($processId, $process, $pipes);
+            return $this->buildResponse($needsInput, $prompt, 'completed', $outputBuffer);
+        }
+
+        return $this->buildResponse($needsInput, $prompt, 'running', $outputBuffer);
     }
 
 
@@ -159,18 +501,18 @@ final class CommandService
         return null;
     }
 
-    private function cleanupProcess(): void
+    private function cleanupProcess(string $processId, $process, array $pipes): void
     {
-        if (is_resource($this->process)) {
-            foreach ($this->pipes as $pipe) {
+        if (isset($this->processes[$processId])) {
+            foreach ($pipes as $pipe) {
                 if (is_resource($pipe)) {
-                    fclose($pipe);
+                    @fclose($pipe);
                 }
             }
-            proc_close($this->process);
-            $this->process = null;
-            $this->pipes = [];
-            $this->processId = null;
+            if (is_resource($process)) {
+                @proc_close($process);
+            }
+            unset($this->processes[$processId]);
         }
     }
 

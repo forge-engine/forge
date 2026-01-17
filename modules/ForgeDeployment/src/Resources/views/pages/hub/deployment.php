@@ -1,0 +1,791 @@
+<?php
+
+layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
+?>
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">Deployment</h1>
+      <p class="text-sm text-gray-500 mt-1">Manage and monitor your deployments</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <button id="refreshStatusBtn"
+        class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium transition-colors flex items-center gap-2">
+        <i class="fa-solid fa-rotate" id="refreshIcon"></i>
+        <span>Refresh</span>
+      </button>
+      <button id="editConfigBtn"
+        class="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 text-sm font-medium transition-colors">
+        Edit Config
+      </button>
+      <button id="manageSecretsBtn"
+        class="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 text-sm font-medium transition-colors">
+        Manage Secrets
+      </button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Deployment Status</h2>
+      <?php if ($status['has_state']): ?>
+        <div class="space-y-4">
+          <?php if ($status['server_ip']): ?>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Server IP</dt>
+              <dd class="mt-1 text-sm font-semibold text-gray-900" id="status-server-ip"><?= htmlspecialchars($status['server_ip']) ?></dd>
+            </div>
+          <?php endif; ?>
+          <?php if ($status['domain']): ?>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Domain</dt>
+              <dd class="mt-1 text-sm font-semibold text-gray-900" id="status-domain"><?= htmlspecialchars($status['domain']) ?></dd>
+            </div>
+          <?php endif; ?>
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <dt class="text-sm font-medium text-gray-500">Progress</dt>
+              <dd class="text-sm font-semibold text-gray-900" id="status-progress"><?= htmlspecialchars((string) $status['progress_percentage']) ?>%</dd>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-2">
+              <div class="bg-blue-600 h-2 rounded-full transition-all" id="status-progress-bar"
+                style="width: <?= htmlspecialchars((string) $status['progress_percentage']) ?>%"></div>
+            </div>
+          </div>
+          <div>
+            <dt class="text-sm font-medium text-gray-500 mb-2">Completed Steps</dt>
+            <dd class="text-sm text-gray-900" id="status-completed-steps">
+              <?php if (!empty($status['completed_steps'])): ?>
+                <ul class="space-y-1">
+                  <?php foreach ($status['completed_steps'] as $step): ?>
+                    <li class="flex items-center gap-2">
+                      <i class="fa-solid fa-check text-green-600"></i>
+                      <span><?= htmlspecialchars($step) ?></span>
+                    </li>
+                  <?php endforeach; ?>
+                </ul>
+              <?php else: ?>
+                <span class="text-gray-400">No steps completed yet</span>
+              <?php endif; ?>
+            </dd>
+          </div>
+          <?php if ($status['current_step']): ?>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Current Step</dt>
+              <dd class="mt-1 text-sm font-semibold text-blue-600" id="status-current-step"><?= htmlspecialchars($status['current_step']) ?></dd>
+            </div>
+          <?php endif; ?>
+          <?php if ($status['last_updated']): ?>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Last Updated</dt>
+              <dd class="mt-1 text-sm text-gray-900" id="status-last-updated"><?= htmlspecialchars($status['last_updated']) ?></dd>
+            </div>
+          <?php endif; ?>
+          <div>
+            <dt class="text-sm font-medium text-gray-500">Server Status</dt>
+            <dd class="mt-1">
+              <?php if ($status['is_accessible']): ?>
+                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800" id="status-accessible">Accessible</span>
+              <?php else: ?>
+                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800" id="status-accessible">Not Accessible</span>
+              <?php endif; ?>
+            </dd>
+          </div>
+        </div>
+      <?php else: ?>
+        <div class="text-center py-8">
+          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+          </svg>
+          <h3 class="mt-2 text-sm font-medium text-gray-900">No deployment state</h3>
+          <p class="mt-1 text-sm text-gray-500">Start a new deployment to see status here.</p>
+        </div>
+      <?php endif; ?>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Deployment Actions</h2>
+      <div class="space-y-3">
+        <button id="deployBtn"
+          class="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors flex items-center justify-center gap-2">
+          <i class="fa-solid fa-rocket"></i>
+          <span>Deploy</span>
+        </button>
+        <button id="deployAppBtn"
+          class="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors flex items-center justify-center gap-2">
+          <i class="fa-solid fa-upload"></i>
+          <span>Deploy App</span>
+        </button>
+        <button id="updateBtn"
+          class="w-full px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium transition-colors flex items-center justify-center gap-2">
+          <i class="fa-solid fa-arrow-up"></i>
+          <span>Update</span>
+        </button>
+        <button id="rollbackBtn"
+          class="w-full px-4 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium transition-colors flex items-center justify-center gap-2">
+          <i class="fa-solid fa-undo"></i>
+          <span>Rollback</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Configuration</h2>
+      <?php if ($has_config && $config): ?>
+        <div class="space-y-3">
+          <?php if (isset($config['server'])): ?>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Server</dt>
+              <dd class="mt-1 text-sm text-gray-900">
+                <?php if (isset($config['server']['name'])): ?>
+                  <span><?= htmlspecialchars($config['server']['name']) ?></span>
+                <?php endif; ?>
+                <?php if (isset($config['server']['region'])): ?>
+                  <span class="text-gray-400"> • <?= htmlspecialchars($config['server']['region']) ?></span>
+                <?php endif; ?>
+              </dd>
+            </div>
+          <?php endif; ?>
+          <?php if (isset($config['provision'])): ?>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Provision</dt>
+              <dd class="mt-1 text-sm text-gray-900">
+                <?php if (isset($config['provision']['php_version'])): ?>
+                  <span>PHP <?= htmlspecialchars($config['provision']['php_version']) ?></span>
+                <?php endif; ?>
+                <?php if (isset($config['provision']['database_type'])): ?>
+                  <span class="text-gray-400"> • <?= htmlspecialchars($config['provision']['database_type']) ?></span>
+                <?php endif; ?>
+              </dd>
+            </div>
+          <?php endif; ?>
+          <?php if (isset($config['deployment'])): ?>
+            <div>
+              <dt class="text-sm font-medium text-gray-500">Deployment</dt>
+              <dd class="mt-1 text-sm text-gray-900">
+                <?php if (isset($config['deployment']['domain'])): ?>
+                  <span><?= htmlspecialchars($config['deployment']['domain']) ?></span>
+                <?php endif; ?>
+              </dd>
+            </div>
+          <?php endif; ?>
+          <?php if ($config_path): ?>
+            <div class="pt-2 border-t border-gray-200">
+              <dt class="text-sm font-medium text-gray-500">Config File</dt>
+              <dd class="mt-1 text-xs text-gray-600 font-mono"><?= htmlspecialchars($config_path) ?></dd>
+            </div>
+          <?php endif; ?>
+        </div>
+      <?php else: ?>
+        <div class="text-center py-8">
+          <p class="text-sm text-gray-500">No configuration found</p>
+          <button onclick="editConfig()" class="mt-2 text-sm text-blue-600 hover:text-blue-800">Create Configuration</button>
+        </div>
+      <?php endif; ?>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+      <h2 class="text-lg font-semibold text-gray-900 mb-4">Recent Deployments</h2>
+      <?php if (!empty($recent_logs)): ?>
+        <div class="space-y-2">
+          <?php foreach ($recent_logs as $log): ?>
+            <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium text-gray-900 truncate"><?= htmlspecialchars($log['id']) ?></div>
+                <div class="text-xs text-gray-500"><?= date('M j, Y H:i:s', $log['modified']) ?></div>
+              </div>
+              <button onclick="viewLogs('<?= htmlspecialchars($log['id']) ?>')"
+                class="ml-2 px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded">
+                View
+              </button>
+            </div>
+          <?php endforeach; ?>
+        </div>
+      <?php else: ?>
+        <div class="text-center py-8">
+          <p class="text-sm text-gray-500">No deployment logs yet</p>
+        </div>
+      <?php endif; ?>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  let currentDeploymentId = null;
+
+  document.getElementById('refreshStatusBtn')?.addEventListener('click', async function () {
+    const button = this;
+    const icon = document.getElementById('refreshIcon');
+    const originalText = button.querySelector('span')?.textContent;
+
+    button.disabled = true;
+    if (icon) {
+      icon.classList.add('fa-spin');
+    }
+
+    try {
+      const response = await fetch('/hub/deployment/status', {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': window.csrfToken || ''
+        }
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        updateStatus(data.status);
+      }
+    } catch (error) {
+      console.error('Error refreshing status:', error);
+    } finally {
+      button.disabled = false;
+      if (icon) {
+        icon.classList.remove('fa-spin');
+      }
+    }
+  });
+
+  document.getElementById('deployBtn')?.addEventListener('click', () => executeDeployment('deploy'));
+  document.getElementById('deployAppBtn')?.addEventListener('click', () => executeDeployment('deploy-app'));
+  document.getElementById('updateBtn')?.addEventListener('click', () => executeDeployment('update'));
+  document.getElementById('rollbackBtn')?.addEventListener('click', () => executeDeployment('rollback'));
+  document.getElementById('editConfigBtn')?.addEventListener('click', () => editConfig());
+  document.getElementById('manageSecretsBtn')?.addEventListener('click', () => manageSecrets());
+
+  function updateStatus(status) {
+    if (!status.has_state) {
+      return;
+    }
+
+    if (status.server_ip) {
+      const el = document.getElementById('status-server-ip');
+      if (el) el.textContent = status.server_ip;
+    }
+    if (status.domain) {
+      const el = document.getElementById('status-domain');
+      if (el) el.textContent = status.domain;
+    }
+    if (status.progress_percentage !== undefined) {
+      const el = document.getElementById('status-progress');
+      const bar = document.getElementById('status-progress-bar');
+      if (el) el.textContent = status.progress_percentage + '%';
+      if (bar) bar.style.width = status.progress_percentage + '%';
+    }
+    if (status.current_step) {
+      const el = document.getElementById('status-current-step');
+      if (el) el.textContent = status.current_step;
+    }
+    if (status.last_updated) {
+      const el = document.getElementById('status-last-updated');
+      if (el) el.textContent = status.last_updated;
+    }
+    if (status.is_accessible !== undefined) {
+      const el = document.getElementById('status-accessible');
+      if (el) {
+        el.textContent = status.is_accessible ? 'Accessible' : 'Not Accessible';
+        el.className = status.is_accessible
+          ? 'px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800'
+          : 'px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800';
+      }
+    }
+  }
+
+  async function executeDeployment(type) {
+    if (!confirm(`Are you sure you want to ${type}? This may take several minutes.`)) {
+      return;
+    }
+
+    const endpoint = `/hub/deployment/${type}`;
+
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': window.csrfToken || ''
+        },
+        body: JSON.stringify({ args: {} })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        currentDeploymentId = data.deployment_id;
+        alert(`Deployment started successfully. ID: ${data.deployment_id}`);
+        viewLogs(data.deployment_id);
+      } else {
+        alert('Deployment failed: ' + (data.message || 'Unknown error'));
+      }
+    } catch (error) {
+      alert('Error starting deployment: ' + error.message);
+    }
+  }
+
+  function editConfig() {
+    const modal = document.getElementById('configModal');
+    if (modal) {
+      modal.classList.remove('hidden');
+    }
+  }
+
+  function manageSecrets() {
+    const modal = document.getElementById('secretsModal');
+    if (modal) {
+      modal.classList.remove('hidden');
+    }
+  }
+
+  function viewLogs(deploymentId) {
+    currentDeploymentId = deploymentId;
+    const modal = document.getElementById('logsModal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      loadLogs(deploymentId);
+    }
+  }
+
+  async function loadLogs(deploymentId) {
+    const logsContent = document.getElementById('logsContent');
+    if (!logsContent) return;
+
+    try {
+      const response = await fetch(`/hub/deployment/logs/${deploymentId}`, {
+        method: 'GET',
+        headers: {
+          'X-CSRF-Token': window.csrfToken || ''
+        }
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        logsContent.textContent = data.logs || 'No logs available';
+        logsContent.scrollTop = logsContent.scrollHeight;
+      } else {
+        logsContent.textContent = 'Failed to load logs: ' + (data.message || 'Unknown error');
+      }
+    } catch (error) {
+      logsContent.textContent = 'Error loading logs: ' + error.message;
+    }
+  }
+</script>
+
+<div id="configModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+  <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" onclick="closeConfigModal()"></div>
+  <div class="relative min-h-screen flex items-center justify-center p-4 sm:p-6">
+    <div class="relative w-full max-w-4xl bg-white rounded-lg shadow-xl" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <h3 class="text-xl font-semibold text-gray-900">Deployment Configuration</h3>
+        <button onclick="closeConfigModal()"
+          class="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 rounded-lg p-1">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="px-6 py-6">
+        <form id="configForm" class="space-y-6">
+          <div>
+            <h4 class="text-lg font-medium text-gray-900 mb-4">Server Configuration</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Server Name</label>
+                <input type="text" name="server[name]" id="serverName"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Region</label>
+                <input type="text" name="server[region]" id="serverRegion"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Size</label>
+                <input type="text" name="server[size]" id="serverSize"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Image</label>
+                <input type="text" name="server[image]" id="serverImage"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm">
+              </div>
+            </div>
+          </div>
+          <div>
+            <h4 class="text-lg font-medium text-gray-900 mb-4">Provision Configuration</h4>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">PHP Version</label>
+                <input type="text" name="provision[php_version]" id="phpVersion"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Database Type</label>
+                <input type="text" name="provision[database_type]" id="databaseType"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Database Version</label>
+                <input type="text" name="provision[database_version]" id="databaseVersion"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Database Name</label>
+                <input type="text" name="provision[database_name]" id="databaseName"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm">
+              </div>
+            </div>
+          </div>
+          <div>
+            <h4 class="text-lg font-medium text-gray-900 mb-4">Deployment Configuration</h4>
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Domain</label>
+                <input type="text" name="deployment[domain]" id="deploymentDomain"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">SSL Email</label>
+                <input type="email" name="deployment[ssl_email]" id="sslEmail"
+                  class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm">
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+            <button type="button" onclick="closeConfigModal()"
+              class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+              Cancel
+            </button>
+            <button type="submit"
+              class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+              Save Configuration
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="logsModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+  <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" onclick="closeLogsModal()"></div>
+  <div class="relative min-h-screen flex items-center justify-center p-4 sm:p-6">
+    <div class="relative w-full max-w-4xl bg-white rounded-lg shadow-xl" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <h3 class="text-xl font-semibold text-gray-900">Deployment Logs</h3>
+        <div class="flex items-center gap-2">
+          <button id="refreshLogsBtn" onclick="refreshLogs()"
+            class="px-3 py-1 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors">
+            <i class="fa-solid fa-rotate"></i> Refresh
+          </button>
+          <button onclick="closeLogsModal()"
+            class="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 rounded-lg p-1">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div class="px-6 py-6">
+        <div id="logsContent"
+          class="bg-gray-900 text-gray-100 font-mono text-sm p-4 rounded-lg max-h-96 overflow-y-auto whitespace-pre-wrap"
+          style="min-height: 200px;">
+          Loading logs...
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="secretsModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+  <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" onclick="closeSecretsModal()"></div>
+  <div class="relative min-h-screen flex items-center justify-center p-4 sm:p-6">
+    <div class="relative w-full max-w-2xl bg-white rounded-lg shadow-xl" onclick="event.stopPropagation()">
+      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+        <h3 class="text-xl font-semibold text-gray-900">Manage Secrets</h3>
+        <button onclick="closeSecretsModal()"
+          class="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 rounded-lg p-1">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+          </svg>
+        </button>
+      </div>
+      <div class="px-6 py-6">
+        <form id="secretsForm" class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">DigitalOcean API Token</label>
+            <div class="flex items-center gap-2">
+              <input type="password" name="digitalocean_api_token" id="digitaloceanToken"
+                class="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                placeholder="Enter API token or leave blank to keep current">
+              <button type="button" onclick="togglePassword('digitaloceanToken')"
+                class="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors">
+                <i class="fa-solid fa-eye" id="digitaloceanTokenIcon"></i>
+              </button>
+            </div>
+            <p class="mt-1 text-xs text-gray-500">Leave blank to keep current value (masked as ••••••••)</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Cloudflare API Token</label>
+            <div class="flex items-center gap-2">
+              <input type="password" name="cloudflare_api_token" id="cloudflareToken"
+                class="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                placeholder="Enter API token or leave blank to keep current">
+              <button type="button" onclick="togglePassword('cloudflareToken')"
+                class="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors">
+                <i class="fa-solid fa-eye" id="cloudflareTokenIcon"></i>
+              </button>
+            </div>
+            <p class="mt-1 text-xs text-gray-500">Leave blank to keep current value (masked as ••••••••)</p>
+          </div>
+          <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <div class="flex items-start gap-2">
+              <i class="fa-solid fa-exclamation-triangle text-yellow-600 mt-0.5"></i>
+              <div class="text-sm text-yellow-800">
+                <p class="font-medium mb-1">Security Notice</p>
+                <p>Secrets are stored securely. Only enter new values if you need to update them. Existing values are masked for security.</p>
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+            <button type="button" onclick="closeSecretsModal()"
+              class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+              Cancel
+            </button>
+            <button type="submit"
+              class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+              Save Secrets
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  async function loadConfig() {
+    try {
+      const response = await fetch('/hub/deployment/config', {
+        method: 'GET',
+        headers: {
+          'X-CSRF-Token': window.csrfToken || ''
+        }
+      });
+      const data = await response.json();
+      if (data.success && data.config) {
+        const config = data.config;
+        if (config.server) {
+          if (config.server.name) document.getElementById('serverName').value = config.server.name;
+          if (config.server.region) document.getElementById('serverRegion').value = config.server.region;
+          if (config.server.size) document.getElementById('serverSize').value = config.server.size;
+          if (config.server.image) document.getElementById('serverImage').value = config.server.image;
+        }
+        if (config.provision) {
+          if (config.provision.php_version) document.getElementById('phpVersion').value = config.provision.php_version;
+          if (config.provision.database_type) document.getElementById('databaseType').value = config.provision.database_type;
+          if (config.provision.database_version) document.getElementById('databaseVersion').value = config.provision.database_version;
+          if (config.provision.database_name) document.getElementById('databaseName').value = config.provision.database_name;
+        }
+        if (config.deployment) {
+          if (config.deployment.domain) document.getElementById('deploymentDomain').value = config.deployment.domain;
+          if (config.deployment.ssl_email) document.getElementById('sslEmail').value = config.deployment.ssl_email;
+        }
+      }
+    } catch (error) {
+      console.error('Error loading config:', error);
+    }
+  }
+
+  function closeConfigModal() {
+    const modal = document.getElementById('configModal');
+    if (modal) modal.classList.add('hidden');
+  }
+
+  document.getElementById('configForm')?.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const config = { server: {}, provision: {}, deployment: {} };
+    for (const [key, value] of formData.entries()) {
+      const parts = key.split('[');
+      if (parts.length === 2) {
+        const section = parts[0];
+        const field = parts[1].replace(']', '');
+        if (section === 'server' || section === 'provision' || section === 'deployment') {
+          config[section][field] = value;
+        }
+      }
+    }
+    try {
+      const response = await fetch('/hub/deployment/config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': window.csrfToken || ''
+        },
+        body: JSON.stringify({ config })
+      });
+      const data = await response.json();
+      if (data.success) {
+        alert('Configuration saved successfully');
+        closeConfigModal();
+        location.reload();
+      } else {
+        alert('Failed to save configuration: ' + (data.message || 'Unknown error'));
+      }
+    } catch (error) {
+      alert('Error saving configuration: ' + error.message);
+    }
+  });
+
+  document.getElementById('configModal')?.addEventListener('click', function (e) {
+    if (e.target === this) closeConfigModal();
+  });
+
+  const editConfigBtn = document.getElementById('editConfigBtn');
+  if (editConfigBtn) {
+    editConfigBtn.addEventListener('click', function () {
+      const modal = document.getElementById('configModal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        loadConfig();
+      }
+    });
+  }
+
+  let currentLogsDeploymentId = null;
+
+  function closeLogsModal() {
+    const modal = document.getElementById('logsModal');
+    if (modal) {
+      modal.classList.add('hidden');
+      currentLogsDeploymentId = null;
+    }
+  }
+
+  function refreshLogs() {
+    if (currentLogsDeploymentId) {
+      loadLogs(currentLogsDeploymentId);
+    }
+  }
+
+  async function loadLogs(deploymentId) {
+    currentLogsDeploymentId = deploymentId;
+    const logsContent = document.getElementById('logsContent');
+    if (!logsContent) return;
+    logsContent.textContent = 'Loading logs...';
+    try {
+      const response = await fetch(`/hub/deployment/logs/${deploymentId}`, {
+        method: 'GET',
+        headers: { 'X-CSRF-Token': window.csrfToken || '' }
+      });
+      const data = await response.json();
+      if (data.success) {
+        logsContent.textContent = data.logs || 'No logs available';
+        logsContent.scrollTop = logsContent.scrollHeight;
+      } else {
+        logsContent.textContent = 'Failed to load logs: ' + (data.message || 'Unknown error');
+      }
+    } catch (error) {
+      logsContent.textContent = 'Error loading logs: ' + error.message;
+    }
+  }
+
+  document.getElementById('logsModal')?.addEventListener('click', function (e) {
+    if (e.target === this) closeLogsModal();
+  });
+
+  window.viewLogs = function (deploymentId) {
+    const modal = document.getElementById('logsModal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      loadLogs(deploymentId);
+    }
+  };
+
+  async function loadSecrets() {
+    try {
+      const response = await fetch('/hub/deployment/secrets', {
+        method: 'GET',
+        headers: { 'X-CSRF-Token': window.csrfToken || '' }
+      });
+      const data = await response.json();
+      if (data.success && data.secrets) {
+        const digitaloceanInput = document.getElementById('digitaloceanToken');
+        const cloudflareInput = document.getElementById('cloudflareToken');
+        if (digitaloceanInput && data.secrets.digitalocean_api_token) {
+          digitaloceanInput.placeholder = 'Current value: ' + data.secrets.digitalocean_api_token;
+        }
+        if (cloudflareInput && data.secrets.cloudflare_api_token) {
+          cloudflareInput.placeholder = 'Current value: ' + data.secrets.cloudflare_api_token;
+        }
+      }
+    } catch (error) {
+      console.error('Error loading secrets:', error);
+    }
+  }
+
+  function togglePassword(inputId) {
+    const input = document.getElementById(inputId);
+    const icon = document.getElementById(inputId + 'Icon');
+    if (input && icon) {
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+      } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+      }
+    }
+  }
+
+  function closeSecretsModal() {
+    const modal = document.getElementById('secretsModal');
+    if (modal) modal.classList.add('hidden');
+  }
+
+  document.getElementById('secretsForm')?.addEventListener('submit', async function (e) {
+    e.preventDefault();
+    const formData = new FormData(this);
+    const secrets = {
+      digitalocean_api_token: formData.get('digitalocean_api_token') || '••••••••',
+      cloudflare_api_token: formData.get('cloudflare_api_token') || '••••••••',
+    };
+    try {
+      const response = await fetch('/hub/deployment/secrets', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': window.csrfToken || ''
+        },
+        body: JSON.stringify({ secrets })
+      });
+      const data = await response.json();
+      if (data.success) {
+        alert('Secrets updated successfully');
+        closeSecretsModal();
+      } else {
+        alert('Failed to update secrets: ' + (data.message || 'Unknown error'));
+      }
+    } catch (error) {
+      alert('Error updating secrets: ' + error.message);
+    }
+  });
+
+  document.getElementById('secretsModal')?.addEventListener('click', function (e) {
+    if (e.target === this) closeSecretsModal();
+  });
+
+  const manageSecretsBtn = document.getElementById('manageSecretsBtn');
+  if (manageSecretsBtn) {
+    manageSecretsBtn.addEventListener('click', function () {
+      const modal = document.getElementById('secretsModal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        loadSecrets();
+      }
+    });
+  }
+</script>

@@ -48,7 +48,7 @@ final class QueueController
   public int $currentPage = 1;
 
   #[State]
-  public int $perPage = 20;
+  public int $perPage = 10;
 
   #[State]
   public array $selectedJobs = [];

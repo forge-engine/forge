@@ -13,9 +13,11 @@ use Forge\CLI\Traits\Wizard;
 #[Cli(
     command: 'queue:work',
     description: 'Process queued events',
-    usage: 'queue:work [--workers=1]',
+    usage: 'queue:work [--workers=1] [--queues=queue1,queue2]',
     examples: [
         'queue:work --workers=2',
+        'queue:work --queues=emails,notifications',
+        'queue:work --workers=2 --queues=emails,notifications',
         'queue:work  (starts wizard)'
     ]
 )]
@@ -34,6 +36,14 @@ final class QueueWorkCommand extends Command
     )]
     private int $workers = 1;
 
+    #[Arg(
+        name: 'queues',
+        description: 'Comma-separated list of queue names (overrides QUEUE_LIST)',
+        default: null,
+        required: false
+    )]
+    private ?string $queues = null;
+
     public function __construct(private readonly EventDispatcher $dispatcher)
     {
     }
@@ -43,7 +53,17 @@ final class QueueWorkCommand extends Command
         $this->wizard($args);
 
         $workers = max(1, $this->workers);
-        $queues = env('QUEUE_LIST', ['default']);
+
+        if ($this->queues !== null && !empty($this->queues)) {
+            $queues = array_map('trim', explode(',', $this->queues));
+            $queues = array_filter($queues, fn($q) => !empty($q));
+            if (empty($queues)) {
+                $this->error('Invalid queue list provided');
+                return 1;
+            }
+        } else {
+            $queues = env('QUEUE_LIST', ['default']);
+        }
 
         pcntl_async_signals(true);
         pcntl_signal(SIGINT, fn() => self::$shutdown = true);
@@ -60,7 +80,7 @@ final class QueueWorkCommand extends Command
                 exit(0);
             }
         }
-        
+
         while (pcntl_wait($status) !== -1) {
         }
 

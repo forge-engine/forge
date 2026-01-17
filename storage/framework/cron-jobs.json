@@ -1,0 +1,26 @@
+{
+    "cron_jobs": {
+        "cron_696bb764511dc7.84025821": {
+            "id": "cron_696bb764511dc7.84025821",
+            "name": "App Greet",
+            "command": "app:testing:greet --name=jeremias",
+            "command_type": "forge",
+            "normalized_command": "cd '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3' && '/opt/homebrew/bin/php' '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/forge.php' app:testing:greet --name=jeremias >> '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/storage/framework/cron-outputs/cron_696bb764511dc7.84025821.log' 2>&1",
+            "schedule": {
+                "mode": "simple",
+                "seconds": "*",
+                "minutes": "1",
+                "hours": "*",
+                "days": "*",
+                "months": "*"
+            },
+            "cron_expression": "1 * * * *",
+            "enabled": false,
+            "created_at": "2026-01-17 16:23:00",
+            "updated_at": "2026-01-17 16:32:42",
+            "last_run": "2026-01-17 16:29:21",
+            "last_output": null,
+            "output_file": "/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/storage/framework/cron-outputs/cron_696bb764511dc7.84025821.log"
+        }
+    }
+}
