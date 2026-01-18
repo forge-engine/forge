@@ -4,18 +4,13 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
-use App\Modules\ForgeAuth\Models\User;
 use App\Modules\ForgeAuth\Repositories\UserRepository;
 use App\Modules\ForgeAuth\Services\ForgeAuthService;
 use App\Modules\ForgeAuth\Validation\ForgeAuthValidate;
-use App\Modules\ForgeMultiTenant\Attributes\TenantScope;
 use App\Modules\ForgeNotification\Services\ForgeNotificationService;
 use App\Modules\ForgeSqlOrm\ORM\QueryBuilder;
 use App\Services\UserService;
 use Forge\Core\Contracts\Database\DatabaseConnectionInterface;
-use Forge\Core\Contracts\NotificationInterface;
-use Forge\Core\Debug\Metrics;
-use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Helpers\Flash;
 use Forge\Core\Helpers\Redirect;
 use Forge\Core\Http\Attributes\Middleware;
@@ -27,7 +22,6 @@ use Forge\Traits\ControllerHelper;
 use Forge\Traits\PaginationHelper;
 use Forge\Traits\SecurityHelper;
 
-#[TenantScope("central")]
 #[Middleware("web")]
 final class HomeController
 {
@@ -49,7 +43,6 @@ final class HomeController
   #[Route("/")]
   public function index(Request $request): Response
   {
-    Metrics::start("db_load_one_record_test");
 
     $paginationParams = $this->getPaginationParamsForApi($request);
 
@@ -65,21 +58,6 @@ final class HomeController
         'queryParams' => $paginationParams['queryParams'],
       ]
     );
-
-    //        $jhon = new User();
-    //        $jhon->email = 'test@example.com';
-    //        $jhon->password = password_hash('test', PASSWORD_DEFAULT);
-    //        $jhon->status = 'active';
-    //        $jhon->identifier = 'test';
-    //        $jhon->metadata = [
-    //            "notifications" => [
-    //                "email" => true,
-    //                "mentions" => false
-    //            ]
-    //        ];
-    //        $jhon->save();
-    //dd($user);
-    Metrics::stop("db_load_one_record_test");
 
     $data = [
       "title" => "Welcome to Forge Framework",
@@ -200,7 +178,6 @@ final class HomeController
   #[Route("/examples/raw-sql")]
   public function rawSqlExamples(): Response
   {
-    Metrics::start("raw_sql_examples");
     $examples = [];
 
     $examples['forge_database_sql'] = [
@@ -221,8 +198,6 @@ final class HomeController
       'forge_sql_orm_commit' => $this->forgeSqlOrmTransactionCommit(),
       'forge_sql_orm_rollback' => $this->forgeSqlOrmTransactionRollback(),
     ];
-
-    Metrics::stop("raw_sql_examples");
 
     return $this->jsonResponse($examples);
   }

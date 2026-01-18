@@ -33,14 +33,6 @@ return array (
     'mtime' => 1768601269,
     'modulePath' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/modules/ForgeErrorHandler',
   ),
-  'App\\Modules\\ForgeMultiTenant\\ForgeMultiTenantModule' => 
-  array (
-    'hubItems' => 
-    array (
-    ),
-    'mtime' => 1768601152,
-    'modulePath' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/modules/ForgeMultiTenant',
-  ),
   'App\\Modules\\ForgeDebugBar\\DebugBarModule' => 
   array (
     'hubItems' => 

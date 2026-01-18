@@ -9,4 +9,7 @@ return [
   ],
   'env' => env('APP_ENV', 'development'),
   'disabled_modules' => env('DISABLED_MODULES', []),
+  'metrics' => [
+    'enabled' => env('APP_METRICS_ENABLED', false),
+  ],
 ];
