@@ -14,7 +14,7 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
     </button>
   </div>
 
-  <div id="workersList" class="bg-white rounded-lg shadow-sm overflow-hidden">
+  <div id="workersList" class="bg-white rounded-lg shadow-sm overflow-x-auto">
     <?php if (empty($workers)): ?>
       <div class="p-12 text-center">
         <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

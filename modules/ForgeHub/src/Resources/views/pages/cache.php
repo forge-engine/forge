@@ -8,7 +8,7 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
     <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div>
         <dt class="text-sm font-medium text-gray-500">Driver</dt>
-        <dd class="mt-1 text-sm text-gray-900 font-mono"><?= htmlspecialchars($stats['driver']) ?></dd>
+        <dd class="mt-1 text-sm text-gray-900 font-mono break-all"><?= htmlspecialchars($stats['driver']) ?></dd>
       </div>
       <div>
         <dt class="text-sm font-medium text-gray-500">Keys Count</dt>
@@ -29,7 +29,7 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
       <div class="border-t border-gray-200 pt-4">
         <h3 class="text-sm font-medium text-gray-700 mb-2">Clear by Tag</h3>
         <p class="text-sm text-gray-500 mb-3">Remove cached data associated with a specific tag.</p>
-        <form id="clearTagForm" class="flex gap-2">
+        <form id="clearTagForm" class="flex flex-wrap gap-2">
           <?= component(name: 'ForgeHub:input', props: ['type' => 'text', 'name' => 'tag', 'id' => 'tag', 'placeholder' => 'Enter tag name', 'class' => 'flex-1']) ?>
           <?= component(name: 'ForgeHub:button', props: ['type' => 'submit', 'variant' => 'primary', 'children' => 'Clear Tag']) ?>
         </form>

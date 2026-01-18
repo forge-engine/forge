@@ -3,15 +3,15 @@
 layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
 ?>
 <div class="space-y-6">
-  <div class="flex items-center justify-between">
+  <div class="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
     <div>
       <h1 class="text-2xl font-bold text-gray-900">Deployment</h1>
-      <p class="text-sm text-gray-500 mt-1">Manage and monitor your deployments</p>
+      <p class="mt-1 text-sm text-gray-500">Manage and monitor your deployments</p>
     </div>
-    <div class="flex items-center gap-2">
+    <div class="flex flex-wrap gap-2 items-center w-full sm:w-auto sm:justify-end">
       <?php $isProduction = $is_production ?? false; ?>
       <button id="refreshStatusBtn"
-        class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm font-medium transition-colors flex items-center gap-2">
+        class="flex gap-2 items-center px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg transition-colors hover:bg-gray-200">
         <i class="fa-solid fa-rotate" id="refreshIcon"></i>
         <span>Refresh</span>
       </button>
@@ -26,9 +26,9 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
     </div>
   </div>
 
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <div class="bg-white rounded-xl border border-gray-200 p-6">
-      <h2 class="text-lg font-semibold text-gray-900 mb-4">Deployment Status</h2>
+  <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
+    <div class="p-6 bg-white rounded-xl border border-gray-200">
+      <h2 class="mb-4 text-lg font-semibold text-gray-900">Deployment Status</h2>
       <?php if ($status['has_state']): ?>
         <div class="space-y-4">
           <?php if ($status['server_ip']): ?>
@@ -49,7 +49,7 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
                   $domainUrl = 'https://' . htmlspecialchars($status['domain']);
                   ?>
                   <a href="<?= $domainUrl ?>" target="_blank" rel="noopener noreferrer"
-                    class="text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1">
+                    class="inline-flex gap-1 items-center text-blue-600 hover:text-blue-800 hover:underline">
                     <?= htmlspecialchars($status['domain']) ?>
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -63,25 +63,25 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
             </div>
           <?php endif; ?>
           <div>
-            <div class="flex items-center justify-between mb-2">
+            <div class="flex justify-between items-center mb-2">
               <dt class="text-sm font-medium text-gray-500">Progress</dt>
               <dd class="text-sm font-semibold text-gray-900" id="status-progress">
                 <?= htmlspecialchars((string) $status['progress_percentage']) ?>%
               </dd>
             </div>
-            <div class="w-full bg-gray-200 rounded-full h-2">
-              <div class="bg-blue-600 h-2 rounded-full transition-all" id="status-progress-bar"
+            <div class="w-full h-2 bg-gray-200 rounded-full">
+              <div class="h-2 bg-blue-600 rounded-full transition-all" id="status-progress-bar"
                 style="width: <?= htmlspecialchars((string) $status['progress_percentage']) ?>%"></div>
             </div>
           </div>
           <div>
-            <dt class="text-sm font-medium text-gray-500 mb-2">Completed Steps</dt>
+            <dt class="mb-2 text-sm font-medium text-gray-500">Completed Steps</dt>
             <dd class="text-sm text-gray-900" id="status-completed-steps">
               <?php if (!empty($status['completed_steps'])): ?>
                 <ul class="space-y-1">
                   <?php foreach ($status['completed_steps'] as $step): ?>
-                    <li class="flex items-center gap-2">
-                      <i class="fa-solid fa-check text-green-600"></i>
+                    <li class="flex gap-2 items-center">
+                      <i class="text-green-600 fa-solid fa-check"></i>
                       <span><?= htmlspecialchars($step) ?></span>
                     </li>
                   <?php endforeach; ?>
@@ -111,18 +111,18 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
             <dt class="text-sm font-medium text-gray-500">Server Status</dt>
             <dd class="mt-1">
               <?php if ($status['is_accessible']): ?>
-                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800"
+                <span class="px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full"
                   id="status-accessible">Accessible</span>
               <?php else: ?>
-                <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800"
+                <span class="px-2 py-1 text-xs font-semibold text-red-800 bg-red-100 rounded-full"
                   id="status-accessible">Not Accessible</span>
               <?php endif; ?>
             </dd>
           </div>
         </div>
       <?php else: ?>
-        <div class="text-center py-8">
-          <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="py-8 text-center">
+          <svg class="mx-auto w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
               d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
           </svg>
@@ -132,23 +132,23 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
       <?php endif; ?>
     </div>
 
-    <div class="bg-white rounded-xl border border-gray-200 p-6">
-      <div class="flex items-center justify-between mb-4">
+    <div class="p-6 bg-white rounded-xl border border-gray-200">
+      <div class="flex justify-between items-center mb-4">
         <h2 class="text-lg font-semibold text-gray-900">Deployment Actions</h2>
         <button id="viewDeploymentOutputBtn" onclick="openDeploymentOutputModalFromButton()"
-          class="hidden px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors flex items-center gap-1.5">
+          class="flex hidden gap-1.5 items-center px-3 py-1.5 text-sm text-gray-600 rounded transition-colors hover:text-gray-900 hover:bg-gray-100">
           <i class="fa-solid fa-terminal"></i>
           <span>View Console</span>
         </button>
       </div>
-      <div class="mb-4 p-3 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
-        <p class="font-medium mb-1">PHP Command Info:</p>
+      <div class="p-3 mb-4 text-xs text-blue-800 bg-blue-50 rounded border border-blue-200">
+        <p class="mb-1 font-medium">PHP Command Info:</p>
         <p class="text-blue-700" id="phpInfoDisplay">
           <?php if (isset($php_info) && !empty($php_info)): ?>
             <?php if ($php_info['is_default'] ?? false): ?>
-              Using default PHP CLI command (<code class="bg-blue-100 px-1 rounded">php</code>).
+              Using default PHP CLI command (<code class="px-1 bg-blue-100 rounded">php</code>).
             <?php else: ?>
-              Using PHP at <code class="bg-blue-100 px-1 rounded"><?= htmlspecialchars($php_info['path'] ?? 'php') ?></code>
+              Using PHP at <code class="px-1 bg-blue-100 rounded"><?= htmlspecialchars($php_info['path'] ?? 'php') ?></code>
               <?php if (!empty($php_info['version'] ?? '')): ?>
                 (version <?= htmlspecialchars($php_info['version']) ?>)
               <?php endif; ?>
@@ -158,10 +158,10 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
           <?php endif; ?>
         </p>
         <div class="mt-2">
-          <label for="phpExecutableSelect" class="block text-xs font-medium text-blue-900 mb-1">Select PHP
+          <label for="phpExecutableSelect" class="block mb-1 text-xs font-medium text-blue-900">Select PHP
             Executable:</label>
           <select id="phpExecutableSelect"
-            class="w-full px-2 py-1.5 text-xs border border-blue-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-white">
+            class="px-2 py-1.5 w-full text-xs bg-white rounded border border-blue-300 focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
             <option value="">Loading...</option>
           </select>
         </div>
@@ -177,26 +177,21 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
           <i class="fa-solid fa-rocket"></i>
           <span><?= $isProduction ? 'Deployed' : 'Deploy' ?></span>
         </button>
-        <button id="deployAppBtn" <?= $deployDisabled ?>
-          class="w-full px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-medium transition-colors flex items-center justify-center gap-2 opacity-50 cursor-not-allowed"
-          disabled>
-          <i class="fa-solid fa-upload"></i>
-          <span>Deploy App</span>
-        </button>
+
         <button id="updateBtn" <?= $deployDisabled ?>
-          class="w-full px-4 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm font-medium transition-colors flex items-center justify-center gap-2 opacity-50 cursor-not-allowed"
+          class="flex gap-2 justify-center items-center px-4 py-3 w-full text-sm font-medium text-white bg-purple-600 rounded-lg opacity-50 transition-colors cursor-not-allowed hover:bg-purple-700"
           disabled>
           <i class="fa-solid fa-arrow-up"></i>
           <span>Update</span>
         </button>
         <button id="rollbackBtn" <?= $deployDisabled ?>
-          class="w-full px-4 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 text-sm font-medium transition-colors flex items-center justify-center gap-2 opacity-50 cursor-not-allowed"
+          class="flex gap-2 justify-center items-center px-4 py-3 w-full text-sm font-medium text-white bg-orange-600 rounded-lg opacity-50 transition-colors cursor-not-allowed hover:bg-orange-700"
           disabled>
           <i class="fa-solid fa-undo"></i>
           <span>Rollback</span>
         </button>
         <button id="deployEnvBtn" <?= $deployDisabled ?>
-          class="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium transition-colors flex items-center justify-center gap-2 opacity-50 cursor-not-allowed"
+          class="flex gap-2 justify-center items-center px-4 py-3 w-full text-sm font-medium text-white bg-indigo-600 rounded-lg opacity-50 transition-colors cursor-not-allowed hover:bg-indigo-700"
           disabled>
           <i class="fa-solid fa-file-code"></i>
           <span>Deploy Env</span>
@@ -204,8 +199,8 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
       </div>
     </div>
 
-    <div class="bg-white rounded-xl border border-gray-200 p-6">
-      <h2 class="text-lg font-semibold text-gray-900 mb-4">Configuration</h2>
+    <div class="p-6 bg-white rounded-xl border border-gray-200">
+      <h2 class="mb-4 text-lg font-semibold text-gray-900">Configuration</h2>
       <?php if ($has_config && $config): ?>
         <div class="space-y-3">
           <?php if (isset($config['server'])): ?>
@@ -247,12 +242,12 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
           <?php if ($config_path): ?>
             <div class="pt-2 border-t border-gray-200">
               <dt class="text-sm font-medium text-gray-500">Config File</dt>
-              <dd class="mt-1 text-xs text-gray-600 font-mono"><?= htmlspecialchars($config_path) ?></dd>
+              <dd class="mt-1 font-mono text-xs text-gray-600"><?= htmlspecialchars($config_path) ?></dd>
             </div>
           <?php endif; ?>
         </div>
       <?php else: ?>
-        <div class="text-center py-8">
+        <div class="py-8 text-center">
           <p class="text-sm text-gray-500">No configuration found</p>
           <button onclick="editConfig()" class="mt-2 text-sm text-blue-600 hover:text-blue-800">Create
             Configuration</button>
@@ -261,8 +256,8 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
     </div>
 
     <?php if ($has_config && $config && isset($config['deployment'])): ?>
-      <div class="bg-white rounded-xl border border-gray-200 p-6">
-        <div class="flex items-center justify-between mb-4">
+      <div class="p-6 bg-white rounded-xl border border-gray-200">
+        <div class="flex justify-between items-center mb-4">
           <h2 class="text-lg font-semibold text-gray-900">Post-Deployment Commands</h2>
           <?php $isProduction = $is_production ?? false; ?>
           <button id="editPostCommandsBtn" <?= $isProduction ? 'disabled' : '' ?>
@@ -271,23 +266,23 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
           </button>
         </div>
         <?php if (!empty($config['deployment']['post_deployment_commands'])): ?>
-          <div class="space-y-2 max-h-64 overflow-y-auto pr-2" id="postCommandsDisplay">
+          <div class="overflow-y-auto pr-2 space-y-2 max-h-64" id="postCommandsDisplay">
             <?php foreach ($config['deployment']['post_deployment_commands'] as $cmd): ?>
-              <div class="flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-200">
-                <i class="fa-solid fa-terminal text-gray-400 text-xs"></i>
-                <span class="text-sm text-gray-900 font-mono"><?= htmlspecialchars($cmd) ?></span>
+              <div class="flex gap-2 items-center p-2 bg-gray-50 rounded border border-gray-200">
+                <i class="text-xs text-gray-400 fa-solid fa-terminal"></i>
+                <span class="font-mono text-sm text-gray-900"><?= htmlspecialchars($cmd) ?></span>
               </div>
             <?php endforeach; ?>
           </div>
         <?php else: ?>
-          <div class="text-center py-4" id="postCommandsDisplay">
+          <div class="py-4 text-center" id="postCommandsDisplay">
             <p class="text-sm text-gray-500">No post-deployment commands configured</p>
           </div>
         <?php endif; ?>
       </div>
 
-      <div class="bg-white rounded-xl border border-gray-200 p-6">
-        <div class="flex items-center justify-between mb-4">
+      <div class="p-6 bg-white rounded-xl border border-gray-200">
+        <div class="flex justify-between items-center mb-4">
           <h2 class="text-lg font-semibold text-gray-900">Environment Variables</h2>
           <?php $isProduction = $is_production ?? false; ?>
           <button id="editEnvVarsBtn" <?= $isProduction ? 'disabled' : '' ?>
@@ -296,49 +291,49 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
           </button>
         </div>
         <?php if (!empty($config['deployment']['env_vars'])): ?>
-          <div class="space-y-2 max-h-64 overflow-y-auto pr-2" id="envVarsDisplay">
+          <div class="overflow-y-auto pr-2 space-y-2 max-h-64" id="envVarsDisplay">
             <?php foreach ($config['deployment']['env_vars'] as $key => $value): ?>
               <?php
               $displayValue = is_array($value)
                 ? '[' . implode(', ', array_map(fn($v) => '"' . addslashes((string) $v) . '"', $value)) . ']'
                 : (string) $value;
               ?>
-              <div class="flex items-center justify-between p-2 bg-gray-50 rounded border border-gray-200">
-                <div class="flex items-center gap-2 flex-1 min-w-0">
+              <div class="flex justify-between items-center p-2 bg-gray-50 rounded border border-gray-200">
+                <div class="flex flex-1 gap-2 items-center min-w-0">
                   <span class="text-sm font-medium text-gray-700"><?= htmlspecialchars($key) ?></span>
                   <span class="text-sm text-gray-400">=</span>
-                  <span class="text-sm text-gray-900 font-mono truncate"><?= htmlspecialchars($displayValue) ?></span>
+                  <span class="font-mono text-sm text-gray-900 truncate"><?= htmlspecialchars($displayValue) ?></span>
                 </div>
               </div>
             <?php endforeach; ?>
           </div>
         <?php else: ?>
-          <div class="text-center py-4" id="envVarsDisplay">
+          <div class="py-4 text-center" id="envVarsDisplay">
             <p class="text-sm text-gray-500">No environment variables configured</p>
           </div>
         <?php endif; ?>
       </div>
     <?php endif; ?>
 
-    <div class="bg-white rounded-xl border border-gray-200 p-6">
-      <h2 class="text-lg font-semibold text-gray-900 mb-4">Recent Deployments</h2>
+    <div class="p-6 bg-white rounded-xl border border-gray-200">
+      <h2 class="mb-4 text-lg font-semibold text-gray-900">Recent Deployments</h2>
       <?php if (!empty($recent_logs)): ?>
-        <div class="space-y-2">
+        <div class="overflow-y-auto pr-2 space-y-2 max-h-64">
           <?php foreach ($recent_logs as $log): ?>
-            <div class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50">
+            <div class="flex justify-between items-center p-3 rounded-lg border border-gray-200 hover:bg-gray-50">
               <div class="flex-1 min-w-0">
                 <div class="text-sm font-medium text-gray-900 truncate"><?= htmlspecialchars($log['id']) ?></div>
                 <div class="text-xs text-gray-500"><?= date('M j, Y H:i:s', $log['modified']) ?></div>
               </div>
               <button onclick="viewLogs('<?= htmlspecialchars($log['id']) ?>')"
-                class="ml-2 px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded">
+                class="px-3 py-1 ml-2 text-xs font-medium text-blue-600 rounded hover:text-blue-800 hover:bg-blue-50">
                 View
               </button>
             </div>
           <?php endforeach; ?>
         </div>
       <?php else: ?>
-        <div class="text-center py-8">
+        <div class="py-8 text-center">
           <p class="text-sm text-gray-500">No deployment logs yet</p>
         </div>
       <?php endif; ?>
@@ -481,7 +476,7 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
         if (isComplete) {
           const domainUrl = 'https://' + status.domain;
           el.innerHTML = `<a href="${domainUrl}" target="_blank" rel="noopener noreferrer"
-            class="text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1">
+            class="inline-flex gap-1 items-center text-blue-600 hover:text-blue-800 hover:underline">
             ${status.domain}
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
@@ -793,9 +788,9 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
       if (data.success && data.config?.deployment?.post_deployment_commands && data.config.deployment.post_deployment_commands.length > 0) {
         display.className = 'space-y-2 max-h-64 overflow-y-auto pr-2';
         display.innerHTML = data.config.deployment.post_deployment_commands.map(cmd => `
-          <div class="flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-200">
-            <i class="fa-solid fa-terminal text-gray-400 text-xs"></i>
-            <span class="text-sm text-gray-900 font-mono">${escapeHtml(cmd)}</span>
+          <div class="flex gap-2 items-center p-2 bg-gray-50 rounded border border-gray-200">
+            <i class="text-xs text-gray-400 fa-solid fa-terminal"></i>
+            <span class="font-mono text-sm text-gray-900">${escapeHtml(cmd)}</span>
           </div>
         `).join('');
       } else {
@@ -822,11 +817,11 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
         display.innerHTML = Object.entries(data.config.deployment.env_vars).map(([key, value]) => {
           const stringValue = convertArrayToString(value);
           return `
-          <div class="flex items-center justify-between p-2 bg-gray-50 rounded border border-gray-200">
-            <div class="flex items-center gap-2 flex-1 min-w-0">
+          <div class="flex justify-between items-center p-2 bg-gray-50 rounded border border-gray-200">
+            <div class="flex flex-1 gap-2 items-center min-w-0">
               <span class="text-sm font-medium text-gray-700">${escapeHtml(key)}</span>
               <span class="text-sm text-gray-400">=</span>
-              <span class="text-sm text-gray-900 font-mono truncate">${escapeHtml(stringValue)}</span>
+              <span class="font-mono text-sm text-gray-900 truncate">${escapeHtml(stringValue)}</span>
             </div>
           </div>
         `;
@@ -893,14 +888,14 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
     row.className = 'flex items-center gap-2';
     row.innerHTML = `
       <input type="text" placeholder="Variable name" value="${escapeHtmlAttribute(key)}"
-        class="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+        class="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
         required>
       <span class="text-gray-400">=</span>
       <input type="text" placeholder="Variable value" value="${escapeHtmlAttribute(value)}"
-        class="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+        class="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
         required>
       <button type="button" onclick="removeEnvVarRow(this)"
-        class="px-3 py-2 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors">
+        class="px-3 py-2 text-red-600 rounded transition-colors hover:text-red-800 hover:bg-red-50">
         <i class="fa-solid fa-trash"></i>
       </button>
     `;
@@ -1033,15 +1028,15 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
   }
 </script>
 
-<div id="configModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+<div id="configModal" class="hidden overflow-y-auto fixed inset-0 z-50">
   <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" onclick="closeConfigModal()">
   </div>
-  <div class="relative min-h-screen flex items-center justify-center p-4 sm:p-6">
+  <div class="flex relative justify-center items-center p-4 min-h-screen sm:p-6">
     <div class="relative w-full max-w-4xl bg-white rounded-lg shadow-xl" onclick="event.stopPropagation()">
-      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+      <div class="flex justify-between items-center px-6 py-4 border-b border-gray-200">
         <h3 class="text-xl font-semibold text-gray-900">Deployment Configuration</h3>
         <button onclick="closeConfigModal()"
-          class="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 rounded-lg p-1">
+          class="p-1 text-gray-400 rounded-lg transition-colors hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
           </svg>
@@ -1050,77 +1045,77 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
       <div class="px-6 py-6">
         <form id="configForm" class="space-y-6">
           <div>
-            <h4 class="text-lg font-medium text-gray-900 mb-4">Server Configuration</h4>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <h4 class="mb-4 text-lg font-medium text-gray-900">Server Configuration</h4>
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Server Name</label>
+                <label class="block mb-1 text-sm font-medium text-gray-700">Server Name</label>
                 <input type="text" name="server[name]" id="serverName"
-                  class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm">
+                  class="px-3 py-2 w-full text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Region</label>
+                <label class="block mb-1 text-sm font-medium text-gray-700">Region</label>
                 <input type="text" name="server[region]" id="serverRegion"
-                  class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm">
+                  class="px-3 py-2 w-full text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Size</label>
+                <label class="block mb-1 text-sm font-medium text-gray-700">Size</label>
                 <input type="text" name="server[size]" id="serverSize"
-                  class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm">
+                  class="px-3 py-2 w-full text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Image</label>
+                <label class="block mb-1 text-sm font-medium text-gray-700">Image</label>
                 <input type="text" name="server[image]" id="serverImage"
-                  class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm">
+                  class="px-3 py-2 w-full text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
               </div>
             </div>
           </div>
           <div>
-            <h4 class="text-lg font-medium text-gray-900 mb-4">Provision Configuration</h4>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <h4 class="mb-4 text-lg font-medium text-gray-900">Provision Configuration</h4>
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">PHP Version</label>
+                <label class="block mb-1 text-sm font-medium text-gray-700">PHP Version</label>
                 <input type="text" name="provision[php_version]" id="phpVersion"
-                  class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm">
+                  class="px-3 py-2 w-full text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Database Type</label>
+                <label class="block mb-1 text-sm font-medium text-gray-700">Database Type</label>
                 <input type="text" name="provision[database_type]" id="databaseType"
-                  class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm">
+                  class="px-3 py-2 w-full text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Database Version</label>
+                <label class="block mb-1 text-sm font-medium text-gray-700">Database Version</label>
                 <input type="text" name="provision[database_version]" id="databaseVersion"
-                  class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm">
+                  class="px-3 py-2 w-full text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Database Name</label>
+                <label class="block mb-1 text-sm font-medium text-gray-700">Database Name</label>
                 <input type="text" name="provision[database_name]" id="databaseName"
-                  class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm">
+                  class="px-3 py-2 w-full text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
               </div>
             </div>
           </div>
           <div>
-            <h4 class="text-lg font-medium text-gray-900 mb-4">Deployment Configuration</h4>
+            <h4 class="mb-4 text-lg font-medium text-gray-900">Deployment Configuration</h4>
             <div class="space-y-4">
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Domain</label>
+                <label class="block mb-1 text-sm font-medium text-gray-700">Domain</label>
                 <input type="text" name="deployment[domain]" id="deploymentDomain"
-                  class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm">
+                  class="px-3 py-2 w-full text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
               </div>
               <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">SSL Email</label>
+                <label class="block mb-1 text-sm font-medium text-gray-700">SSL Email</label>
                 <input type="email" name="deployment[ssl_email]" id="sslEmail"
-                  class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm">
+                  class="px-3 py-2 w-full text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500">
               </div>
             </div>
           </div>
-          <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+          <div class="flex gap-3 justify-end items-center pt-4 border-t border-gray-200">
             <button type="button" onclick="closeConfigModal()"
-              class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+              class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg transition-colors hover:bg-gray-200">
               Cancel
             </button>
             <button type="submit"
-              class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+              class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg transition-colors hover:bg-blue-700">
               Save Configuration
             </button>
           </div>
@@ -1133,14 +1128,14 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
 <div id="deploymentOutputModal" class="hidden fixed inset-0 z-[60] overflow-y-auto">
   <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity"
     onclick="closeDeploymentOutputModal()"></div>
-  <div class="relative flex items-center justify-center p-4 sm:p-6 py-12">
+  <div class="flex relative justify-center items-center p-4 py-12 sm:p-6">
     <div class="relative w-full max-w-5xl h-[85vh] bg-white rounded-lg shadow-xl flex flex-col"
       onclick="event.stopPropagation()">
-      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+      <div class="flex justify-between items-center px-6 py-4 border-b border-gray-200">
         <h3 class="text-xl font-semibold text-gray-900" id="deploymentOutputTitle">Deployment Output</h3>
-        <div class="flex items-center gap-2">
+        <div class="flex gap-2 items-center">
           <select id="autoRefreshInterval" onchange="updateAutoRefresh()"
-            class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+            class="px-3 py-1.5 text-sm bg-white rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
             <option value="0">Auto-refresh: OFF</option>
             <option value="5">Auto-refresh: 5s</option>
             <option value="10">Auto-refresh: 10s</option>
@@ -1148,7 +1143,7 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
             <option value="60">Auto-refresh: 1m</option>
           </select>
           <button id="refreshDeploymentOutputBtn" onclick="refreshDeploymentOutput()"
-            class="px-3 py-1.5 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors flex items-center gap-1">
+            class="flex gap-1 items-center px-3 py-1.5 text-sm text-gray-600 rounded transition-colors hover:text-gray-900 hover:bg-gray-100">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
@@ -1157,19 +1152,19 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
             Refresh
           </button>
           <button id="closeDeploymentOutputBtn" onclick="closeDeploymentOutputModal()"
-            class="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 rounded-lg p-1">
+            class="p-1 text-gray-400 rounded-lg transition-colors hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500">
             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
             </svg>
           </button>
         </div>
       </div>
-      <div class="px-6 py-6 flex-1 overflow-hidden flex flex-col min-h-0">
+      <div class="flex overflow-hidden flex-col flex-1 px-6 py-6 min-h-0">
         <div
-          class="bg-gray-900 text-gray-100 rounded-lg p-4 flex-1 overflow-y-auto overflow-x-hidden font-mono text-xs border border-gray-700 min-h-0">
+          class="overflow-y-auto overflow-x-hidden flex-1 p-4 min-h-0 font-mono text-xs text-gray-100 bg-gray-900 rounded-lg border border-gray-700">
           <pre id="deploymentOutputContent" class="whitespace-pre-wrap break-words">Loading output...</pre>
         </div>
-        <p class="mt-2 text-xs text-gray-500 flex-shrink-0">Deployment output is updated as the process runs. Use the
+        <p class="flex-shrink-0 mt-2 text-xs text-gray-500">Deployment output is updated as the process runs. Use the
           refresh button
           or enable auto-refresh to see the latest output.</p>
       </div>
@@ -1177,15 +1172,15 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
   </div>
 </div>
 
-<div id="secretsModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+<div id="secretsModal" class="hidden overflow-y-auto fixed inset-0 z-50">
   <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" onclick="closeSecretsModal()">
   </div>
-  <div class="relative min-h-screen flex items-center justify-center p-4 sm:p-6">
+  <div class="flex relative justify-center items-center p-4 min-h-screen sm:p-6">
     <div class="relative w-full max-w-2xl bg-white rounded-lg shadow-xl" onclick="event.stopPropagation()">
-      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+      <div class="flex justify-between items-center px-6 py-4 border-b border-gray-200">
         <h3 class="text-xl font-semibold text-gray-900">Manage Secrets</h3>
         <button onclick="closeSecretsModal()"
-          class="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 rounded-lg p-1">
+          class="p-1 text-gray-400 rounded-lg transition-colors hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
           </svg>
@@ -1194,48 +1189,48 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
       <div class="px-6 py-6">
         <form id="secretsForm" class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">DigitalOcean API Token</label>
-            <div class="flex items-center gap-2">
+            <label class="block mb-1 text-sm font-medium text-gray-700">DigitalOcean API Token</label>
+            <div class="flex gap-2 items-center">
               <input type="password" name="digitalocean_api_token" id="digitaloceanToken"
-                class="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                class="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 placeholder="Enter API token or leave blank to keep current">
               <button type="button" onclick="togglePassword('digitaloceanToken')"
-                class="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors">
+                class="px-3 py-2 text-sm text-gray-600 rounded transition-colors hover:text-gray-900 hover:bg-gray-100">
                 <i class="fa-solid fa-eye" id="digitaloceanTokenIcon"></i>
               </button>
             </div>
             <p class="mt-1 text-xs text-gray-500">Leave blank to keep current value (masked as ••••••••)</p>
           </div>
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">Cloudflare API Token</label>
-            <div class="flex items-center gap-2">
+            <label class="block mb-1 text-sm font-medium text-gray-700">Cloudflare API Token</label>
+            <div class="flex gap-2 items-center">
               <input type="password" name="cloudflare_api_token" id="cloudflareToken"
-                class="flex-1 px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
+                class="flex-1 px-3 py-2 text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 placeholder="Enter API token or leave blank to keep current">
               <button type="button" onclick="togglePassword('cloudflareToken')"
-                class="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded transition-colors">
+                class="px-3 py-2 text-sm text-gray-600 rounded transition-colors hover:text-gray-900 hover:bg-gray-100">
                 <i class="fa-solid fa-eye" id="cloudflareTokenIcon"></i>
               </button>
             </div>
             <p class="mt-1 text-xs text-gray-500">Leave blank to keep current value (masked as ••••••••)</p>
           </div>
-          <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-            <div class="flex items-start gap-2">
-              <i class="fa-solid fa-exclamation-triangle text-yellow-600 mt-0.5"></i>
+          <div class="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+            <div class="flex gap-2 items-start">
+              <i class="mt-0.5 text-yellow-600 fa-solid fa-exclamation-triangle"></i>
               <div class="text-sm text-yellow-800">
-                <p class="font-medium mb-1">Security Notice</p>
+                <p class="mb-1 font-medium">Security Notice</p>
                 <p>Secrets are stored securely. Only enter new values if you need to update them. Existing values are
                   masked for security.</p>
               </div>
             </div>
           </div>
-          <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+          <div class="flex gap-3 justify-end items-center pt-4 border-t border-gray-200">
             <button type="button" onclick="closeSecretsModal()"
-              class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+              class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg transition-colors hover:bg-gray-200">
               Cancel
             </button>
             <button type="submit"
-              class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+              class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg transition-colors hover:bg-blue-700">
               Save Secrets
             </button>
           </div>
@@ -1245,15 +1240,15 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
   </div>
 </div>
 
-<div id="postCommandsModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+<div id="postCommandsModal" class="hidden overflow-y-auto fixed inset-0 z-50">
   <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity"
     onclick="closePostCommandsModal()"></div>
-  <div class="relative min-h-screen flex items-center justify-center p-4 sm:p-6">
+  <div class="flex relative justify-center items-center p-4 min-h-screen sm:p-6">
     <div class="relative w-full max-w-3xl bg-white rounded-lg shadow-xl" onclick="event.stopPropagation()">
-      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+      <div class="flex justify-between items-center px-6 py-4 border-b border-gray-200">
         <h3 class="text-xl font-semibold text-gray-900">Edit Post-Deployment Commands</h3>
         <button onclick="closePostCommandsModal()"
-          class="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 rounded-lg p-1">
+          class="p-1 text-gray-400 rounded-lg transition-colors hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
           </svg>
@@ -1262,20 +1257,20 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
       <div class="px-6 py-6">
         <form id="postCommandsForm" class="space-y-4">
           <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Commands (one per line)</label>
+            <label class="block mb-2 text-sm font-medium text-gray-700">Commands (one per line)</label>
             <textarea id="postCommandsTextarea" rows="10"
-              class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm font-mono"
+              class="px-3 py-2 w-full font-mono text-sm rounded-lg border border-gray-200 focus:outline-none focus:ring-1 focus:ring-blue-500"
               placeholder="cache:flush&#10;migrate&#10;queue:restart"></textarea>
             <p class="mt-1 text-xs text-gray-500">Enter one command per line. These commands will run after deployment
               completes.</p>
           </div>
-          <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+          <div class="flex gap-3 justify-end items-center pt-4 border-t border-gray-200">
             <button type="button" onclick="closePostCommandsModal()"
-              class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+              class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg transition-colors hover:bg-gray-200">
               Cancel
             </button>
             <button type="submit"
-              class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+              class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg transition-colors hover:bg-blue-700">
               Save Commands
             </button>
           </div>
@@ -1285,15 +1280,15 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
   </div>
 </div>
 
-<div id="envVarsModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+<div id="envVarsModal" class="hidden overflow-y-auto fixed inset-0 z-50">
   <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" onclick="closeEnvVarsModal()">
   </div>
-  <div class="relative min-h-screen flex items-center justify-center p-4 sm:p-6">
+  <div class="flex relative justify-center items-center p-4 min-h-screen sm:p-6">
     <div class="relative w-full max-w-3xl bg-white rounded-lg shadow-xl" onclick="event.stopPropagation()">
-      <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+      <div class="flex justify-between items-center px-6 py-4 border-b border-gray-200">
         <h3 class="text-xl font-semibold text-gray-900">Edit Environment Variables</h3>
         <button onclick="closeEnvVarsModal()"
-          class="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 rounded-lg p-1">
+          class="p-1 text-gray-400 rounded-lg transition-colors hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500">
           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
           </svg>
@@ -1304,16 +1299,16 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
           <div id="envVarsContainer" class="space-y-3">
           </div>
           <button type="button" id="addEnvVarBtn" onclick="addEnvVarRow()"
-            class="w-full px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
-            <i class="fa-solid fa-plus mr-2"></i> Add Variable
+            class="px-4 py-2 w-full text-sm font-medium text-blue-600 bg-blue-50 rounded-lg transition-colors hover:bg-blue-100">
+            <i class="mr-2 fa-solid fa-plus"></i> Add Variable
           </button>
-          <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
+          <div class="flex gap-3 justify-end items-center pt-4 border-t border-gray-200">
             <button type="button" onclick="closeEnvVarsModal()"
-              class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors">
+              class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg transition-colors hover:bg-gray-200">
               Cancel
             </button>
             <button type="submit"
-              class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+              class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg transition-colors hover:bg-blue-700">
               Save Variables
             </button>
           </div>
@@ -1324,19 +1319,19 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
 </div>
 
 <div id="notificationModal" class="hidden fixed inset-0 z-[60] overflow-y-auto pointer-events-none">
-  <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+  <div class="flex justify-center items-end px-4 pt-4 pb-20 min-h-screen text-center sm:block sm:p-0">
     <div class="fixed inset-0 bg-transparent transition-opacity" aria-hidden="true"></div>
     <div
-      class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full pointer-events-auto"
+      class="inline-block overflow-hidden text-left align-bottom bg-white rounded-lg shadow-xl transition-all transform pointer-events-auto sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
       id="notificationContent">
-      <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+      <div class="px-4 pt-5 pb-4 bg-white sm:p-6 sm:pb-4">
         <div class="sm:flex sm:items-start">
           <div
-            class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full sm:mx-0 sm:h-10 sm:w-10"
+            class="flex flex-shrink-0 justify-center items-center mx-auto w-12 h-12 rounded-full sm:mx-0 sm:h-10 sm:w-10"
             id="notificationIcon">
           </div>
-          <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left flex-1">
-            <h3 class="text-lg leading-6 font-medium text-gray-900" id="notificationTitle">
+          <div class="flex-1 mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+            <h3 class="text-lg font-medium leading-6 text-gray-900" id="notificationTitle">
             </h3>
             <div class="mt-2">
               <p class="text-sm text-gray-500" id="notificationMessage">
@@ -1345,9 +1340,9 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
           </div>
         </div>
       </div>
-      <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+      <div class="px-4 py-3 bg-gray-50 sm:px-6 sm:flex sm:flex-row-reverse">
         <button type="button" id="notificationOkBtn"
-          class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+          class="inline-flex justify-center px-4 py-2 w-full text-base font-medium text-white bg-blue-600 rounded-md border border-transparent shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
           OK
         </button>
       </div>
@@ -1356,24 +1351,24 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
 </div>
 
 <div id="confirmationModal" class="hidden fixed inset-0 z-[100] overflow-y-auto">
-  <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+  <div class="flex justify-center items-end px-4 pt-4 pb-20 min-h-screen text-center sm:block sm:p-0">
     <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity -z-10" aria-hidden="true"
       onclick="closeConfirmationModal()"></div>
     <div
-      class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
+      class="inline-block overflow-hidden text-left align-bottom bg-white rounded-lg shadow-xl transition-all transform sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
       onclick="event.stopPropagation()">
-      <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+      <div class="px-4 pt-5 pb-4 bg-white sm:p-6 sm:pb-4">
         <div class="sm:flex sm:items-start">
           <div
-            class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10">
-            <svg class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            class="flex flex-shrink-0 justify-center items-center mx-auto w-12 h-12 bg-yellow-100 rounded-full sm:mx-0 sm:h-10 sm:w-10">
+            <svg class="w-6 h-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                 d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z">
               </path>
             </svg>
           </div>
-          <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left flex-1">
-            <h3 class="text-lg leading-6 font-medium text-gray-900" id="confirmationTitle">
+          <div class="flex-1 mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
+            <h3 class="text-lg font-medium leading-6 text-gray-900" id="confirmationTitle">
             </h3>
             <div class="mt-2">
               <p class="text-sm text-gray-500" id="confirmationMessage">
@@ -1382,13 +1377,13 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
           </div>
         </div>
       </div>
-      <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+      <div class="px-4 py-3 bg-gray-50 sm:px-6 sm:flex sm:flex-row-reverse">
         <button type="button" id="confirmationConfirmBtn"
-          class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
+          class="inline-flex justify-center px-4 py-2 w-full text-base font-medium text-white bg-blue-600 rounded-md border border-transparent shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm">
           Confirm
         </button>
         <button type="button" id="confirmationCancelBtn"
-          class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
+          class="inline-flex justify-center px-4 py-2 mt-3 w-full text-base font-medium text-gray-700 bg-white rounded-md border border-gray-300 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
           Cancel
         </button>
       </div>
@@ -1420,19 +1415,19 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
 
     if (type === 'success') {
       bgColor = 'bg-green-100';
-      iconSvg = '<svg class="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+      iconSvg = '<svg class="w-6 h-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
       okBtn.className = 'w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm';
     } else if (type === 'error') {
       bgColor = 'bg-red-100';
-      iconSvg = '<svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+      iconSvg = '<svg class="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
       okBtn.className = 'w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm';
     } else if (type === 'warning') {
       bgColor = 'bg-yellow-100';
-      iconSvg = '<svg class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>';
+      iconSvg = '<svg class="w-6 h-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>';
       okBtn.className = 'w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-yellow-600 text-base font-medium text-white hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 sm:ml-3 sm:w-auto sm:text-sm';
     } else {
       bgColor = 'bg-blue-100';
-      iconSvg = '<svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
+      iconSvg = '<svg class="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>';
       okBtn.className = 'w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto sm:text-sm';
     }
 
@@ -1799,9 +1794,9 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
     if (!display) return;
 
     if (phpInfo.is_default) {
-      display.innerHTML = 'Using default PHP CLI command (<code class="bg-blue-100 px-1 rounded">php</code>).';
+      display.innerHTML = 'Using default PHP CLI command (<code class="px-1 bg-blue-100 rounded">php</code>).';
     } else {
-      display.innerHTML = `Using PHP at <code class="bg-blue-100 px-1 rounded">${escapeHtml(phpInfo.path)}</code>${phpInfo.version ? ' (version ' + escapeHtml(phpInfo.version) + ')' : ''}`;
+      display.innerHTML = `Using PHP at <code class="px-1 bg-blue-100 rounded">${escapeHtml(phpInfo.path)}</code>${phpInfo.version ? ' (version ' + escapeHtml(phpInfo.version) + ')' : ''}`;
     }
   }
 

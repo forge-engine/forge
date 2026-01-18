@@ -785,6 +785,11 @@ final class DeploymentExecutionService
       }
     }
 
+    $phpInfo = $this->getPhpInfo();
+    $currentPath = $phpInfo['path'] ?? null;
+    $currentVersion = $phpInfo['version'] ?? PHP_VERSION;
+    $currentHasSsh2 = function_exists('ssh2_connect');
+
     foreach ($checkedPaths as $path) {
       $normalizedPath = $this->normalizePath($path);
       if (!file_exists($normalizedPath) || !is_executable($normalizedPath)) {
@@ -795,35 +800,8 @@ final class DeploymentExecutionService
         continue;
       }
 
-      $testOutput = [];
-      $testReturnCode = 0;
-      @exec(escapeshellarg($normalizedPath) . ' -v 2>/dev/null', $testOutput, $testReturnCode);
-      if ($testReturnCode !== 0 || empty($testOutput[0])) {
-        continue;
-      }
-
-      $versionOutput = $testOutput[0];
-      if (!str_contains($versionOutput, 'cli') && str_contains($versionOutput, 'fpm')) {
-        continue;
-      }
-
-      $version = '';
-      if (preg_match('/PHP\s+([\d.]+)/', $versionOutput, $matches)) {
-        $version = $matches[1];
-      }
-
-      $this->logger->debug('Checking PHP binary for SSH2', [
-        'path' => $normalizedPath,
-        'version' => $version,
-      ]);
-
-      $hasSsh2 = $this->hasSsh2Extension($normalizedPath);
-
-      $this->logger->debug('PHP binary SSH2 check complete', [
-        'path' => $normalizedPath,
-        'version' => $version,
-        'has_ssh2' => $hasSsh2,
-      ]);
+      $version = $normalizedPath === $currentPath ? $currentVersion : '';
+      $hasSsh2 = $normalizedPath === $currentPath ? $currentHasSsh2 : false;
 
       $binaries[] = [
         'path' => $normalizedPath,
@@ -840,6 +818,9 @@ final class DeploymentExecutionService
     usort($binaries, function ($a, $b) {
       if ($a['has_ssh2'] !== $b['has_ssh2']) {
         return $b['has_ssh2'] ? 1 : -1;
+      }
+      if (empty($a['version']) || empty($b['version'])) {
+        return 0;
       }
       return version_compare($b['version'], $a['version']);
     });

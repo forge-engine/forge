@@ -126,6 +126,7 @@ return [
             'APP_ENV' => 'production',
             'APP_DEBUG' => 'true',
             'CENTRAL_DOMAIN' => 'domain.com',
+            'FORGE_WIRE_STALE_THRESHOLD' => '300',
             'CORS_ALLOWED_ORIGINS' => [
             ],
             'IP_WHITE_LIST' => [

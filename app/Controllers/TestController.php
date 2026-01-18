@@ -21,46 +21,52 @@ use Forge\Traits\ResponseHelper;
 #[TenantScope("central")]
 final class TestController
 {
-    use ControllerHelper;
-    use ResponseHelper;
+  use ControllerHelper;
+  use ResponseHelper;
 
-    public function __construct(
-        private readonly SessionInterface $session,
-        private readonly CookieJar $cookies,
-        private readonly EventDispatcher $dispatcher,
-    ) {
-        //
+  public function __construct(
+    private readonly SessionInterface $session,
+    private readonly CookieJar $cookies,
+    private readonly EventDispatcher $dispatcher,
+  ) {
+    //
+  }
+
+  /**
+   * @throws EventException
+   */
+  #[Route("/test")]
+  public function index(Request $request): Response
+  {
+    $existingUserId = $this->session->get("user_id");
+    $testUserId = $existingUserId ?? 123456;
+
+    if ($existingUserId === null) {
+      $this->session->set("test_user_id", 123456);
     }
 
-    /**
-     * @throws EventException
-     */
-    #[Route("/test")]
-    public function index(Request $request): Response
-    {
-        $this->session->set("user_id", 123456);
-        $cookie = $this->cookies->make("remember_me", "token123", 60 * 24 * 30);
+    $cookie = $this->cookies->make("remember_me", "token123", 60 * 24 * 30);
 
-        $this->dispatcher->dispatch(
-            new TestPageVisitedEvent(
-                userId: $this->session->get("user_id"),
-                visitedAt: date("Y-m-d H:i:s"),
-            ),
-        );
+    $this->dispatcher->dispatch(
+      new TestPageVisitedEvent(
+        userId: $testUserId,
+        visitedAt: date("Y-m-d H:i:s"),
+      ),
+    );
 
-        $data = [
-            "title" => "Welcome to Forge",
-            "userId" => $this->session->get("user_id") ?? null,
-        ];
+    $data = [
+      "title" => "Welcome to Forge",
+      "userId" => $existingUserId ?? $this->session->get("test_user_id") ?? null,
+    ];
 
-        return $this->view(view: "pages/test/index", data: $data)->withCookie(
-            $cookie,
-        );
-    }
+    return $this->view(view: "pages/test/index", data: $data)->withCookie(
+      $cookie,
+    );
+  }
 
-    #[Route("/test/failure")]
-    public function failure(Request $request): Response
-    {
-        return $this->createErrorResponse($request, "Simulate failure", 500);
-    }
+  #[Route("/test/failure")]
+  public function failure(Request $request): Response
+  {
+    return $this->createErrorResponse($request, "Simulate failure", 500);
+  }
 }

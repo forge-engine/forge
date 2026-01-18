@@ -1,4 +1,10 @@
 (() => {
+	if (typeof window !== 'undefined') {
+		if (window.__forgeWireInitialized) {
+			return;
+		}
+		window.__forgeWireInitialized = true;
+	}
 	// ============================================================================
 	// CONSTANTS & CONFIGURATION
 	// ============================================================================
@@ -6,35 +12,35 @@
 	const rootSel = '[fw\\:id]';
 	const attr = (el, n) => el.getAttribute(n);
 	const closestRoot = el => el.closest(rootSel);
-	
+
 	// ============================================================================
 	// ATTRIBUTE CACHING SYSTEM
 	// ============================================================================
 	const attributeCache = new WeakMap();
-	
+
 	function getCachedAttributes(el) {
 		if (!attributeCache.has(el)) {
 			attributeCache.set(el, Array.from(el.getAttributeNames()));
 		}
 		return attributeCache.get(el);
 	}
-	
+
 	function invalidateElementCache(el) {
 		attributeCache.delete(el);
 	}
-	
+
 	// ============================================================================
 	// CLEANUP REGISTRY (Memory Leak Prevention)
 	// ============================================================================
 	const cleanupRegistry = new Map();
-	
+
 	function registerCleanup(id, cleanupFn) {
 		if (!cleanupRegistry.has(id)) {
 			cleanupRegistry.set(id, new Set());
 		}
 		cleanupRegistry.get(id).add(cleanupFn);
 	}
-	
+
 	function cleanupComponent(id) {
 		const cleanups = cleanupRegistry.get(id);
 		if (cleanups) {
@@ -48,7 +54,7 @@
 			cleanupRegistry.delete(id);
 		}
 	}
-	
+
 	// ============================================================================
 	// STATE MANAGEMENT
 	// ============================================================================
@@ -74,7 +80,7 @@
 				if (!id) return;
 				const rec = pollers.get(id);
 				if (!rec) return;
-				
+
 				if (rec.el !== root) {
 					rec.el = root;
 				}
@@ -297,10 +303,24 @@
 	// ============================================================================
 	// REQUEST QUEUING
 	// ============================================================================
-	const queues = new Map(); // id -> Array of requests
+	const queues = new Map();
+	const processing = new Map();
+	const inFlight = new Map();
+
+	function getRequestKey(id, action, args) {
+		const argsStr = JSON.stringify(args);
+		return `${id}:${action || 'null'}:${argsStr}`;
+	}
 
 	async function trigger(root, action = null, args = [], dirtyOverride = null) {
 		const id = attr(root, 'fw:id');
+		if (!id) return;
+
+		const reqKey = getRequestKey(id, action, args);
+		if (inFlight.has(reqKey)) {
+			return;
+		}
+
 		const req = { action, args, dirty: dirtyOverride ?? collectDirty(root) };
 
 		if (queues.has(id)) {
@@ -308,6 +328,15 @@
 			return;
 		}
 
+		if (processing.get(id)) {
+			if (!queues.has(id)) {
+				queues.set(id, []);
+			}
+			queues.get(id).push(req);
+			return;
+		}
+
+		processing.set(id, true);
 		const queue = [req];
 		queues.set(id, queue);
 
@@ -315,14 +344,27 @@
 			let currentRoot = root;
 			while (queue.length > 0) {
 				const nextReq = queue[0];
-				const result = await performTrigger(currentRoot, nextReq.action, nextReq.args, nextReq.dirty);
-				if (result && result.root) {
-					currentRoot = result.root;
+				const nextReqKey = getRequestKey(id, nextReq.action, nextReq.args);
+
+				if (inFlight.has(nextReqKey)) {
+					queue.shift();
+					continue;
+				}
+
+				inFlight.set(nextReqKey, true);
+				try {
+					const result = await performTrigger(currentRoot, nextReq.action, nextReq.args, nextReq.dirty);
+					if (result && result.root) {
+						currentRoot = result.root;
+					}
+				} finally {
+					inFlight.delete(nextReqKey);
 				}
 				queue.shift();
 			}
 		} finally {
 			queues.delete(id);
+			processing.delete(id);
 		}
 	}
 
@@ -350,7 +392,7 @@
 		} else {
 			const domTargets = root.querySelectorAll('[fw\\:target]');
 			const matchingComponent = doc.querySelector(`[fw\\:id="${id}"]`);
-			const docTargets = matchingComponent 
+			const docTargets = matchingComponent
 				? matchingComponent.querySelectorAll('[fw\\:target]')
 				: doc.querySelectorAll('[fw\\:target]');
 
@@ -386,7 +428,7 @@
 					keyToElement.set(bind.key, el);
 				}
 			}
-			
+
 			Object.entries(state).forEach(([key, val]) => {
 				const el = keyToElement.get(key);
 				if (el) {
@@ -396,13 +438,13 @@
 						if (val !== undefined && val !== sentValue && el.value === sentValue) {
 							const start = el.selectionStart ?? el.value.length;
 							const end = el.selectionEnd ?? el.value.length;
-							
+
 							el.value = val;
 
 							Promise.resolve().then(() => {
 								if (document.activeElement === el && el.setSelectionRange) {
 									try {
-										
+
 										const oldLength = sentValue ? sentValue.length : 0;
 										const newLength = el.value.length;
 										const lengthDiff = newLength - oldLength;
@@ -415,7 +457,7 @@
 								}
 							});
 						}
-					
+
 					} else {
 						if (el.type === 'checkbox') el.checked = !!val;
 						else if (el.type === 'radio') el.checked = (el.value == val);
@@ -438,8 +480,19 @@
 			clearTimeout(pendingRedirectTimeout);
 			pendingRedirectTimeout = null;
 		}
-		
+
 		const id = attr(root, 'fw:id');
+		const pollRec = pollers.get(id);
+		if (pollRec && pollRec.timer) {
+			clearTimeout(pollRec.timer);
+			pollRec.timer = null;
+		}
+
+		let currentRoot = document.querySelector(`[fw\\:id="${id}"]`);
+		if (!currentRoot) {
+			return { root };
+		}
+		root = currentRoot;
 
 		let dirty = {};
 		try {
@@ -491,7 +544,7 @@
 				const key = el.getAttribute('fw:validation-error');
 				const messages = out.errors[key] || [];
 				const showAll = el.hasAttribute('fw:validation-error.all');
-				
+
 				if (showAll && messages.length > 0) {
 					el.textContent = messages.join(', ');
 				} else {
@@ -550,10 +603,10 @@
 				clearTimeout(pendingRedirectTimeout);
 				pendingRedirectTimeout = null;
 			}
-			
+
 			const redirectUrl = typeof out.redirect === 'string' ? out.redirect : out.redirect.url;
 			const redirectDelay = typeof out.redirect === 'object' && out.redirect.delay ? out.redirect.delay : 0;
-			
+
 			if (isValidRedirect(redirectUrl)) {
 				if (redirectDelay > 0) {
 					pendingRedirectTimeout = setTimeout(() => {
@@ -610,15 +663,16 @@
 
 		const prev = pollers.get(id);
 		if (prev) {
-			if (prev.timer) clearTimeout(prev.timer);
+			if (prev.timer) {
+				clearTimeout(prev.timer);
+			}
 			try {
-				if (io && prev.el && prev.el !== root) {
+				if (io && prev.el) {
 					io.unobserve(prev.el);
 				}
 			} catch {
 			}
 		}
-
 
 		const target = findPollTarget(root);
 		if (!target) {
@@ -631,7 +685,7 @@
 
 		const every = target.everyMs | 0;
 		const pollAction = target.action || null;
-		
+
 		const wasVisible = prev ? prev.visible : false;
 		pollers.set(id, { el: root, timer: null, everyMs: every, visible: wasVisible, action: pollAction });
 
@@ -639,7 +693,7 @@
 		if (!prev || prev.el !== root) {
 			obs.observe(root);
 		}
-		
+
 		registerCleanup(id, () => {
 			try {
 				if (io && root) io.unobserve(root);
@@ -649,23 +703,31 @@
 
 		requestAnimationFrame(() => {
 			const rec = pollers.get(id);
-			if (!rec || rec.el !== root) return;
-			
-			const inDom = document.documentElement.contains(root);
+			if (!rec) return;
+
+			const currentRoot = document.querySelector(`[fw\\:id="${id}"]`);
+			if (!currentRoot || currentRoot !== root) {
+				rec.visible = false;
+				return;
+			}
+
+			rec.el = currentRoot;
+
+			const inDom = document.documentElement.contains(currentRoot);
 			if (!inDom) {
 				rec.visible = false;
 				return;
 			}
-			
-			const rect = root.getBoundingClientRect();
+
+			const rect = currentRoot.getBoundingClientRect();
 			const onScreen = rect.width > 0 && rect.height > 0 &&
 				rect.bottom >= 0 && rect.right >= 0 &&
 				rect.top <= (window.innerHeight || 0) &&
 				rect.left <= (window.innerWidth || 0);
-			
+
 			rec.visible = onScreen;
-			if (onScreen && !rec.timer) {
-				schedulePoll(root);
+			if (onScreen && !rec.timer && !queues.has(id)) {
+				schedulePoll(currentRoot);
 			}
 		});
 	}
@@ -674,6 +736,11 @@
 		const id = root.getAttribute('fw:id');
 		const rec = pollers.get(id);
 		if (!rec) return;
+
+		if (rec.timer) {
+			clearTimeout(rec.timer);
+			rec.timer = null;
+		}
 
 		if (!rec.visible) return;
 		if (!document.documentElement.contains(root)) {
@@ -688,39 +755,38 @@
 
 		const wait = jitter(rec.everyMs);
 		const timerId = setTimeout(() => {
-			// Check if timer was cleared (component removed or visibility changed)
-			if (rec.timer !== timerId) {
+			const currentRec = pollers.get(id);
+			if (!currentRec || currentRec.timer !== timerId) {
 				return;
 			}
-			
-			if (!document.documentElement.contains(root)) {
+
+			const currentRoot = document.querySelector(`[fw\\:id="${id}"]`);
+			if (!currentRoot || !document.documentElement.contains(currentRoot)) {
 				try {
-					if (io) io.unobserve(root);
+					if (io && currentRoot) io.unobserve(currentRoot);
 				} catch {
 				}
 				pollers.delete(id);
 				cleanupComponent(id);
 				return;
 			}
-			
-			// Double-check visibility before triggering poll
-			if (document.hidden || !rec.visible) {
-				rec.timer = null;
+
+			if (document.hidden || !currentRec.visible) {
+				currentRec.timer = null;
 				return;
 			}
-			
-			const pollAction = rec.action || null;
+
+			const pollAction = currentRec.action || null;
 			const parsed = pollAction ? parseAction(pollAction) : { method: null, args: [] };
-			trigger(root, parsed.method, parsed.args);
-			
-			// Only reschedule if still visible and timer hasn't been cleared
-			if (rec.timer === timerId && rec.visible) {
-				rec.timer = null;
-				schedulePoll(root);
+			trigger(currentRoot, parsed.method, parsed.args);
+
+			if (currentRec.timer === timerId && currentRec.visible && !queues.has(id)) {
+				currentRec.timer = null;
+				schedulePoll(currentRoot);
 			}
 		}, wait);
 		rec.timer = timerId;
-		
+
 		registerCleanup(id, () => {
 			if (timerId && rec.timer === timerId) {
 				clearTimeout(timerId);
@@ -732,7 +798,7 @@
 	// ============================================================================
 	// DIRECTIVE REGISTRY (Easy way to add new event-based directives)
 	// ============================================================================
-	
+
 	/**
 	 * Helper to handle common directive pattern: find element, parse action, collect params, trigger
 	 * @param {Event} e - The DOM event
@@ -745,28 +811,29 @@
 		const escapedName = directiveName.replace(/:/g, '\\:');
 		const el = e.target.closest(`[${escapedName}]`);
 		if (!el) return false;
-		
+
 		const root = closestRoot(el);
 		if (!root) return false;
-		
+
 		e.preventDefault();
+		e.stopPropagation();
 		setSuppressUntil(root, suppressMs);
-		
+
 		if (beforeTrigger) {
 			beforeTrigger(el, root, e);
 		}
-		
+
 		const parsed = parseAction(attr(el, directiveName));
 		const params = collectParams(el);
 		let combinedArgs = Array.isArray(parsed.args) ? [...parsed.args] : [];
-		
+
 		if (Object.keys(params).length > 0) {
 			const obj = {};
 			combinedArgs.forEach((v, i) => obj[i] = v);
 			Object.assign(obj, params);
 			combinedArgs = obj;
 		}
-		
+
 		trigger(root, parsed.method, combinedArgs);
 		return true;
 	}
@@ -782,7 +849,7 @@
 	document.addEventListener('submit', (e) => {
 		const form = e.target.closest('[fw\\:submit]');
 		if (!form) return;
-		
+
 		const lazyInputs = form.querySelectorAll('[fw\\:model\\.lazy]');
 		lazyInputs.forEach(input => {
 			if (document.activeElement === input) {
@@ -790,7 +857,7 @@
 				input.dispatchEvent(event);
 			}
 		});
-		
+
 		handleDirective(e, 'fw:submit', 150);
 	});
 
@@ -812,13 +879,13 @@
 			const componentId = attr(root, 'fw:id');
 			const prev = Number(el.getAttribute('data-fw-timer-id'));
 			if (prev) clearTimeout(prev);
-			
+
 			const id = setTimeout(() => {
 				if (shouldSuppress(root)) return;
 				trigger(root, 'input');
 			}, wait);
 			el.setAttribute('data-fw-timer-id', String(id));
-			
+
 			if (componentId) {
 				registerCleanup(componentId, () => {
 					if (Number(el.getAttribute('data-fw-timer-id')) === id) {
@@ -881,6 +948,7 @@
 			const expr = el.getAttribute(match);
 			if (expr) {
 				e.preventDefault();
+				e.stopPropagation();
 				const parsed = parseAction(expr);
 				const params = collectParams(el);
 				let combinedArgs = Array.isArray(parsed.args) ? [...parsed.args] : [];
@@ -911,7 +979,7 @@
 
 	if (document.readyState === 'loading') {
 		document.addEventListener('DOMContentLoaded', initializePolling);
-		
+
 		window.addEventListener('beforeunload', () => {
 			if (pendingRedirectTimeout !== null) {
 				clearTimeout(pendingRedirectTimeout);
@@ -919,7 +987,7 @@
 			}
 			cleanupRegistry.forEach((_, id) => cleanupComponent(id));
 		});
-		
+
 		window.addEventListener('pagehide', () => {
 			if (pendingRedirectTimeout !== null) {
 				clearTimeout(pendingRedirectTimeout);
@@ -948,7 +1016,7 @@
 			messageEl.className = 'fw-flash-message';
 			messageEl.setAttribute('data-flash-type', flash.type || 'info');
 			messageEl.setAttribute('role', 'alert');
-			
+
 			const textEl = document.createElement('div');
 			textEl.className = 'fw-flash-message-text';
 			textEl.textContent = flash.message || '';

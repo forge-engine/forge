@@ -30,24 +30,78 @@ final class WireController
   #[Route("/__wire", method: 'POST')]
   public function handle(Request $request): Response
   {
-    try {
-      $payload = $request->json();
-      $componentId = $payload['id'] ?? null;
+    $payload = $request->json();
+    $componentId = $payload['id'] ?? null;
 
-      // Track active component
+    try {
       if ($componentId) {
         $this->trackActiveComponent($componentId);
       }
 
       $result = $this->kernel->process($payload, $request, $this->session);
 
-      // Cleanup stale components (with probability to avoid overhead on every request)
-      if (random_int(1, 10) === 1) { // 10% chance per request
+      if (random_int(1, 20) === 1) { // 5% chance per request (reduced from 10%)
         $this->cleanupStaleComponents();
       }
 
-      $this->gcEmptyComponents();
+      if (random_int(1, 10) === 1) { // 10% chance per request
+        $this->gcEmptyComponents();
+      }
+
       return $this->jsonResponse($result);
+    } catch (\RuntimeException $e) {
+      $isChecksumMismatch = str_contains($e->getMessage(), 'checksum mismatch')
+        || str_contains($e->getMessage(), 'Fingerprint mismatch');
+
+      if ($isChecksumMismatch && $componentId !== null) {
+        $requestKey = $this->getRequestKey($payload);
+        $processingKey = "forgewire:processing:{$requestKey}";
+
+        if ($this->session->has($processingKey)) {
+          $processingTime = $this->session->get($processingKey);
+          if (time() - $processingTime < 5) {
+            return $this->jsonResponse(["ignored" => true, "id" => $componentId]);
+          }
+        }
+
+        $sessionKey = "forgewire:{$componentId}";
+        $state = $this->session->get($sessionKey, []);
+
+        if (empty($state)) {
+          $this->logger->debug('ForgeWire checksum mismatch due to missing state - allowing re-initialization', [
+            'component_id' => $componentId,
+            'exception' => get_class($e),
+          ]);
+
+          return $this->jsonResponse([
+            'needs_reinit' => true,
+            'id' => $componentId,
+            'message' => 'Component state missing - re-initialization required',
+          ], 200);
+        }
+      }
+
+      $this->logger->debug('ForgeWire error: ' . $e->getMessage(), [
+        'exception' => get_class($e),
+        'file' => $e->getFile(),
+        'line' => $e->getLine(),
+      ]);
+
+      $isDebug = env('APP_DEBUG', false);
+
+      $errorResponse = [
+        'error' => [
+          'message' => $isDebug ? $e->getMessage() : 'An error occurred processing your request.',
+          'type' => get_class($e),
+        ],
+      ];
+
+      if ($isDebug) {
+        $errorResponse['error']['file'] = $e->getFile();
+        $errorResponse['error']['line'] = $e->getLine();
+      }
+
+      return $this->jsonResponse($errorResponse, 500);
     } catch (\Throwable $e) {
       $this->logger->debug('ForgeWire error: ' . $e->getMessage(), [
         'exception' => get_class($e),
@@ -73,6 +127,17 @@ final class WireController
     }
   }
 
+  private function getRequestKey(array $payload): string
+  {
+    $id = $payload['id'] ?? '';
+    $action = $payload['action'] ?? null;
+    $args = $payload['args'] ?? [];
+    $checksum = $payload['checksum'] ?? '';
+
+    $argsJson = json_encode($args, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    return md5("{$id}:{$action}:{$argsJson}:{$checksum}");
+  }
+
   /**
    * Track that a component is currently active
    */
@@ -84,6 +149,7 @@ final class WireController
 
   /**
    * Clean up components that haven't been seen recently
+   * Optimized to reduce session operations
    */
   private function cleanupStaleComponents(): void
   {
@@ -91,18 +157,18 @@ final class WireController
     $now = time();
     $staleThreshold = 300; // 5 minutes
 
-    // Find all component IDs
-    $componentIds = [];
-    foreach ($allKeys as $key => $_) {
-      if (preg_match('/^forgewire:([^:]+)$/', $key, $matches)) {
-        $componentIds[$matches[1]] = true;
+    // Find all component IDs and their last seen times in one pass
+    $componentLastSeen = [];
+    foreach ($allKeys as $key => $value) {
+      if (preg_match('/^forgewire:active:([^:]+)$/', $key, $matches)) {
+        $componentId = $matches[1];
+        $lastSeen = is_numeric($value) ? (int) $value : null;
+        $componentLastSeen[$componentId] = $lastSeen;
       }
     }
 
-    foreach (array_keys($componentIds) as $componentId) {
-      $activeKey = "forgewire:active:{$componentId}";
-      $lastSeen = $this->session->get($activeKey);
-
+    // Clean up stale components
+    foreach ($componentLastSeen as $componentId => $lastSeen) {
       // If component hasn't been seen recently, clean it up
       if ($lastSeen === null || ($now - $lastSeen) > $staleThreshold) {
         $this->removeComponent($componentId);
@@ -112,23 +178,30 @@ final class WireController
 
   /**
    * Remove a component and all its related session data
+   * Optimized to batch session operations
    */
   private function removeComponent(string $componentId): void
   {
-    $allKeys = array_keys($this->session->all());
+    $allKeys = $this->session->all();
     $prefix = "forgewire:{$componentId}";
+    $keysToRemove = [];
 
-    // Remove all keys related to this component (including :actions:* keys)
-    foreach ($allKeys as $key) {
+    // Collect all keys related to this component in one pass
+    foreach ($allKeys as $key => $_) {
       if (str_starts_with($key, $prefix . ':') || $key === $prefix) {
-        $this->session->remove($key);
+        $keysToRemove[] = $key;
       }
+    }
+
+    // Batch remove keys
+    foreach ($keysToRemove as $key) {
+      $this->session->remove($key);
     }
 
     // Remove from shared groups
     $this->removeFromSharedGroups($componentId);
 
-    // Remove active tracking
+    // Remove active tracking (if not already removed)
     $this->session->remove("forgewire:active:{$componentId}");
   }
 

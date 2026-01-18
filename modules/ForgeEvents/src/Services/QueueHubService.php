@@ -23,7 +23,8 @@ final class QueueHubService
         string $sortColumn,
         string $sortDirection,
         int $page,
-        int $perPage
+        int $perPage,
+        bool $includeDetails = false
     ): Paginator {
         $countQuery = $this->buildFilteredQuery($filters);
         $total = $countQuery->count();
@@ -38,7 +39,7 @@ final class QueueHubService
 
         $processedItems = [];
         foreach ($items as $item) {
-            $processedItems[] = $this->enrichJobData($item);
+            $processedItems[] = $this->enrichJobData($item, $includeDetails);
         }
 
         return new Paginator(

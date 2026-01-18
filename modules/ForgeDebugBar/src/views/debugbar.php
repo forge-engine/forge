@@ -11,11 +11,9 @@ $startTime = TimeCollector::getStartTime();
   <div class="forge-debugbar-logo">Forge</div>
 
   <div class="forge-debugbar-metrics">
-    <div class="forge-debugbar-tab " data-tab="memory">Memory</div>
-    <div class="forge-debugbar-tab " data-tab="messages">Messages <span
+    <div class="forge-debugbar-tab" data-tab="memory">Memory</div>
+    <div class="forge-debugbar-tab" data-tab="messages">Messages <span
         class="forge-debugbar-tab-count">(<?= count($data['messages'] ?? []) ?>)</span></div>
-    <div class="forge-debugbar-tab" data-tab="timeline">Timeline <span
-        class="forge-debugbar-tab-count">(<?= count($data['timeline'] ?? []) ?>)</span></div>
     <div class="forge-debugbar-tab" data-tab="exceptions">Exceptions <span
         class="forge-debugbar-tab-count">(<?= count($data['exceptions'] ?? []) ?>)</span></div>
     <div class="forge-debugbar-tab" data-tab="views">Views</div>
@@ -145,35 +143,6 @@ $startTime = TimeCollector::getStartTime();
       </ol>
     <?php else: ?>
       <p>No messages collected.</p>
-    <?php endif; ?>
-  </div>
-
-  <div class="forge-debugbar-panel" id="debugbar-panel-timeline">
-    <?php if (isset($data['timeline']) && is_array($data['timeline']) && !empty($data['timeline'])): ?>
-      <ol class="debugbar-timeline-list">
-        <?php foreach ($data['timeline'] as $event): ?>
-          <li class="debugbar-timeline-item">
-            <span class="debugbar-timeline-time">
-              [<?= number_format($event['relative_time'] ?? (($event['time'] ?? 0) - $startTime) * 1000, 2) ?>ms]
-            </span>
-            <strong class="debugbar-timeline-name"><?= htmlspecialchars($event['name'] ?? '') ?>
-              <?= htmlspecialchars($event['origin'] ?? '') ?></strong>
-            <?php if (in_array($event['label'] ?? '', ['info', 'warning', 'error', 'start', 'end'])): ?>
-              <span class="debugbar-timeline-label debugbar-timeline-label-<?= htmlspecialchars($event['label'] ?? '') ?>">
-                <?= htmlspecialchars(ucfirst($event['label'] ?? '')) ?>
-              </span>
-            <?php endif; ?>
-            <?php if (!empty($event['data'] ?? [])): ?>
-              <details>
-                <summary>Data</summary>
-                <pre class="debugbar-timeline-data"><?= htmlspecialchars(print_r($event['data'] ?? '', true)) ?></pre>
-              </details>
-            <?php endif; ?>
-          </li>
-        <?php endforeach; ?>
-      </ol>
-    <?php else: ?>
-      <p>No timeline events recorded.</p>
     <?php endif; ?>
   </div>
 

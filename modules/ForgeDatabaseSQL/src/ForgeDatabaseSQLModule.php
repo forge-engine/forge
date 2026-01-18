@@ -8,6 +8,9 @@ use App\Modules\ForgeDatabaseSQL\DB\DatabaseSetup;
 use Forge\Core\Config\Environment;
 use Forge\Core\Contracts\Database\DatabaseConnectionInterface;
 use Forge\Core\DI\Container;
+use Forge\Core\Session\Drivers\DatabaseSessionDriver;
+use Forge\Core\Session\Session;
+use Forge\Core\Session\SessionInterface;
 use Forge\Core\Module\Attributes\Compatibility;
 use Forge\Core\Module\Attributes\ConfigDefaults;
 use Forge\Core\Module\Attributes\Module;
@@ -21,7 +24,7 @@ use Forge\CLI\Traits\OutputHelper;
 
 #[Module(
   name: 'ForgeDatabaseSQL',
-  version: '0.5.0',
+  version: '0.6.0',
   description: 'SQL database support (SQLite, MySQL, PostgreSQL)',
   order: 0,
   author: 'Forge Team',
@@ -33,7 +36,7 @@ use Forge\CLI\Traits\OutputHelper;
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[Requires(interface: DatabaseConnectionInterface::class, version: '>=0.1.0')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
-#[Provides(interface: 'forge-database-sql', version: '0.5.0')]
+#[Provides(interface: 'forge-database-sql', version: '0.6.0')]
 #[ConfigDefaults(defaults: [
   "forge_database_sql" => []
 ])]
@@ -47,6 +50,22 @@ final class ForgeDatabaseSQLModule
   {
     $env = Environment::getInstance();
     DatabaseSetup::setup($container, $env);
+    $this->setupDatabaseSessionDriver($container, $env);
+  }
+
+  private function setupDatabaseSessionDriver(Container $container, Environment $env): void
+  {
+    $driverName = strtolower($env->get('SESSION_DRIVER', 'file'));
+    if ($driverName === 'database') {
+      try {
+        if ($container->has(DatabaseConnectionInterface::class)) {
+          $driver = new DatabaseSessionDriver();
+          $session = new Session($driver);
+          $container->setInstance(SessionInterface::class, $session);
+        }
+      } catch (\Throwable $e) {
+      }
+    }
   }
 
 }

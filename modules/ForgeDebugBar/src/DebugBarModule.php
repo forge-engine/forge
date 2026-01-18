@@ -27,6 +27,7 @@ use Forge\Core\Module\Attributes\Provides;
 use Forge\Core\Module\ForgeIcon;
 use Forge\Core\Module\LifecycleHookName;
 use Forge\Traits\InjectsAssets;
+use \App\Modules\ForgeDebugBar\DebugBar;
 
 #[Service]
 #[Module(
@@ -57,19 +58,19 @@ class DebugBarModule
 
   public function register(Container $container): void
   {
-    $container->bind(\App\Modules\ForgeDebugBar\DebugBar::class, \App\Modules\ForgeDebugBar\DebugBar::class);
+    $container->bind(DebugBar::class, DebugBar::class);
   }
 
   #[LifecycleHook(hook: LifecycleHookName::BEFORE_REQUEST)]
   public function onBeforeRequest(Request $request): void
   {
-    add_timeline_event('onBeforeRequest', 'start');
+    //add_timeline_event('onBeforeRequest', 'start');
   }
 
   #[LifecycleHook(hook: LifecycleHookName::AFTER_REQUEST)]
   public function onAfterRequest(Request $request, Response $response): void
   {
-    add_timeline_event('onAfterRequest', 'end');
+    //add_timeline_event('onAfterRequest', 'end');
 
     self::$memoryCollector = MemoryCollector::instance();
 

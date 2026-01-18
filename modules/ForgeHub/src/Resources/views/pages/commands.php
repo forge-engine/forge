@@ -2,27 +2,29 @@
 layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
 
 $commandHistory = $_SESSION['command_history'] ?? [];
+$whoami = $whoami ?? 'user';
+$pwd = $pwd ?? '/';
 ?>
-<div class="flex gap-6 h-[calc(100vh-12rem)]">
-  <div class="w-80 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col">
+<div class="flex flex-col lg:flex-row gap-6 h-[calc(100vh-12rem)]">
+  <div class="flex flex-col w-full bg-white rounded-lg border border-gray-200 shadow-sm lg:w-80">
     <div class="p-4 border-b border-gray-200">
-      <h2 class="text-lg font-semibold text-gray-900 mb-3">Commands</h2>
+      <h2 class="mb-3 text-lg font-semibold text-gray-900">Commands</h2>
       <div class="relative">
         <input type="text" id="commandSearch" placeholder="Search commands..."
-          class="w-full px-3 py-2 pl-10 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-        <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          class="px-3 py-2 pl-10 w-full text-sm rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+        <svg class="absolute top-2.5 left-3 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
         </svg>
       </div>
     </div>
-    <div class="flex-1 overflow-y-auto p-4" id="commandsList">
-      <div class="text-sm text-gray-500 text-center py-8">Loading commands...</div>
+    <div class="overflow-y-auto flex-1 p-4" id="commandsList">
+      <div class="py-8 text-sm text-center text-gray-500">Loading commands...</div>
     </div>
   </div>
 
-  <div class="flex-1 bg-white rounded-lg shadow-sm border border-gray-200 flex flex-col overflow-hidden">
-    <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-      <div class="text-sm text-gray-600 font-mono flex items-center gap-2">
+  <div class="flex overflow-hidden flex-col flex-1 bg-white rounded-lg border border-gray-200 shadow-sm">
+    <div class="flex justify-between items-center px-4 py-3 bg-gray-50 border-b border-gray-200">
+      <div class="flex gap-2 items-center font-mono text-sm text-gray-600">
         <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
           <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
         </svg>
@@ -31,23 +33,23 @@ $commandHistory = $_SESSION['command_history'] ?? [];
       <div class="text-xs text-gray-500">Forge CLI</div>
     </div>
 
-    <div class="flex-1 overflow-y-auto p-4 font-mono text-sm text-gray-900 bg-gray-900" id="cliOutput">
-      <div class="text-gray-500 italic">Ready to execute commands...</div>
+    <div class="overflow-y-auto flex-1 p-4 font-mono text-sm text-gray-900 bg-gray-900" id="cliOutput">
+      <div class="italic text-gray-500">Ready to execute commands...</div>
     </div>
 
-    <div class="border-t border-gray-200 bg-gray-50 p-4">
+    <div class="p-4 bg-gray-50 border-t border-gray-200">
       <form id="commandForm" class="flex gap-2">
-        <span class="text-green-500 font-mono font-semibold pt-2">$</span>
+        <span class="pt-2 font-mono font-semibold text-green-500">$</span>
         <input type="text" name="command" id="command"
-          class="flex-1 bg-white text-gray-900 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+          class="flex-1 px-3 py-2 font-mono text-sm text-gray-900 bg-white rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           placeholder="Enter Forge command or select from sidebar" autocomplete="off">
         <?= component(name: 'ForgeHub:button', props: ['type' => 'submit', 'variant' => 'primary', 'children' => 'Execute', 'class' => 'bg-blue-600 hover:bg-blue-700']) ?>
       </form>
-      <div id="argumentForm" class="mt-3 hidden">
-        <label class="block text-sm font-medium text-gray-700 mb-2">Command Arguments</label>
+      <div id="argumentForm" class="hidden mt-3">
+        <label class="block mb-2 text-sm font-medium text-gray-700">Command Arguments</label>
         <div id="argumentsContainer" class="space-y-3"></div>
-        <div class="mt-3 flex gap-2">
-          <button type="button" id="clearArgs" class="px-3 py-2 text-sm text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50">Clear</button>
+        <div class="flex gap-2 mt-3">
+          <button type="button" id="clearArgs" class="px-3 py-2 text-sm text-gray-600 rounded-lg border border-gray-300 hover:text-gray-900 hover:bg-gray-50">Clear</button>
         </div>
       </div>
     </div>
@@ -91,41 +93,41 @@ $commandHistory = $_SESSION['command_history'] ?? [];
         const data = response.data || response;
         allCommands = data.commands || {};
         if (Object.keys(allCommands).length === 0) {
-          commandsList.innerHTML = '<div class="text-sm text-yellow-600 text-center py-8">No commands available. Check server logs for errors.</div>';
+          commandsList.innerHTML = '<div class="py-8 text-sm text-center text-yellow-600">No commands available. Check server logs for errors.</div>';
         } else {
           renderCommands(allCommands);
         }
       })
       .catch(error => {
         console.error('Error loading commands:', error);
-        commandsList.innerHTML = '<div class="text-sm text-red-500 text-center py-8">Error loading commands: ' + escapeHtml(error.message) + '<br><small>Check browser console for details</small></div>';
+        commandsList.innerHTML = '<div class="py-8 text-sm text-center text-red-500">Error loading commands: ' + escapeHtml(error.message) + '<br><small>Check browser console for details</small></div>';
       });
   }
 
   function renderCommands(commands, searchTerm = '') {
     if (Object.keys(commands).length === 0) {
-      commandsList.innerHTML = '<div class="text-sm text-gray-500 text-center py-8">No commands available</div>';
+      commandsList.innerHTML = '<div class="py-8 text-sm text-center text-gray-500">No commands available</div>';
       return;
     }
 
     const filtered = searchTerm ? filterCommands(commands, searchTerm) : commands;
 
     if (Object.keys(filtered).length === 0) {
-      commandsList.innerHTML = '<div class="text-sm text-gray-500 text-center py-8">No commands found</div>';
+      commandsList.innerHTML = '<div class="py-8 text-sm text-center text-gray-500">No commands found</div>';
       return;
     }
 
     let html = '';
     for (const [category, categoryCommands] of Object.entries(filtered)) {
       html += `<div class="mb-6">`;
-      html += `<h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">${escapeHtml(category)}</h3>`;
+      html += `<h3 class="mb-2 text-xs font-semibold tracking-wider text-gray-500 uppercase">${escapeHtml(category)}</h3>`;
       html += `<ul class="space-y-1">`;
       for (const [cmdName, description] of Object.entries(categoryCommands)) {
         const isSelected = selectedCommand === cmdName ? 'bg-blue-50 border-blue-200' : 'border-gray-200 hover:bg-gray-50';
         html += `<li>`;
         html += `<button type="button" class="w-full text-left px-3 py-2 text-sm rounded-lg border ${isSelected} transition-colors command-item" data-command="${escapeHtml(cmdName)}">`;
         html += `<div class="font-medium text-gray-900">${escapeHtml(cmdName)}</div>`;
-        html += `<div class="text-xs text-gray-500 mt-0.5">${escapeHtml(description || 'No description')}</div>`;
+        html += `<div class="mt-0.5 text-xs text-gray-500">${escapeHtml(description || 'No description')}</div>`;
         html += `</button>`;
         html += `</li>`;
       }

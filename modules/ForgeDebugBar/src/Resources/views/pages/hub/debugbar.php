@@ -146,7 +146,7 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
           <h2 class="text-lg font-medium text-gray-800 mb-4">Views (<?= count($debugData['views']) ?>)</h2>
           <ul class="space-y-1">
             <?php foreach ($debugData['views'] as $view): ?>
-              <li class="text-sm text-gray-900 font-mono py-1">
+              <li class="text-sm text-gray-900 font-mono py-1 break-all">
                 <?= htmlspecialchars($view['name'] ?? $view) ?>
               </li>
             <?php endforeach; ?>

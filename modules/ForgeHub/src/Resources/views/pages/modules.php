@@ -18,8 +18,8 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
         <div class="bg-white rounded-lg shadow-sm p-6">
           <div class="flex items-start justify-between mb-4">
             <div class="flex-1">
-              <h2 class="text-xl font-medium text-gray-800"><?= htmlspecialchars($module['name']) ?></h2>
-              <p class="text-sm text-gray-500 mt-1"><?= htmlspecialchars($module['description']) ?></p>
+              <h2 class="text-xl font-medium text-gray-800 break-words"><?= htmlspecialchars($module['name']) ?></h2>
+              <p class="text-sm text-gray-500 mt-1 break-words"><?= htmlspecialchars($module['description']) ?></p>
             </div>
             <div class="flex items-center gap-2 ml-4">
                 <?= component(name: 'ForgeHub:badge', props: ['text' => $module['type'], 'type' => 'info']) ?>
@@ -34,12 +34,12 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
             </div>
             <div>
               <span class="text-gray-500">License:</span>
-              <span class="ml-2 text-gray-900 font-medium"><?= htmlspecialchars($module['license']) ?></span>
+              <span class="ml-2 text-gray-900 font-medium break-words"><?= htmlspecialchars($module['license']) ?></span>
             </div>
             <div class="md:col-span-2">
               <span class="text-gray-500">Class:</span>
               <code
-                class="ml-2 text-xs bg-gray-100 px-2 py-1 rounded-lg font-mono text-gray-800"><?= htmlspecialchars($module['className']) ?></code>
+                class="ml-2 text-xs bg-gray-100 px-2 py-1 rounded-lg font-mono text-gray-800 break-all"><?= htmlspecialchars($module['className']) ?></code>
             </div>
           </div>
 
@@ -65,10 +65,10 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
                     <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
                     </svg>
-                    <a href="<?= htmlspecialchars($item['route']) ?>" class="text-blue-600 hover:text-blue-800 font-medium">
+                    <a href="<?= htmlspecialchars($item['route']) ?>" class="text-blue-600 hover:text-blue-800 font-medium break-words">
                         <?= htmlspecialchars($item['label']) ?>
                     </a>
-                    <span class="text-gray-400 text-xs">(<?= htmlspecialchars($item['route']) ?>)</span>
+                    <span class="text-gray-400 text-xs break-all">(<?= htmlspecialchars($item['route']) ?>)</span>
                   </li>
                   <?php endforeach; ?>
               </ul>

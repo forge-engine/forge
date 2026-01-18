@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
     'php_executable' => '/Users/acidlake/Library/Application Support/Herd/bin/php',
     'server' => [
-        'name' => 'my-app-server',
+        'name' => 'forge-kernel-demo',
         'region' => 'nyc1',
         'size' => 's-1vcpu-1gb',
         'image' => 'ubuntu-22-04-x64',
@@ -20,7 +20,7 @@ return [
         'database_password' => 'secret',
     ],
     'deployment' => [
-        'domain' => 'forgev9.upper.do',
+        'domain' => 'forge.upper.do',
         'ssl_email' => 'jeremias2@gmail.com',
         'commands' => [],
         'post_deployment_commands' => [
@@ -31,18 +31,25 @@ return [
             'modules:forge-deployment:fix-permissions',
             'modules:forgewire:minify',
             'asset:link --type=module --module=forge-wire',
+            'asset:link --type=module --module=forge-debug-bar',
         ],
         'env_vars' => [
             'APP_ENV' => 'production',
             'APP_DEBUG' => 'true',
-            'CENTRAL_DOMAIN' => 'forgev9.upper.do',
+            'CENTRAL_DOMAIN' => 'forge.upper.do',
             'CORS_ALLOWED_ORIGINS' => [
-                'https://forgev9.upper.do',
+                'https://forge.upper.do',
             ],
             'IP_WHITE_LIST' => [
                 '127.0.0.1',
                 '::1',
-                '165.22.14.25',
+            ],
+            'FORGE_WIRE_USE_MINIFIED' => 'true',
+            'FORGE_WIRE_STALE_THRESHOLD' => 300,
+            'FORGE_DEBUG_BAR_ENABLED' => 'false',
+            'DISABLED_MODULES' => [
+                'ForgeMultiTenant',
+                'ForgeWelcome',
             ],
         ],
     ],

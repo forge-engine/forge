@@ -23,14 +23,9 @@ final class ForgeWireMiddleware extends Middleware
         if ($request->hasHeader('X-ForgeWire')) {
             $response = $this->extractLayoutIslands($response);
         } else {
-            // On regular page loads, track components found in HTML and cleanup stale ones
             $content = $response->getContent();
-            $this->trackComponentsInResponse($content);
-
-            // Cleanup stale components (with low probability to avoid overhead)
-            if (random_int(1, 20) === 1) { // 5% chance per page load
-                $this->cleanupStaleComponents();
-            }
+            $componentIdsInResponse = $this->trackComponentsInResponse($content);
+            $this->cleanupStaleComponents($componentIdsInResponse);
         }
 
         return $response;
@@ -38,44 +33,111 @@ final class ForgeWireMiddleware extends Middleware
 
     /**
      * Track components found in the response HTML
+     *
+     * @return array<int, string> Component IDs found in the HTML
      */
-    private function trackComponentsInResponse(string $html): void
+    private function trackComponentsInResponse(string $html): array
     {
         if (!preg_match_all('/fw:id=["\']([^"\']+)["\']/', $html, $matches)) {
-            return;
+            return [];
         }
 
         $now = time();
+        $componentIds = [];
         foreach ($matches[1] as $componentId) {
             $activeKey = "forgewire:active:{$componentId}";
             $this->session->set($activeKey, $now);
+            $componentIds[] = $componentId;
         }
+
+        return $componentIds;
     }
 
     /**
-     * Clean up components that haven't been seen recently
+     * Clean up components that are no longer present on the current page
+     * or haven't been seen recently.
+     *
+     * @param array<int, string> $currentComponentIds Component IDs present in the current HTML response
      */
-    private function cleanupStaleComponents(): void
+    private function cleanupStaleComponents(array $currentComponentIds): void
     {
         $allKeys = $this->session->all();
         $now = time();
-        $staleThreshold = 300; // 5 minutes
+        $staleThreshold = (int) (config('forge_wire.stale_threshold', 300));
 
-        // Find all component IDs
         $componentIds = [];
         foreach ($allKeys as $key => $_) {
+            if (preg_match('/^forgewire:active:([^:]+)$/', $key, $matches)) {
+                $componentIds[$matches[1]] = true;
+                continue;
+            }
+            if (preg_match('/^forgewire:([^:]+):class$/', $key, $matches)) {
+                $componentIds[$matches[1]] = true;
+                continue;
+            }
             if (preg_match('/^forgewire:([^:]+)$/', $key, $matches)) {
                 $componentIds[$matches[1]] = true;
             }
         }
 
+        $currentSet = array_flip($currentComponentIds);
+
         foreach (array_keys($componentIds) as $componentId) {
             $activeKey = "forgewire:active:{$componentId}";
             $lastSeen = $this->session->get($activeKey);
 
-            // If component hasn't been seen recently, clean it up
-            if ($lastSeen === null || ($now - $lastSeen) > $staleThreshold) {
+            $isNotOnCurrentPage = !isset($currentSet[$componentId]);
+            $isStaleByTime = $lastSeen === null || ($now - (int) $lastSeen) > $staleThreshold;
+
+            if ($isNotOnCurrentPage || $isStaleByTime) {
                 $this->removeComponent($componentId);
+            }
+        }
+
+        $componentIdSet = array_flip(array_keys($componentIds));
+
+        foreach ($allKeys as $key => $value) {
+            if (!str_starts_with($key, 'forgewire:processed:')) {
+                continue;
+            }
+
+            $timestamp = is_numeric($value) ? (int) $value : null;
+            if ($timestamp === null || ($now - $timestamp) > $staleThreshold) {
+                $this->session->remove($key);
+            }
+        }
+
+        foreach ($allKeys as $key => $value) {
+            if (preg_match('/^forgewire:shared-group:(.+):components$/', $key, $matches)) {
+                $componentClass = $matches[1];
+                $components = is_array($value) ? $value : [];
+                $components = array_values(array_filter(
+                    $components,
+                    fn($id) => isset($componentIdSet[$id])
+                ));
+
+                if (empty($components)) {
+                    $this->session->remove($key);
+                    $this->session->remove("forgewire:shared-group:{$componentClass}:initialized");
+                    $this->session->remove("forgewire:shared:{$componentClass}");
+                } else {
+                    $this->session->set($key, $components);
+                }
+            }
+        }
+
+        foreach ($allKeys as $key => $value) {
+            if (!str_starts_with($key, 'forge_storage:upload:')) {
+                continue;
+            }
+
+            $createdAt = null;
+            if (is_array($value) && isset($value['created_at']) && is_int($value['created_at'])) {
+                $createdAt = $value['created_at'];
+            }
+
+            if ($createdAt === null || ($now - $createdAt) > $staleThreshold) {
+                $this->session->remove($key);
             }
         }
     }

@@ -56,6 +56,12 @@ final class QueueController
   #[State(shared: true)]
   public array $stats = [];
 
+  #[State]
+  public bool $showJobModal = false;
+
+  #[State]
+  public array $jobDetails = [];
+
   public ?Paginator $paginator = null;
 
   public function __construct(
@@ -82,6 +88,8 @@ final class QueueController
       'search' => $this->search,
       'statusFilter' => $this->statusFilter,
       'queueFilter' => $this->queueFilter,
+      'showJobModal' => $this->showJobModal,
+      'jobDetails' => $this->jobDetails,
     ]);
   }
 
@@ -250,6 +258,25 @@ final class QueueController
     $this->selectedJobs = [];
   }
 
+  #[Action]
+  public function viewJob(int $jobId): void
+  {
+    $details = $this->queueService->getJobDetails($jobId);
+    if ($details) {
+      $this->jobDetails = $details;
+      $this->showJobModal = true;
+    } else {
+      $this->flash('error', 'Job not found');
+    }
+  }
+
+  #[Action]
+  public function closeJobModal(): void
+  {
+    $this->showJobModal = false;
+    $this->jobDetails = [];
+  }
+
   private function loadJobs(): void
   {
     $filters = [
@@ -267,14 +294,6 @@ final class QueueController
     );
 
     $this->jobs = $this->paginator->items();
-
-    // Pre-load all job details for client-side expansion
-    foreach ($this->jobs as &$job) {
-      $jobDetails = $this->queueService->getJobDetails($job['id']);
-      if ($jobDetails) {
-        $job['details'] = $jobDetails['details'] ?? null;
-      }
-    }
   }
 
   private function loadStats(): void

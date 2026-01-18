@@ -91,7 +91,29 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
                       <?= component(name: 'ForgeHub:badge', props: ['text' => $entry->level, 'type' => strtolower($entry->level) === 'error' ? 'error' : (strtolower($entry->level) === 'warning' ? 'warning' : 'info')]) ?>
                     </td>
                     <td class="px-6 py-4 text-sm text-gray-900">
-                      <p class="whitespace-pre-wrap break-words"><?= htmlspecialchars($entry->message) ?></p>
+                      <?php
+                      $rawMessage = $entry->message;
+                      $mainMessage = $rawMessage;
+                      $stackTrace = null;
+                      $stackFormatted = null;
+
+                      $parts = explode(' | ', $rawMessage, 2);
+                      if (count($parts) === 2) {
+                        $mainMessage = $parts[0];
+                        $stackTrace = $parts[1];
+                        $stackFormatted = str_replace(' #', "\n#", $stackTrace);
+                      }
+                      ?>
+                      <p class="whitespace-pre-wrap break-words"><?= htmlspecialchars($mainMessage) ?></p>
+                      <?php if ($stackFormatted !== null && $stackFormatted !== ''): ?>
+                        <details class="mt-2">
+                          <summary class="text-xs text-gray-500 cursor-pointer hover:text-gray-700 font-medium">
+                            Show stack trace
+                          </summary>
+                          <pre
+                            class="mt-2 p-3 bg-gray-50 rounded text-xs overflow-x-auto border border-gray-200 whitespace-pre-wrap break-words"><?= htmlspecialchars($stackFormatted) ?></pre>
+                        </details>
+                      <?php endif; ?>
                       <?php if (!empty($entry->context)): ?>
                         <details class="mt-2">
                           <summary class="text-xs text-gray-500 cursor-pointer hover:text-gray-700 font-medium">

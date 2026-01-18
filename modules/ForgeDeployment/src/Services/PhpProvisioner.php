@@ -85,6 +85,12 @@ final class PhpProvisioner
     foreach ($extensions as $ext) {
       $result = $this->sshService->execute("apt-get install -y php{$version}-{$ext}", $outputCallback, $errorCallback);
       if (!$result['success']) {
+        if ($ext === 'pcntl') {
+          $checkResult = $this->sshService->execute("php{$version} -m | grep -i pcntl", $outputCallback, $errorCallback);
+          if ($checkResult['success'] && strpos($checkResult['output'] ?? '', 'pcntl') !== false) {
+            continue;
+          }
+        }
         throw new \RuntimeException("Failed to install PHP extension {$ext}: " . $result['error']);
       }
     }
@@ -123,7 +129,7 @@ session.cookie_httponly = 1
 session.use_strict_mode = 1
 EOF;
 
-    $fpmIni = $baseIni . "\ndisable_functions = exec,passthru,shell_exec,system,proc_open,popen,curl_exec,curl_multi_exec,parse_ini_file,show_source\n";
+    $fpmIni = $baseIni . "\ndisable_functions = passthru,system,popen,curl_exec,curl_multi_exec,parse_ini_file,show_source\n";
     $cliIni = $baseIni . "\ndisable_functions = \n";
 
     $uploaded = $this->sshService->uploadString($fpmIni, "/tmp/99-forge-fpm.ini", $outputCallback);
