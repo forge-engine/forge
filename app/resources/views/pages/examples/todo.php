@@ -2,7 +2,7 @@
 
 <div fw:shared>
     <div <?= fw_id('todo-app') ?> class="container my-5" fw:depends="counter">
-        <h1 class="text-3xl">Reactive Todo List counter: <?= $counter ?></h1>
+        <h1 class="text-3xl" fw:target>Reactive Todo List counter: <?= $counter ?></h1>
 
         <div class="p-4 shadow-sm card">
             <div class="mb-3 input-group">

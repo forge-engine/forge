@@ -48,7 +48,7 @@ return array (
         ),
       ),
     ),
-    'mtime' => 1768704204,
+    'mtime' => 1768810492,
     'modulePath' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/modules/ForgeDebugBar',
   ),
   'App\\Modules\\ForgeHub\\ForgeHubModule' => 
@@ -194,7 +194,7 @@ return array (
         ),
       ),
     ),
-    'mtime' => 1768711930,
+    'mtime' => 1768806207,
     'modulePath' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/modules/ForgeEvents',
   ),
   'App\\Modules\\ForgeNotification\\ForgeNotificationModule' => 

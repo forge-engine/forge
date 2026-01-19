@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeEvents\Controllers\Hub;
 
+use App\Modules\ForgeEvents\Controllers\Hub\Traits\QueueBulkActions;
+use App\Modules\ForgeEvents\Controllers\Hub\Traits\QueueFilterActions;
+use App\Modules\ForgeEvents\Controllers\Hub\Traits\QueueJobActions;
+use App\Modules\ForgeEvents\Controllers\Hub\Traits\QueueSelectionActions;
+use App\Modules\ForgeEvents\Controllers\Hub\Traits\QueueSortActions;
 use App\Modules\ForgeEvents\Services\QueueHubService;
 use App\Modules\ForgeSqlOrm\ORM\Paginator;
-use App\Modules\ForgeWire\Attributes\Action;
 use App\Modules\ForgeWire\Attributes\Reactive;
 use App\Modules\ForgeWire\Attributes\State;
 use App\Modules\ForgeWire\Traits\ReactiveControllerHelper;
@@ -24,6 +28,11 @@ final class QueueController
 {
   use ControllerHelper;
   use ReactiveControllerHelper;
+  use QueueJobActions;
+  use QueueBulkActions;
+  use QueueFilterActions;
+  use QueueSelectionActions;
+  use QueueSortActions;
 
   #[State(shared: true)]
   public array $jobs = [];
@@ -92,192 +101,110 @@ final class QueueController
     ]);
   }
 
-  #[Action]
-  public function retryJob(int $jobId): void
+  // Actions are now in traits - see QueueJobActions, QueueBulkActions, etc.
+
+  // ============================================================================
+  // Trait Implementation Methods
+  // ============================================================================
+
+  protected function getQueueService(): QueueHubService
   {
-    if ($this->queueService->retryJob($jobId)) {
-      $this->flash('success', 'Job queued for retry');
-    } else {
-      $this->flash('error', 'Failed to retry job');
-    }
-    $this->loadJobs();
-    $this->loadStats();
+    return $this->queueService;
   }
 
-  #[Action]
-  public function deleteJob(int $jobId): void
+  protected function getSelectedJobs(): array
   {
-    if ($this->queueService->deleteJob($jobId)) {
-      $this->flash('success', 'Job deleted successfully');
-      $this->selectedJobs = array_filter($this->selectedJobs, fn($id) => $id !== $jobId);
-    } else {
-      $this->flash('error', 'Failed to delete job');
-    }
-    $this->loadJobs();
-    $this->loadStats();
+    return $this->selectedJobs;
   }
 
-  #[Action]
-  public function triggerJob(int $jobId): void
+  protected function setSelectedJobs(array $jobs): void
   {
-    if ($this->queueService->triggerJob($jobId)) {
-      $this->flash('success', 'Job triggered successfully');
-    } else {
-      $this->flash('error', 'Failed to trigger job');
-    }
-    $this->loadJobs();
-    $this->loadStats();
+    $this->selectedJobs = $jobs;
   }
 
-  #[Action]
-  public function bulkRetry(): void
+  protected function getJobs(): array
   {
-    if (empty($this->selectedJobs)) {
-      $this->flash('warning', 'No jobs selected');
-      return;
-    }
-
-    $successCount = 0;
-    foreach ($this->selectedJobs as $jobId) {
-      if ($this->queueService->retryJob($jobId)) {
-        $successCount++;
-      }
-    }
-
-    if ($successCount > 0) {
-      $this->flash('success', "{$successCount} job(s) queued for retry");
-    } else {
-      $this->flash('error', 'Failed to retry selected jobs');
-    }
-
-    $this->selectedJobs = [];
-    $this->loadJobs();
-    $this->loadStats();
+    return $this->jobs;
   }
 
-  #[Action]
-  public function bulkDelete(): void
+  protected function getStatusFilter(): string
   {
-    if (empty($this->selectedJobs)) {
-      $this->flash('warning', 'No jobs selected');
-      return;
-    }
-
-    $successCount = 0;
-    foreach ($this->selectedJobs as $jobId) {
-      if ($this->queueService->deleteJob($jobId)) {
-        $successCount++;
-      }
-    }
-
-    if ($successCount > 0) {
-      $this->flash('success', "{$successCount} job(s) deleted successfully");
-    } else {
-      $this->flash('error', 'Failed to delete selected jobs');
-    }
-
-    $this->selectedJobs = [];
-    $this->loadJobs();
-    $this->loadStats();
+    return $this->statusFilter;
   }
 
-  #[Action]
-  public function refresh(): void
+  protected function getQueueFilter(): string
   {
-    $this->loadJobs();
-    $this->loadStats();
+    return $this->queueFilter;
   }
 
-  #[Action]
-  public function clearFilters(): void
+  protected function getSearch(): string
   {
-    $this->statusFilter = '';
-    $this->queueFilter = '';
-    $this->search = '';
-    $this->currentPage = 1;
-    $this->loadJobs();
+    return $this->search;
   }
 
-  #[Action]
-  public function applyFilters(): void
+  protected function setStatusFilter(string $filter): void
   {
-    $this->currentPage = 1;
-    $this->loadJobs();
+    $this->statusFilter = $filter;
   }
 
-  #[Action]
-  public function input(...$keys): void
+  protected function setQueueFilter(string $filter): void
   {
-    if (in_array('statusFilter', $keys) || in_array('queueFilter', $keys) || in_array('search', $keys)) {
-      $this->currentPage = 1;
-      $this->loadJobs();
-    }
+    $this->queueFilter = $filter;
   }
 
-  #[Action]
-  public function sort(string $column): void
+  protected function setSearch(string $search): void
   {
-    if ($this->sortColumn === $column) {
-      $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
-    } else {
-      $this->sortColumn = $column;
-      $this->sortDirection = 'asc';
-    }
-    $this->loadJobs();
+    $this->search = $search;
   }
 
-  #[Action]
-  public function changePage(int $page): void
+  protected function getSortColumn(): string
   {
-    $this->currentPage = max(1, $page);
-    $this->loadJobs();
+    return $this->sortColumn;
   }
 
-  #[Action]
-  public function toggleJobSelection(int $jobId): void
+  protected function getSortDirection(): string
   {
-    $index = array_search($jobId, $this->selectedJobs);
-    if ($index !== false) {
-      unset($this->selectedJobs[$index]);
-      $this->selectedJobs = array_values($this->selectedJobs);
-    } else {
-      $this->selectedJobs[] = $jobId;
-    }
+    return $this->sortDirection;
   }
 
-  #[Action]
-  public function selectAll(): void
+  protected function setSortColumn(string $column): void
   {
-    if (empty($this->jobs)) {
-      $this->loadJobs();
-    }
-    $this->selectedJobs = array_column($this->jobs, 'id');
+    $this->sortColumn = $column;
   }
 
-  #[Action]
-  public function deselectAll(): void
+  protected function setSortDirection(string $direction): void
   {
-    $this->selectedJobs = [];
+    $this->sortDirection = $direction;
   }
 
-  #[Action]
-  public function viewJob(int $jobId): void
+  protected function setCurrentPage(int $page): void
   {
-    $details = $this->queueService->getJobDetails($jobId);
-    if ($details) {
-      $this->jobDetails = $details;
-      $this->showJobModal = true;
-    } else {
-      $this->flash('error', 'Job not found');
-    }
+    $this->currentPage = $page;
   }
 
-  #[Action]
-  public function closeJobModal(): void
+  protected function removeSelectedJob(int $jobId): void
   {
-    $this->showJobModal = false;
+    $this->selectedJobs = array_filter($this->selectedJobs, fn($id) => $id !== $jobId);
+  }
+
+  protected function setJobDetails(array $details): void
+  {
+    $this->jobDetails = $details;
+  }
+
+  protected function clearJobDetails(): void
+  {
     $this->jobDetails = [];
   }
+
+  protected function setShowJobModal(bool $show): void
+  {
+    $this->showJobModal = $show;
+  }
+
+  // ============================================================================
+  // Private Methods
+  // ============================================================================
 
   private function loadJobs(): void
   {
