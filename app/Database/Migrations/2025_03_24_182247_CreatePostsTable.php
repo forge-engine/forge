@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use App\Modules\ForgeAuth\Models\User;
-use App\Modules\ForgeMultiTenant\Attributes\TenantScoped;
 use App\Modules\ForgeDatabaseSQL\DB\Attributes\Column;
 use App\Modules\ForgeDatabaseSQL\DB\Attributes\GroupMigration;
 use App\Modules\ForgeDatabaseSQL\DB\Attributes\Index;
@@ -12,7 +11,6 @@ use App\Modules\ForgeDatabaseSQL\DB\Attributes\Table;
 use App\Modules\ForgeDatabaseSQL\DB\Migrations\Migration;
 use App\Modules\ForgeDatabaseSQL\DB\Enums\ColumnType;
 
-#[TenantScoped]
 #[GroupMigration('tenants')]
 #[Table(name: 'posts')]
 #[BelongsTo(related: User::class)]

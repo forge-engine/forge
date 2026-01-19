@@ -17,6 +17,7 @@ use App\Modules\ForgeDatabaseSQL\DB\Enums\ColumnType;
 use App\Modules\ForgeDatabaseSQL\DB\Schema\FormatterInterface;
 use Forge\Core\Contracts\Database\DatabaseConnectionInterface;
 use Forge\Core\Contracts\Database\QueryBuilderInterface;
+use Forge\Core\Helpers\FileExistenceCache;
 use Forge\Core\Helpers\Strings;
 use PDOException;
 use ReflectionClass;
@@ -37,7 +38,7 @@ abstract class Migration
             $this->queryBuilder = new \App\Modules\ForgeSqlOrm\ORM\QueryBuilder($this->pdo);
         }
         $this->formatter = $formatter;
-        
+
         $reflector = new ReflectionClass($this);
         $tableAttributes = $reflector->getAttributes(Table::class);
         if (!empty($tableAttributes)) {
@@ -96,7 +97,7 @@ abstract class Migration
             if ($instance instanceof Status) {
                 $columnName = $instance->column;
                 $this->schema["columns"][$columnName] = [
-                    "type" => ColumnType::ENUM->value,
+                    "type" => ColumnType::ENUM ->value,
                     "enum" => $instance->values,
                     "nullable" => $instance->nullable,
                     "default" => "PENDING",
@@ -189,46 +190,22 @@ abstract class Migration
         }
 
         $multiTenantFile =
-            BASE_PATH . "/modules/ForgeDebugBar/src/ForgeMultiTenantModule.php";
-        $multitenantReady =
-            is_file($multiTenantFile) &&
-            class_exists(
-                \App\Modules\ForgeMultiTenant\ForgeMultiTenantModule::class,
-            );
-        if ($multitenantReady) {
-            if (
-                !empty(
-                    $reflector->getAttributes(
-                        \App\Modules\ForgeMultiTenant\Attributes\TenantScoped::class,
-                    )
-                ) &&
-                class_exists(
-                    \App\Modules\ForgeMultiTenant\ForgeMultiTenantModule::class,
-                )
-            ) {
-                $this->schema["columns"]["tenant_id"] = [
-                    "type" => ColumnType::STRING->value,
-                    "length" => 36,
-                    "nullable" => false,
-                    "default" => null,
-                    "primary" => false,
-                    "unique" => false,
-                    "autoIncrement" => false,
-                ];
-                if (!in_array("tenant_id", $this->columnOrder)) {
-                    $this->columnOrder[] = "tenant_id";
-                }
+            BASE_PATH . "/modules/ForgeMultiTenant/src/ForgeMultiTenantModule.php";
 
-                if ($this->pdo->getDriver() !== "sqlite") {
-                    $this->indexes[] = [
-                        "name" =>
-                            "idx_" . $this->schema["table"] . "_tenant_id",
-                        "columns" => ["tenant_id"],
-                        "unique" => false,
-                        "table" => $this->schema["table"],
-                    ];
+        $multitenantReady = FileExistenceCache::exists($multiTenantFile);
+        if ($multitenantReady) {
+            $tenantScoped = false;
+            foreach ($reflector->getAttributes() as $attribute) {
+                if (
+                    $attribute->getName() ===
+                    'App\\Modules\\ForgeMultiTenant\\Attributes\\TenantScoped'
+                ) {
+                    $tenantScoped = true;
+                    break;
                 }
             }
+
+
         }
     }
 
@@ -320,7 +297,7 @@ abstract class Migration
                 $sql,
             );
         }
-        
+
         try {
             $this->pdo->exec($sql);
         } catch (PDOException $e) {
@@ -383,9 +360,9 @@ abstract class Migration
         $quotedColumns = array_map(fn($col) => $identifierQuote . $col . $identifierQuote, $columns);
         $quotedTableName = $identifierQuote . $tableName . $identifierQuote;
         $quotedIndexName = $identifierQuote . $indexName . $identifierQuote;
-        
+
         $uniqueClause = $unique ? 'UNIQUE ' : '';
-        
+
         return sprintf(
             'CREATE %sINDEX IF NOT EXISTS %s ON %s (%s)',
             $uniqueClause,
@@ -408,19 +385,19 @@ abstract class Migration
     public function addForeignKey(string $tableName, string $foreignKey, string $referencedTable, string $referencedColumn = 'id', string $onDelete = 'CASCADE'): ?string
     {
         $driver = $this->pdo->getDriver();
-        
+
         // SQLite foreign keys are handled differently - skip ALTER TABLE for SQLite
         if ($driver === 'sqlite') {
             return null;
         }
-        
+
         $identifierQuote = $this->getIdentifierQuote($driver);
-        
+
         $quotedTable = $identifierQuote . $tableName . $identifierQuote;
         $quotedForeignKey = $identifierQuote . $foreignKey . $identifierQuote;
         $quotedReferencedTable = $identifierQuote . $referencedTable . $identifierQuote;
         $quotedReferencedColumn = $identifierQuote . $referencedColumn . $identifierQuote;
-        
+
         return sprintf(
             'ALTER TABLE %s ADD FOREIGN KEY (%s) REFERENCES %s(%s) ON DELETE %s',
             $quotedTable,
@@ -438,23 +415,23 @@ abstract class Migration
     {
         $identifierQuote = $this->getIdentifierQuote($driver);
         $quotedTableName = $identifierQuote . $tableName . $identifierQuote;
-        
+
         $columnDefinitions = [];
         foreach ($columns as $columnName => $columnDef) {
             $quotedColumnName = $identifierQuote . $columnName . $identifierQuote;
             $normalizedDef = $this->normalizeColumnDefinition($columnDef, $driver);
             $columnDefinitions[] = $quotedColumnName . ' ' . $normalizedDef;
         }
-        
+
         $columnsSql = implode(",\n    ", $columnDefinitions);
         $ifNotExistsClause = $ifNotExists ? ' IF NOT EXISTS' : '';
-        
+
         $sql = "CREATE TABLE{$ifNotExistsClause} {$quotedTableName} (\n    {$columnsSql}\n)";
-        
+
         if ($driver === 'mysql') {
             $sql .= ' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci';
         }
-        
+
         return $sql;
     }
 
@@ -486,7 +463,7 @@ abstract class Migration
     private function normalizeColumnDefinition(string $definition, string $driver): string
     {
         $definition = trim($definition);
-            
+
         if ($driver === 'pgsql') {
             if (preg_match('/\bINTEGER\b/i', $definition) && preg_match('/\b(?:AUTO_INCREMENT|AUTOINCREMENT)\b/i', $definition)) {
                 $definition = preg_replace('/\bINTEGER\b/i', 'SERIAL', $definition);
@@ -503,7 +480,7 @@ abstract class Migration
         } elseif ($driver === 'sqlite') {
             $definition = preg_replace('/\bAUTO_INCREMENT\b/i', 'AUTOINCREMENT', $definition);
         }
-        
+
         return $definition;
     }
 
