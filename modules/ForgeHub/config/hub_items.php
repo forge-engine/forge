@@ -234,7 +234,7 @@ return array (
     'hubItems' => 
     array (
     ),
-    'mtime' => 1768804015,
+    'mtime' => 1768805354,
     'modulePath' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/modules/ForgeWire',
   ),
   'App\\Modules\\AppAuth\\AppAuthModule' => 
