@@ -6,7 +6,7 @@ return array (
     'hubItems' => 
     array (
     ),
-    'mtime' => 1768711880,
+    'mtime' => 1768834580,
     'modulePath' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/modules/ForgeDatabaseSQL',
   ),
   'App\\Modules\\ForgePackageManager\\ForgePackageManager' => 
@@ -194,7 +194,7 @@ return array (
         ),
       ),
     ),
-    'mtime' => 1768806207,
+    'mtime' => 1768835490,
     'modulePath' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/modules/ForgeEvents',
   ),
   'App\\Modules\\ForgeNotification\\ForgeNotificationModule' => 
