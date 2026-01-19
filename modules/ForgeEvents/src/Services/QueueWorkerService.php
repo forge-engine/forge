@@ -143,7 +143,7 @@ final class QueueWorkerService
         }
 
         if (isset($data['processes'])) {
-            $worker['processes'] = max(1, min(10, (int)$data['processes']));
+            $worker['processes'] = max(1, min(10, (int) $data['processes']));
         }
 
         $worker['updated_at'] = date('Y-m-d H:i:s');
@@ -181,7 +181,7 @@ final class QueueWorkerService
             foreach ($pids as $pid) {
                 if ($this->isPidRunning($pid)) {
                     if (function_exists('posix_kill')) {
-                        posix_kill($pid, SIGTERM);
+                        posix_kill($pid, defined('SIGTERM') ? SIGTERM : 15);
                     } else {
                         @exec("kill -TERM {$pid} 2>/dev/null");
                     }
@@ -193,7 +193,7 @@ final class QueueWorkerService
             foreach ($pids as $pid) {
                 if ($this->isPidRunning($pid)) {
                     if (function_exists('posix_kill')) {
-                        posix_kill($pid, SIGKILL);
+                        posix_kill($pid, defined('SIGKILL') ? SIGKILL : 9);
                     } else {
                         @exec("kill -KILL {$pid} 2>/dev/null");
                     }
@@ -284,7 +284,7 @@ final class QueueWorkerService
             escapeshellarg(BASE_PATH),
             escapeshellarg($phpExecutable),
             escapeshellarg($forgePath),
-            (int)$processes,
+            (int) $processes,
             escapeshellarg($queues),
             escapeshellarg($outputFile)
         );
@@ -295,7 +295,7 @@ final class QueueWorkerService
 
         $pid = null;
         if (!empty($pidOutput[0]) && is_numeric($pidOutput[0])) {
-            $pid = (int)$pidOutput[0];
+            $pid = (int) $pidOutput[0];
         }
 
         if ($pid) {
@@ -345,7 +345,7 @@ final class QueueWorkerService
         foreach ($pids as $pid) {
             if ($this->isPidRunning($pid)) {
                 if (function_exists('posix_kill')) {
-                    posix_kill($pid, SIGTERM);
+                    posix_kill($pid, defined('SIGTERM') ? SIGTERM : 15);
                 } else {
                     @exec("kill -TERM {$pid} 2>/dev/null");
                 }
@@ -359,7 +359,7 @@ final class QueueWorkerService
             foreach ($pids as $pid) {
                 if ($this->isPidRunning($pid)) {
                     if (function_exists('posix_kill')) {
-                        posix_kill($pid, SIGKILL);
+                        posix_kill($pid, defined('SIGKILL') ? SIGKILL : 9);
                     } else {
                         @exec("kill -KILL {$pid} 2>/dev/null");
                     }
@@ -602,7 +602,7 @@ final class QueueWorkerService
         $queues = implode(',', $worker['queues'] ?? []);
         $processes = $worker['processes'] ?? 1;
 
-        $command = "cd " . escapeshellarg($basePath) . " && " . escapeshellarg($phpExecutable) . " " . escapeshellarg($forgePath) . " modules:queue:work --workers=" . (int)$processes . " --queues=" . escapeshellarg($queues);
+        $command = "cd " . escapeshellarg($basePath) . " && " . escapeshellarg($phpExecutable) . " " . escapeshellarg($forgePath) . " modules:queue:work --workers=" . (int) $processes . " --queues=" . escapeshellarg($queues);
 
         return $command;
     }
