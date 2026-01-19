@@ -5,7 +5,7 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
 <div class="space-y-6">
   <!-- Welcome Section -->
   <div>
-    <h1 class="text-2xl font-bold text-gray-900">Welcome to ForgeHub Updated</h1>
+    <h1 class="text-2xl font-bold text-gray-900">Welcome to ForgeHub</h1>
     <p class="text-sm text-gray-500 mt-1">Your administration dashboard</p>
   </div>
 
