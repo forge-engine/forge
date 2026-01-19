@@ -10,23 +10,22 @@ use App\Modules\ForgeWire\Attributes\Action;
 use App\Modules\ForgeWire\Attributes\Reactive;
 use App\Modules\ForgeWire\Attributes\State;
 use App\Modules\ForgeWire\Traits\ReactiveControllerHelper;
-use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Http\Attributes\Middleware;
 use Forge\Core\Http\Response;
 use Forge\Core\Routing\Route;
 use Forge\Traits\ControllerHelper;
 
-#[Service]
+#[Reactive]
 #[Middleware('web')]
 #[Middleware('auth')]
 #[Middleware('hub-permissions')]
-#[Reactive]
+
 final class QueueController
 {
   use ControllerHelper;
   use ReactiveControllerHelper;
 
-  #[State]
+  #[State(shared: true)]
   public array $jobs = [];
 
   #[State]
@@ -53,7 +52,7 @@ final class QueueController
   #[State]
   public array $selectedJobs = [];
 
-  #[State(shared: true)]
+  #[State]
   public array $stats = [];
 
   #[State]
@@ -249,6 +248,9 @@ final class QueueController
   #[Action]
   public function selectAll(): void
   {
+    if (empty($this->jobs)) {
+      $this->loadJobs();
+    }
     $this->selectedJobs = array_column($this->jobs, 'id');
   }
 

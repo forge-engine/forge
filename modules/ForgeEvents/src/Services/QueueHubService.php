@@ -15,17 +15,19 @@ final class QueueHubService
 {
     public function __construct(
         private readonly QueryBuilderInterface $queryBuilder
-    ) {
+    )
+    {
     }
 
     public function getJobs(
-        array $filters,
+        array  $filters,
         string $sortColumn,
         string $sortDirection,
-        int $page,
-        int $perPage,
-        bool $includeDetails = false
-    ): Paginator {
+        int    $page,
+        int    $perPage,
+        bool   $includeDetails = false
+    ): Paginator
+    {
         $countQuery = $this->buildFilteredQuery($filters);
         $total = $countQuery->count();
 
@@ -91,45 +93,36 @@ final class QueueHubService
 
     public function getQueues(): array
     {
-        $queues = $this->queryBuilder->reset()
+        return array_column($this->queryBuilder->reset()
             ->setTable('queue_jobs')
-            ->select('queue')
-            ->get();
-
-        $uniqueQueues = array_unique(array_column($queues, 'queue'));
-        return array_values($uniqueQueues);
+            ->select('DISTINCT queue')
+            ->get(), 'queue');
     }
 
     public function getStats(): array
     {
-        $total = $this->queryBuilder->reset()
-            ->setTable('queue_jobs')
-            ->count();
-
         $now = date('Y-m-d H:i:s');
-        $pending = $this->queryBuilder->reset()
-            ->setTable('queue_jobs')
-            ->whereNull('reserved_at')
-            ->whereNull('failed_at')
-            ->whereRaw('(process_at IS NULL OR process_at <= :now)', ['now' => $now])
-            ->count();
 
-        $processing = $this->queryBuilder->reset()
+        $stats = $this->queryBuilder->reset()
             ->setTable('queue_jobs')
-            ->whereNotNull('reserved_at')
-            ->whereNull('failed_at')
-            ->count();
-
-        $failed = $this->queryBuilder->reset()
-            ->setTable('queue_jobs')
-            ->whereNotNull('failed_at')
-            ->count();
+            ->selectRaw("COUNT(*) as total")
+            ->selectRaw("COUNT(CASE WHEN failed_at IS NOT NULL THEN 1 END) as failed")
+            ->selectRaw("COUNT(CASE WHEN reserved_at IS NOT NULL AND failed_at IS NULL THEN 1 END) as processing")
+            ->selectRaw("
+            COUNT(CASE WHEN
+                reserved_at IS NULL AND
+                failed_at IS NULL AND
+                (process_at IS NULL OR process_at <= :now)
+            THEN 1 END) as pending",
+                ['now' => $now]
+            )
+            ->first();
 
         return [
-            'total' => $total,
-            'pending' => $pending,
-            'processing' => $processing,
-            'failed' => $failed,
+            'total' => (int)($stats['total'] ?? 0),
+            'pending' => (int)($stats['pending'] ?? 0),
+            'processing' => (int)($stats['processing'] ?? 0),
+            'failed' => (int)($stats['failed'] ?? 0),
         ];
     }
 

@@ -5,15 +5,14 @@ declare(strict_types=1);
 namespace App\Modules\ForgeDebugBar\Controllers\Hub;
 
 use App\Modules\ForgeDebugBar\Services\DebugBarHubService;
-use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Http\Attributes\Middleware;
 use Forge\Core\Http\Request;
 use Forge\Core\Http\Response;
 use Forge\Core\Routing\Route;
 use Forge\Traits\ControllerHelper;
 
-#[Service]
 #[Middleware('web')]
+#[Middleware('auth')]
 final class DebugBarController
 {
     use ControllerHelper;
@@ -23,7 +22,7 @@ final class DebugBarController
     ) {
     }
 
-    #[Route("/hub/debugbar")]
+    #[Route(path: "/hub/debugbar")]
     public function index(Request $request): Response
     {
         $latestData = $this->hubService->getLatestData();

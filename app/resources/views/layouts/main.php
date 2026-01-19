@@ -1,7 +1,4 @@
 <?php
-
-use Forge\Core\Helpers\ModuleResources;
-
 /**
  * @var string $title
  * @var string $content
@@ -22,11 +19,34 @@ use Forge\Core\Helpers\ModuleResources;
   <title><?= $title ?? "Default Title" ?></title>
 
   <?= raw(csrf_meta()) ?>
-  <script>
+  <!-- <script>
     window.csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
-  </script>
+  </script> -->
 </head>
+<!--
+<script>
+  Stark.define('counter', function (root) {
+  return {
+    count: 0,
+    inc() {
+      this.count++
+    },
+    dec() {
+      this.count--
+    }
+  }
+})
+</script>
+<div s-scope="{ name: 'Stark' }">
+  <input type="text" s-model="name">
+  <p s-text="'Hello ' + name"></p>
+</div>
 
+<div s-scope="counter">
+  <button s-on="click: dec()">-</button>
+  <span s-text="count"></span>
+  <button s-on="click: inc()">+</button>
+</div> -->
 <body class="h-full scroll-smooth">
   <div>
     <?= $content ?>

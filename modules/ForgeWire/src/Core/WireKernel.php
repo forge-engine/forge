@@ -16,6 +16,7 @@ use ReflectionClass;
 use ReflectionMethod;
 use RuntimeException;
 use ReflectionNamedType;
+use LogicException;
 
 final class WireKernel
 {
@@ -37,6 +38,7 @@ final class WireKernel
     $action = $p["action"] ?? null;
     $args = is_array($p["args"] ?? []) ? $p["args"] : [];
     $dirty = (array) ($p["dirty"] ?? []);
+    $depends = is_array($p["depends"] ?? null) ? $p["depends"] : null;
 
     $sessionKey = "forgewire:{$id}";
     $sharedKey = "forgewire:shared:{$class}";
@@ -56,6 +58,10 @@ final class WireKernel
 
     if (!self::$reflCache[$class]) {
       return ["ignored" => true, "id" => $id];
+    }
+
+    if ($depends !== null) {
+      $session->set("forgewire:{$id}:uses", $depends);
     }
 
     $state = $session->get($sessionKey, []);
@@ -80,7 +86,8 @@ final class WireKernel
     if ($session->has($processedKey)) {
       $processedTime = $session->get($processedKey);
       if (time() - $processedTime < 2) {
-        return ["ignored" => true, "id" => $id];
+        // TODO: Analyze this behaviour in production to check if we add it back or not
+        //return ["ignored" => true, "id" => $id];
       }
     }
 
@@ -110,6 +117,15 @@ final class WireKernel
         $action !== null
         && $action !== 'input'
         && $this->isSubmitAction($class, $action);
+
+      if ($session->has($processedKey)) {
+        $processedTime = $session->get($processedKey);
+        if (time() - $processedTime < 2) {
+          if ($action === 'input' || $isSubmit) {
+            return ["ignored" => true, "id" => $id];
+          }
+        }
+      }
 
       if (!$isSubmit) {
         $dirty = $this->filterDirty($dirty, $session, $sessionKey, $class);
@@ -144,9 +160,10 @@ final class WireKernel
         }
       }
 
-      $this->hydrator->hydrate($instance, $dirty, $session, $sessionKey, $sharedKey);
+      $sharedBag = $session->get($sharedKey, []);
+      $sharedStatesBefore = $this->getSharedStatesFromSession($sharedBag, $class);
 
-      $sharedStatesBefore = $this->getSharedStates($instance, $class);
+      $this->hydrator->hydrate($instance, $dirty, $session, $sessionKey, $sharedKey);
 
       $responseContext = new ForgeWireResponse();
       ForgeWireResponse::setContext($id, $responseContext);
@@ -182,6 +199,7 @@ final class WireKernel
       $this->initializeSharedGroupIfNeeded($id, $class, $session, $request, $sharedKey, $html);
       $this->parseAndStoreUsesForAllComponents($html, $session, $class);
       $this->discoverAndStoreUsesForRegisteredComponents($html, $session, $class);
+      $this->assertDependenciesRegisteredForController($session, $class);
 
       $this->trackComponentsInHtml($html, $session);
 
@@ -472,93 +490,92 @@ final class WireKernel
     return $sharedStates;
   }
 
+  private function getSharedStatesFromSession(array $sharedBag, string $class): array
+  {
+    $recipe = Hydrator::getRecipe($class);
+    $sharedStates = [];
+
+    foreach ($recipe as $propName => $cfg) {
+      if (($cfg['kind'] ?? null) === 'state' && ($cfg['shared'] ?? false)) {
+        $sharedStates[$propName] = $sharedBag[$propName] ?? null;
+      }
+    }
+
+    return $sharedStates;
+  }
+
   private function getSharedStateChanges(array $before, array $after): array
   {
     $changes = [];
+    $allKeys = array_unique(array_merge(array_keys($before), array_keys($after)));
 
-    foreach ($after as $propName => $value) {
-      if (!array_key_exists($propName, $before) || $before[$propName] !== $value) {
-        $changes[$propName] = $value;
+    foreach ($allKeys as $propName) {
+      $beforeValue = $before[$propName] ?? null;
+      $afterValue = $after[$propName] ?? null;
+
+      $hasChanged = false;
+
+      if (!array_key_exists($propName, $before) && array_key_exists($propName, $after)) {
+        $hasChanged = true;
+      } elseif (array_key_exists($propName, $before) && !array_key_exists($propName, $after)) {
+        $hasChanged = true;
+      } else {
+        if (is_array($afterValue) || is_array($beforeValue)) {
+          $hasChanged = json_encode($beforeValue, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) !== json_encode($afterValue, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        } else {
+          $hasChanged = $beforeValue !== $afterValue;
+        }
+      }
+
+      if ($hasChanged) {
+        $changes[$propName] = $afterValue;
       }
     }
 
     return $changes;
   }
 
-  private function findAffectedComponents(array $sharedStateChanges, SessionInterface $session, string $controllerClass, string $triggeringId): array
-  {
-    $affectedComponents = [];
-    $allSessionKeys = array_keys($session->all());
+  private function findAffectedComponents(
+    array $sharedStateChanges,
+    SessionInterface $session,
+    string $controllerClass,
+    string $triggeringId
+  ): array {
+    $affected = [];
+    $changedKeys = array_keys($sharedStateChanges);
 
-    foreach ($allSessionKeys as $sessionKey) {
-      if (!str_starts_with($sessionKey, 'forgewire:')) {
+    foreach ($session->all() as $sessionKey => $_) {
+      if (!preg_match('/^forgewire:(.+):uses$/', $sessionKey, $m)) {
         continue;
       }
 
-      if (str_contains($sessionKey, ':shared:') || str_contains($sessionKey, ':class') || str_contains($sessionKey, ':action') || str_contains($sessionKey, ':fp') || str_contains($sessionKey, ':sig') || str_contains($sessionKey, ':uses')) {
-        continue;
-      }
-
-      if (!preg_match('/^forgewire:(.+)$/', $sessionKey, $matches)) {
-        continue;
-      }
-
-      $componentId = $matches[1];
+      $componentId = $m[1];
 
       if ($componentId === $triggeringId) {
         continue;
       }
 
       $componentClass = $session->get("forgewire:{$componentId}:class");
-
-      if ($componentClass === $controllerClass) {
-        $affectedComponents[] = [
-          'id' => $componentId,
-          'class' => $controllerClass,
-        ];
+      if ($componentClass !== $controllerClass) {
+        continue;
       }
+
+      $uses = $session->get($sessionKey, []);
+      if (!is_array($uses)) {
+        continue;
+      }
+
+      if (!array_intersect($uses, $changedKeys)) {
+        continue;
+      }
+
+      $affected[] = [
+        'id' => $componentId,
+        'class' => $componentClass,
+      ];
     }
 
-    foreach ($allSessionKeys as $sessionKey) {
-      if (!str_starts_with($sessionKey, 'forgewire:')) {
-        continue;
-      }
-
-      if (!str_ends_with($sessionKey, ':class')) {
-        continue;
-      }
-
-      if (!preg_match('/^forgewire:(.+):class$/', $sessionKey, $matches)) {
-        continue;
-      }
-
-      $componentId = $matches[1];
-
-      if ($componentId === $triggeringId) {
-        continue;
-      }
-
-      $componentClass = $session->get($sessionKey);
-
-      if ($componentClass === $controllerClass) {
-        $alreadyAdded = false;
-        foreach ($affectedComponents as $existing) {
-          if ($existing['id'] === $componentId) {
-            $alreadyAdded = true;
-            break;
-          }
-        }
-
-        if (!$alreadyAdded) {
-          $affectedComponents[] = [
-            'id' => $componentId,
-            'class' => $controllerClass,
-          ];
-        }
-      }
-    }
-
-    return $affectedComponents;
+    return $affected;
   }
 
   private function renderAffectedComponent(
@@ -608,6 +625,12 @@ final class WireKernel
 
     $this->parseAndStoreUses($componentHtml, $componentId, $session);
     $this->storeExpectedActions($componentHtml, $componentId, $session, $sessionKey);
+
+    $targetElements = $this->extractTargetElements($componentHtml);
+
+    if (!empty($targetElements)) {
+      $componentHtml = '<div>' . implode('', $targetElements) . '</div>';
+    }
 
     $state = $this->hydrator->dehydrate($instance, $session, $sessionKey, $sharedKey);
     $checksum = $this->checksum->sign($sessionKey, $session, $ctx);
@@ -754,6 +777,17 @@ final class WireKernel
       }
     }
 
+    if (preg_match_all('/fw:depends=["\']([^"\']+)["\']/', $html, $matches)) {
+      foreach ($matches[1] as $match) {
+        $values = array_map('trim', explode(',', $match));
+        foreach ($values as $value) {
+          if ($value !== '') {
+            $uses[$value] = true;
+          }
+        }
+      }
+    }
+
     $session->set("forgewire:{$componentId}:uses", array_keys($uses));
   }
 
@@ -834,11 +868,44 @@ final class WireKernel
     }
   }
 
+  private function assertDependenciesRegisteredForController(SessionInterface $session, string $controllerClass): void
+  {
+    $allSessionKeys = array_keys($session->all());
+    $componentIds = [];
+
+    foreach ($allSessionKeys as $sessionKey) {
+      if (!preg_match('/^forgewire:([^:]+):class$/', $sessionKey, $matches)) {
+        continue;
+      }
+
+      $componentId = $matches[1];
+      $componentClass = $session->get($sessionKey);
+
+      if ($componentClass !== $controllerClass) {
+        continue;
+      }
+
+      $componentIds[] = $componentId;
+    }
+
+    if (empty($componentIds)) {
+      return;
+    }
+
+    foreach ($componentIds as $componentId) {
+      if (!$session->has("forgewire:{$componentId}:uses")) {
+        throw new LogicException(
+          "Reactive component {$componentId} is active but has no dependencies registered"
+        );
+      }
+    }
+  }
+
   private function extractComponentHtml(string $fullHtml, string $componentId): ?string
   {
     $escapedId = preg_quote($componentId, '/');
 
-    $pattern = '/<([^\s>]+)[^>]*\s+fw:id=["\']' . $escapedId . '["\'][^>]*(?:\/>|>)/i';
+    $pattern = '/<([^\s>]+)[^>]*fw:id=["\']' . $escapedId . '["\'][^>]*(?:\/>|>)/i';
 
     if (!preg_match($pattern, $fullHtml, $tagMatch, PREG_OFFSET_CAPTURE)) {
       return null;
@@ -868,6 +935,15 @@ final class WireKernel
 
       $result .= substr($fullHtml, $pos, $nextTag - $pos);
       $pos = $nextTag;
+
+      if ($pos + 3 < $len && substr($fullHtml, $pos, 4) === '<!--') {
+        $commentEnd = strpos($fullHtml, '-->', $pos);
+        if ($commentEnd !== false) {
+          $result .= substr($fullHtml, $pos, $commentEnd - $pos + 3);
+          $pos = $commentEnd + 3;
+          continue;
+        }
+      }
 
       if ($pos + 1 < $len && $fullHtml[$pos + 1] === '/') {
         $closeEnd = strpos($fullHtml, '>', $pos);
@@ -904,7 +980,7 @@ final class WireKernel
 
         if (!$isSelfClosing && preg_match('/<([^\s>\/]+)/i', $openTag, $openMatch)) {
           $openTagName = strtolower($openMatch[1]);
-          if (!in_array($openTagName, $selfClosingTags, true)) {
+          if ($openTagName !== '!--' && !in_array($openTagName, $selfClosingTags, true)) {
             $stack[] = $openTagName;
           }
         }
@@ -914,7 +990,110 @@ final class WireKernel
       }
     }
 
-    return empty($stack) ? $result : null;
+    if (!empty($stack)) {
+      return null;
+    }
+
+    return $result;
+  }
+
+  private function extractTargetElements(string $html): array
+  {
+    $len = strlen($html);
+    $pos = 0;
+    $targets = [];
+
+    $stack = [];
+    $captureStart = null;
+    $captureDepth = null;
+
+    $selfClosing = [
+      'area',
+      'base',
+      'br',
+      'col',
+      'embed',
+      'hr',
+      'img',
+      'input',
+      'link',
+      'meta',
+      'param',
+      'source',
+      'track',
+      'wbr'
+    ];
+
+    while ($pos < $len) {
+      $lt = strpos($html, '<', $pos);
+      if ($lt === false) {
+        break;
+      }
+
+      if ($captureStart !== null) {
+      }
+
+      if (substr($html, $lt, 4) === '<!--') {
+        $end = strpos($html, '-->', $lt + 4);
+        $pos = $end !== false ? $end + 3 : $len;
+        continue;
+      }
+
+      if (isset($html[$lt + 1]) && $html[$lt + 1] === '!') {
+        $end = strpos($html, '>', $lt + 2);
+        $pos = $end !== false ? $end + 1 : $len;
+        continue;
+      }
+
+      if (isset($html[$lt + 1]) && $html[$lt + 1] === '/') {
+        if (preg_match('/<\/\s*([^\s>]+)/A', substr($html, $lt), $m)) {
+          $tag = strtolower($m[1]);
+          array_pop($stack);
+
+          if ($captureStart !== null && count($stack) < $captureDepth) {
+            $targets[] = substr($html, $captureStart, $lt + strlen($m[0]) + 1 - $captureStart);
+            $captureStart = null;
+            $captureDepth = null;
+          }
+        }
+
+        $end = strpos($html, '>', $lt);
+        $pos = $end !== false ? $end + 1 : $len;
+        continue;
+      }
+
+      if (preg_match('/<([^\s>\/]+)/A', substr($html, $lt), $m)) {
+        $tag = strtolower($m[1]);
+        $end = strpos($html, '>', $lt);
+        if ($end === false) {
+          break;
+        }
+
+        $fullTag = substr($html, $lt, $end - $lt + 1);
+        $isSelfClosing =
+          substr($fullTag, -2) === '/>' ||
+          in_array($tag, $selfClosing, true);
+
+        if (
+          $captureStart === null &&
+          strpos($fullTag, 'fw:target') !== false
+        ) {
+          $captureStart = $lt;
+          $captureDepth = count($stack) + 1;
+        }
+
+        if (!$isSelfClosing) {
+          $stack[] = $tag;
+        }
+
+        $pos = $end + 1;
+        continue;
+      }
+
+      $pos = $lt + 1;
+    }
+
+    return $targets;
   }
 
   private function parseSharedGroupsFromHtml(string $html, SessionInterface $session, ?string $controllerClass = null): void

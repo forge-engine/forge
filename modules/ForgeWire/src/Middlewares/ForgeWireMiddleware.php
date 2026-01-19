@@ -8,9 +8,12 @@ use Forge\Core\Http\Middleware;
 use Forge\Core\Http\Request;
 use Forge\Core\Http\Response;
 use Forge\Core\Session\SessionInterface;
+use Forge\Traits\WireHelper;
 
 final class ForgeWireMiddleware extends Middleware
 {
+  use WireHelper;
+
     public function __construct(
         private SessionInterface $session
     ) {
@@ -29,168 +32,6 @@ final class ForgeWireMiddleware extends Middleware
         }
 
         return $response;
-    }
-
-    /**
-     * Track components found in the response HTML
-     *
-     * @return array<int, string> Component IDs found in the HTML
-     */
-    private function trackComponentsInResponse(string $html): array
-    {
-        if (!preg_match_all('/fw:id=["\']([^"\']+)["\']/', $html, $matches)) {
-            return [];
-        }
-
-        $now = time();
-        $componentIds = [];
-        foreach ($matches[1] as $componentId) {
-            $activeKey = "forgewire:active:{$componentId}";
-            $this->session->set($activeKey, $now);
-            $componentIds[] = $componentId;
-        }
-
-        return $componentIds;
-    }
-
-    /**
-     * Clean up components that are no longer present on the current page
-     * or haven't been seen recently.
-     *
-     * @param array<int, string> $currentComponentIds Component IDs present in the current HTML response
-     */
-    private function cleanupStaleComponents(array $currentComponentIds): void
-    {
-        $allKeys = $this->session->all();
-        $now = time();
-        $staleThreshold = (int) (config('forge_wire.stale_threshold', 300));
-
-        $componentIds = [];
-        foreach ($allKeys as $key => $_) {
-            if (preg_match('/^forgewire:active:([^:]+)$/', $key, $matches)) {
-                $componentIds[$matches[1]] = true;
-                continue;
-            }
-            if (preg_match('/^forgewire:([^:]+):class$/', $key, $matches)) {
-                $componentIds[$matches[1]] = true;
-                continue;
-            }
-            if (preg_match('/^forgewire:([^:]+)$/', $key, $matches)) {
-                $componentIds[$matches[1]] = true;
-            }
-        }
-
-        $currentSet = array_flip($currentComponentIds);
-
-        foreach (array_keys($componentIds) as $componentId) {
-            $activeKey = "forgewire:active:{$componentId}";
-            $lastSeen = $this->session->get($activeKey);
-
-            $isNotOnCurrentPage = !isset($currentSet[$componentId]);
-            $isStaleByTime = $lastSeen === null || ($now - (int) $lastSeen) > $staleThreshold;
-
-            if ($isNotOnCurrentPage || $isStaleByTime) {
-                $this->removeComponent($componentId);
-            }
-        }
-
-        $componentIdSet = array_flip(array_keys($componentIds));
-
-        foreach ($allKeys as $key => $value) {
-            if (!str_starts_with($key, 'forgewire:processed:')) {
-                continue;
-            }
-
-            $timestamp = is_numeric($value) ? (int) $value : null;
-            if ($timestamp === null || ($now - $timestamp) > $staleThreshold) {
-                $this->session->remove($key);
-            }
-        }
-
-        foreach ($allKeys as $key => $value) {
-            if (preg_match('/^forgewire:shared-group:(.+):components$/', $key, $matches)) {
-                $componentClass = $matches[1];
-                $components = is_array($value) ? $value : [];
-                $components = array_values(array_filter(
-                    $components,
-                    fn($id) => isset($componentIdSet[$id])
-                ));
-
-                if (empty($components)) {
-                    $this->session->remove($key);
-                    $this->session->remove("forgewire:shared-group:{$componentClass}:initialized");
-                    $this->session->remove("forgewire:shared:{$componentClass}");
-                } else {
-                    $this->session->set($key, $components);
-                }
-            }
-        }
-
-        foreach ($allKeys as $key => $value) {
-            if (!str_starts_with($key, 'forge_storage:upload:')) {
-                continue;
-            }
-
-            $createdAt = null;
-            if (is_array($value) && isset($value['created_at']) && is_int($value['created_at'])) {
-                $createdAt = $value['created_at'];
-            }
-
-            if ($createdAt === null || ($now - $createdAt) > $staleThreshold) {
-                $this->session->remove($key);
-            }
-        }
-    }
-
-    /**
-     * Remove a component and all its related session data
-     */
-    private function removeComponent(string $componentId): void
-    {
-        $allKeys = array_keys($this->session->all());
-        $prefix = "forgewire:{$componentId}";
-
-        // Remove all keys related to this component (including :actions:* keys)
-        foreach ($allKeys as $key) {
-            if (str_starts_with($key, $prefix . ':') || $key === $prefix) {
-                $this->session->remove($key);
-            }
-        }
-
-        // Remove from shared groups
-        $this->removeFromSharedGroups($componentId);
-
-        // Remove active tracking
-        $this->session->remove("forgewire:active:{$componentId}");
-    }
-
-    /**
-     * Remove component from shared groups and clean up empty groups
-     */
-    private function removeFromSharedGroups(string $componentId): void
-    {
-        $componentClass = $this->session->get("forgewire:{$componentId}:class");
-
-        if (!$componentClass) {
-            return;
-        }
-
-        // Find shared groups for this component class
-        $groupKey = "forgewire:shared-group:{$componentClass}:components";
-        if ($this->session->has($groupKey)) {
-            $components = $this->session->get($groupKey, []);
-            $components = array_filter($components, fn($id) => $id !== $componentId);
-            $components = array_values($components);
-
-            if (empty($components)) {
-                // Remove entire shared group if empty
-                $this->session->remove($groupKey);
-                $this->session->remove("forgewire:shared-group:{$componentClass}:initialized");
-                $this->session->remove("forgewire:shared:{$componentClass}");
-            } else {
-                $this->session->set($groupKey, $components);
-            }
-        }
     }
 
     private function extractLayoutIslands(Response $response): Response

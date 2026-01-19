@@ -12,6 +12,14 @@
 	const rootSel = '[fw\\:id]';
 	const attr = (el, n) => el.getAttribute(n);
 	const closestRoot = el => el.closest(rootSel);
+	const optimisticHandlers = {};
+
+	if (typeof window !== 'undefined') {
+		window.ForgeWire = window.ForgeWire || {};
+		window.ForgeWire.optimistic = function (actionName, handler) {
+			optimisticHandlers[actionName] = handler;
+		};
+	}
 
 	// ============================================================================
 	// ATTRIBUTE CACHING SYSTEM
@@ -100,7 +108,7 @@
 					}
 				}
 			});
-		}, { root: null, threshold: 0 });
+		}, {root: null, threshold: 0});
 		return io;
 	}
 
@@ -119,12 +127,12 @@
 		const names = getCachedAttributes(root);
 		if (names.includes('fw:poll')) {
 			const action = root.getAttribute('fw:action');
-			return { el: root, everyMs: 2000, action: action || null };
+			return {el: root, everyMs: 2000, action: action || null};
 		}
 		const param = names.find(n => n.startsWith('fw:poll.'));
 		if (param) {
 			const action = root.getAttribute('fw:action');
-			return { el: root, everyMs: parsePollInterval(param), action: action || null };
+			return {el: root, everyMs: parsePollInterval(param), action: action || null};
 		}
 
 		const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
@@ -133,12 +141,12 @@
 			const ns = getCachedAttributes(node);
 			if (ns.includes('fw:poll')) {
 				const action = node.getAttribute('fw:action');
-				return { el: node, everyMs: 2000, action: action || null };
+				return {el: node, everyMs: 2000, action: action || null};
 			}
 			const p = ns.find(n => n.startsWith('fw:poll.'));
 			if (p) {
 				const action = node.getAttribute('fw:action');
-				return { el: node, everyMs: parsePollInterval(p), action: action || null };
+				return {el: node, everyMs: parsePollInterval(p), action: action || null};
 			}
 		}
 		return null;
@@ -164,17 +172,39 @@
 		return params;
 	}
 
+	function collectDepends(root) {
+		const depends = new Set();
+		const rootDepends = root.getAttribute('fw:depends');
+		if (rootDepends) {
+			rootDepends.split(',').forEach(d => {
+				const trimmed = d.trim();
+				if (trimmed) depends.add(trimmed);
+			});
+		}
+
+		root.querySelectorAll('[fw\\:depends]').forEach(el => {
+			const d = el.getAttribute('fw:depends');
+			if (d) {
+				d.split(',').forEach(v => {
+					const trimmed = v.trim();
+					if (trimmed) depends.add(trimmed);
+				});
+			}
+		});
+		return Array.from(depends);
+	}
+
 	// ============================================================================
 	// ACTION PARSING
 	// ============================================================================
 	function parseAction(expr) {
-		if (!expr) return { method: null, args: [] };
+		if (!expr) return {method: null, args: []};
 		const t = expr.trim();
 		const open = t.indexOf('(');
-		if (open === -1) return { method: t, args: [] };
+		if (open === -1) return {method: t, args: []};
 		const method = t.slice(0, open).trim();
 		const inner = t.slice(open + 1, t.lastIndexOf(')')).trim();
-		if (!inner) return { method, args: [] };
+		if (!inner) return {method, args: []};
 
 		const args = [];
 		let cur = '', inS = false, inD = false, esc = false;
@@ -216,7 +246,7 @@
 			if (/^-?\d+(\.\d+)?$/.test(s)) return Number(s);
 			return null;
 		};
-		return { method, args: args.map(norm) };
+		return {method, args: args.map(norm)};
 	}
 
 	// ============================================================================
@@ -224,9 +254,9 @@
 	// ============================================================================
 	function getModelBinding(el) {
 		for (const name of getCachedAttributes(el)) {
-			if (name === 'fw:model') return { key: el.getAttribute(name), type: 'immediate', debounce: 0 };
-			if (name === 'fw:model.lazy') return { key: el.getAttribute(name), type: 'lazy', debounce: null };
-			if (name === 'fw:model.defer') return { key: el.getAttribute(name), type: 'defer', debounce: null };
+			if (name === 'fw:model') return {key: el.getAttribute(name), type: 'immediate', debounce: 0};
+			if (name === 'fw:model.lazy') return {key: el.getAttribute(name), type: 'lazy', debounce: null};
+			if (name === 'fw:model.defer') return {key: el.getAttribute(name), type: 'defer', debounce: null};
 			if (name === 'fw:model.debounce') return {
 				key: el.getAttribute(name),
 				type: 'debounce',
@@ -281,7 +311,7 @@
 		const csrf = window.csrfToken || document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 		if (csrf) headers['X-CSRF-TOKEN'] = csrf;
 
-		const res = await fetch('/__wire', { method: 'POST', headers, body: JSON.stringify(payload), signal });
+		const res = await fetch('/__wire', {method: 'POST', headers, body: JSON.stringify(payload), signal});
 		if (!res.ok) {
 			const text = await res.text();
 			throw new Error(`Server error: ${res.status}. ${text.substring(0, 100)}`);
@@ -312,7 +342,7 @@
 		return `${id}:${action || 'null'}:${argsStr}`;
 	}
 
-	async function trigger(root, action = null, args = [], dirtyOverride = null) {
+	async function trigger(root, action = null, args = [], dirtyOverride = null, options = null) {
 		const id = attr(root, 'fw:id');
 		if (!id) return;
 
@@ -321,7 +351,7 @@
 			return;
 		}
 
-		const req = { action, args, dirty: dirtyOverride ?? collectDirty(root) };
+		const req = {action, args, dirty: dirtyOverride ?? collectDirty(root), options: options || null};
 
 		if (queues.has(id)) {
 			queues.get(id).push(req);
@@ -353,7 +383,7 @@
 
 				inFlight.set(nextReqKey, true);
 				try {
-					const result = await performTrigger(currentRoot, nextReq.action, nextReq.args, nextReq.dirty);
+					const result = await performTrigger(currentRoot, nextReq.action, nextReq.args, nextReq.dirty, nextReq.options);
 					if (result && result.root) {
 						currentRoot = result.root;
 					}
@@ -420,6 +450,7 @@
 		}
 
 		if (state) {
+			root.__fw_state = state;
 			const keyToElement = new Map();
 			const inputs = root.querySelectorAll('input, textarea, select');
 			for (const el of inputs) {
@@ -475,7 +506,7 @@
 	// ============================================================================
 	// TRIGGER EXECUTION
 	// ============================================================================
-	async function performTrigger(root, action = null, args = [], dirtyOverride = null) {
+	async function performTrigger(root, action = null, args = [], dirtyOverride = null, options = null) {
 		if (pendingRedirectTimeout !== null) {
 			clearTimeout(pendingRedirectTimeout);
 			pendingRedirectTimeout = null;
@@ -490,7 +521,7 @@
 
 		let currentRoot = document.querySelector(`[fw\\:id="${id}"]`);
 		if (!currentRoot) {
-			return { root };
+			return {root};
 		}
 		root = currentRoot;
 
@@ -501,12 +532,26 @@
 			dirty = {};
 		}
 
+		const opts = options || {};
+		if (action && opts.optimistic === true && optimisticHandlers[action]) {
+			try {
+				optimisticHandlers[action]({
+					root,
+					id,
+					lastState: root.__fw_state || null,
+					dirty,
+					args
+				});
+			} catch (e) {
+			}
+		}
+
 		let focusInfo = null;
 		const active = document.activeElement;
 		if (active && root.contains(active)) {
 			const bind = getModelBinding(active);
 			if (bind) {
-				focusInfo = { key: bind.key, start: active.selectionStart ?? null, end: active.selectionEnd ?? null };
+				focusInfo = {key: bind.key, start: active.selectionStart ?? null, end: active.selectionEnd ?? null};
 			}
 		}
 
@@ -520,19 +565,20 @@
 				controller: attr(root, 'fw:controller'),
 				action, args,
 				dirty,
+				depends: collectDepends(root),
 				checksum: root.__fw_checksum || root.getAttribute('fw:checksum') || null,
-				fingerprint: { path: location.pathname }
+				fingerprint: {path: location.pathname}
 			});
 		} catch (e) {
 			console.error('ForgeWire Request Failed:', e);
 			root.removeAttribute('fw:loading');
-			return { root };
+			return {root};
 		} finally {
 			root.removeAttribute('fw:loading');
 		}
 
 		if (out.ignored) {
-			return { root };
+			return {root};
 		}
 
 		if (out.errors && Object.keys(out.errors).length > 0) {
@@ -621,7 +667,7 @@
 					window.location.assign(redirectUrl);
 				}
 			}
-			return { root };
+			return {root};
 		}
 
 		if (focusInfo) {
@@ -637,7 +683,7 @@
 			}
 		}
 
-		return { root };
+		return {root};
 	}
 
 	// ============================================================================
@@ -687,7 +733,7 @@
 		const pollAction = target.action || null;
 
 		const wasVisible = prev ? prev.visible : false;
-		pollers.set(id, { el: root, timer: null, everyMs: every, visible: wasVisible, action: pollAction });
+		pollers.set(id, {el: root, timer: null, everyMs: every, visible: wasVisible, action: pollAction});
 
 		const obs = ensureObserver();
 		if (!prev || prev.el !== root) {
@@ -777,7 +823,7 @@
 			}
 
 			const pollAction = currentRec.action || null;
-			const parsed = pollAction ? parseAction(pollAction) : { method: null, args: [] };
+			const parsed = pollAction ? parseAction(pollAction) : {method: null, args: []};
 			trigger(currentRoot, parsed.method, parsed.args);
 
 			if (currentRec.timer === timerId && currentRec.visible && !queues.has(id)) {
@@ -807,8 +853,8 @@
 	 * @param {Function} beforeTrigger - Optional callback before triggering (receives el, root, e)
 	 * @returns {boolean} - Returns true if directive was handled
 	 */
-	function handleDirective(e, directiveName, suppressMs = 120, beforeTrigger = null) {
-		const escapedName = directiveName.replace(/:/g, '\\:');
+	function handleDirective(e, directiveName, suppressMs = 120, beforeTrigger = null, opts = null) {
+		const escapedName = directiveName.replace(/:/g, '\\:').replace(/\./g, '\\.');
 		const el = e.target.closest(`[${escapedName}]`);
 		if (!el) return false;
 
@@ -834,7 +880,12 @@
 			combinedArgs = obj;
 		}
 
-		trigger(root, parsed.method, combinedArgs);
+		const options = opts || {};
+		if (options.optimistic === true) {
+			trigger(root, parsed.method, combinedArgs, null, {optimistic: true});
+		} else {
+			trigger(root, parsed.method, combinedArgs);
+		}
 		return true;
 	}
 
@@ -843,21 +894,27 @@
 	// ============================================================================
 
 	document.addEventListener('click', (e) => {
+		if (handleDirective(e, 'fw:click.optimistic', 120, null, {optimistic: true})) {
+			return;
+		}
 		handleDirective(e, 'fw:click', 120);
 	});
 
 	document.addEventListener('submit', (e) => {
-		const form = e.target.closest('[fw\\:submit]');
+		const form = e.target.closest('[fw\\:submit],[fw\\:submit\\.optimistic]');
 		if (!form) return;
 
 		const lazyInputs = form.querySelectorAll('[fw\\:model\\.lazy]');
 		lazyInputs.forEach(input => {
 			if (document.activeElement === input) {
-				const event = new Event('change', { bubbles: true });
+				const event = new Event('change', {bubbles: true});
 				input.dispatchEvent(event);
 			}
 		});
 
+		if (handleDirective(e, 'fw:submit.optimistic', 150, null, {optimistic: true})) {
+			return;
+		}
 		handleDirective(e, 'fw:submit', 150);
 	});
 

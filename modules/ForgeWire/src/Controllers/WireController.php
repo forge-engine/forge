@@ -40,11 +40,11 @@ final class WireController
 
       $result = $this->kernel->process($payload, $request, $this->session);
 
-      if (random_int(1, 20) === 1) { // 5% chance per request (reduced from 10%)
+      if (random_int(1, 20) === 1) {
         $this->cleanupStaleComponents();
       }
 
-      if (random_int(1, 10) === 1) { // 10% chance per request
+      if (random_int(1, 10) === 1) {
         $this->gcEmptyComponents();
       }
 
@@ -155,9 +155,8 @@ final class WireController
   {
     $allKeys = $this->session->all();
     $now = time();
-    $staleThreshold = 300; // 5 minutes
+    $staleThreshold = 200;
 
-    // Find all component IDs and their last seen times in one pass
     $componentLastSeen = [];
     foreach ($allKeys as $key => $value) {
       if (preg_match('/^forgewire:active:([^:]+)$/', $key, $matches)) {
@@ -167,9 +166,7 @@ final class WireController
       }
     }
 
-    // Clean up stale components
     foreach ($componentLastSeen as $componentId => $lastSeen) {
-      // If component hasn't been seen recently, clean it up
       if ($lastSeen === null || ($now - $lastSeen) > $staleThreshold) {
         $this->removeComponent($componentId);
       }
@@ -186,22 +183,17 @@ final class WireController
     $prefix = "forgewire:{$componentId}";
     $keysToRemove = [];
 
-    // Collect all keys related to this component in one pass
     foreach ($allKeys as $key => $_) {
       if (str_starts_with($key, $prefix . ':') || $key === $prefix) {
         $keysToRemove[] = $key;
       }
     }
 
-    // Batch remove keys
     foreach ($keysToRemove as $key) {
       $this->session->remove($key);
     }
 
-    // Remove from shared groups
     $this->removeFromSharedGroups($componentId);
-
-    // Remove active tracking (if not already removed)
     $this->session->remove("forgewire:active:{$componentId}");
   }
 
@@ -217,7 +209,6 @@ final class WireController
       return;
     }
 
-    // Find shared groups for this component class
     $groupKey = "forgewire:shared-group:{$componentClass}:components";
     if ($this->session->has($groupKey)) {
       $components = $this->session->get($groupKey, []);
@@ -225,7 +216,6 @@ final class WireController
       $components = array_values($components);
 
       if (empty($components)) {
-        // Remove entire shared group if empty
         $this->session->remove($groupKey);
         $this->session->remove("forgewire:shared-group:{$componentClass}:initialized");
         $this->session->remove("forgewire:shared:{$componentClass}");
@@ -243,7 +233,6 @@ final class WireController
     $allKeys = $this->session->all();
     $components = [];
     foreach ($allKeys as $key => $_) {
-      // Match base component session keys (not special keys like :class, :action, etc.)
       if (preg_match('/^forgewire:[^:]+$/', $key)) {
         $components[] = $key;
       }
@@ -252,7 +241,6 @@ final class WireController
     foreach ($components as $base) {
       $state = $this->session->get($base, []);
       if ($state === []) {
-        // Extract component ID from key (forgewire:componentId)
         $componentId = str_replace('forgewire:', '', $base);
         $this->removeComponent($componentId);
       }

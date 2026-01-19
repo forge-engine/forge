@@ -15,16 +15,17 @@ final class QueryBuilder implements QueryBuilderInterface
 
   public function __construct(
     private DatabaseConnectionInterface $conn,
-    private string $table = '',
-    private array $select = [],
-    private array $where = [],
-    private array $params = [],
-    private ?string $order = null,
-    private ?int $limit = null,
-    private ?int $offset = null,
-    private bool $forUpdate = false,
-    private array $joins = []
-  ) {
+    private string                      $table = '',
+    private array                       $select = [],
+    private array                       $where = [],
+    private array                       $params = [],
+    private ?string                     $order = null,
+    private ?int                        $limit = null,
+    private ?int                        $offset = null,
+    private bool                        $forUpdate = false,
+    private array                       $joins = []
+  )
+  {
   }
 
   public function table(?string $name): self
@@ -212,6 +213,15 @@ final class QueryBuilder implements QueryBuilderInterface
     return $this->get();
   }
 
+  public function selectRaw(string $expression, array $params = []): self
+  {
+    $this->select[] = $expression;
+    if (!empty($params)) {
+      $this->params = array_merge($this->params, $params);
+    }
+    return $this;
+  }
+
 
   public function get(): array
   {
@@ -232,8 +242,7 @@ final class QueryBuilder implements QueryBuilderInterface
   {
     $sql = 'SELECT ' . ($this->select === [] ? '*' : implode(', ', $this->select))
       . " FROM {$this->table}";
-
-    // Add joins
+  
     foreach ($this->joins as $join) {
       $sql .= " {$join['type']} JOIN {$join['table']} ON {$join['first']} {$join['operator']} {$join['second']}";
     }
@@ -274,7 +283,7 @@ final class QueryBuilder implements QueryBuilderInterface
     $startTime = microtime(true);
     $this->conn->prepare($sql)->execute($data);
     $this->collectQuery($sql, $data, (microtime(true) - $startTime) * 1000, 'insert');
-    return (int) $this->conn->getPdo()->lastInsertId();
+    return (int)$this->conn->getPdo()->lastInsertId();
   }
 
   public function update(array $data): int
@@ -328,7 +337,7 @@ final class QueryBuilder implements QueryBuilderInterface
 
   public function count(string $column = '*'): int
   {
-    return (int) $this->aggregate("COUNT($column)");
+    return (int)$this->aggregate("COUNT($column)");
   }
 
   private function aggregate(string $fn): mixed
@@ -341,23 +350,23 @@ final class QueryBuilder implements QueryBuilderInterface
 
   public function sum(string $column): float
   {
-    return (float) $this->aggregate("SUM($column)");
+    return (float)$this->aggregate("SUM($column)");
   }
 
 
   public function avg(string $column): float
   {
-    return (float) $this->aggregate("AVG($column)");
+    return (float)$this->aggregate("AVG($column)");
   }
 
   public function min(string $column): float
   {
-    return (float) $this->aggregate("MIN($column)");
+    return (float)$this->aggregate("MIN($column)");
   }
 
   public function max(string $column): float
   {
-    return (float) $this->aggregate("MAX($column)");
+    return (float)$this->aggregate("MAX($column)");
   }
 
   public function reset(): self
