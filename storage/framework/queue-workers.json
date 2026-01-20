@@ -7,11 +7,13 @@
                 "notifications"
             ],
             "processes": 1,
-            "pids": [],
-            "status": "stopped",
+            "pids": [
+                39243
+            ],
+            "status": "running",
             "created_at": "2026-01-17 16:53:29",
-            "updated_at": "2026-01-17 16:57:49",
-            "last_started_at": "2026-01-17 16:57:42",
+            "updated_at": "2026-01-20 21:50:26",
+            "last_started_at": "2026-01-20 21:50:26",
             "output_file": "/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/storage/framework/queue-worker-outputs/worker_696bbe89710bd5.28007649.log"
         },
         "worker_696bbeb0c36851.87760680": {
@@ -21,12 +23,28 @@
                 "page_visits"
             ],
             "processes": 1,
+            "pids": [
+                39274
+            ],
+            "status": "running",
+            "created_at": "2026-01-17 16:54:08",
+            "updated_at": "2026-01-20 21:50:32",
+            "last_started_at": "2026-01-20 21:50:32",
+            "output_file": "/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/storage/framework/queue-worker-outputs/worker_696bbeb0c36851.87760680.log"
+        },
+        "worker_696ff9cf4e4434.57085079": {
+            "id": "worker_696ff9cf4e4434.57085079",
+            "name": "Cache Refresh",
+            "queues": [
+                "cache_refresh"
+            ],
+            "processes": 1,
             "pids": [],
             "status": "stopped",
-            "created_at": "2026-01-17 16:54:08",
-            "updated_at": "2026-01-17 16:55:35",
-            "last_started_at": "2026-01-17 16:54:12",
-            "output_file": "/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/storage/framework/queue-worker-outputs/worker_696bbeb0c36851.87760680.log"
+            "created_at": "2026-01-20 21:55:27",
+            "updated_at": "2026-01-20 21:56:06",
+            "last_started_at": "2026-01-20 21:55:30",
+            "output_file": "/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/storage/framework/queue-worker-outputs/worker_696ff9cf4e4434.57085079.log"
         }
     }
 }

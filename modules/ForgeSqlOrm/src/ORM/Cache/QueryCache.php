@@ -1,8 +1,12 @@
 <?php
+
 declare(strict_types=1);
 
 namespace App\Modules\ForgeSqlOrm\ORM\Cache;
 
+use Forge\Core\DI\Attributes\Service;
+
+#[Service]
 final class QueryCache
 {
     private array $cache = [];

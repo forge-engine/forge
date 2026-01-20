@@ -11,7 +11,7 @@ use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Helpers\Url;
 
 #[Service]
-final class QueueHubService
+class QueueHubService
 {
     public function __construct(
         private readonly QueryBuilderInterface $queryBuilder

@@ -22,7 +22,7 @@ class User extends Model
     use CanLoadRelations;
 
     #[Column(primary: true, cast: Cast::INT)]
-    public int $id;
+    public ?int $id = null;
 
     #[Column(cast: Cast::STRING)]
     public string $status;

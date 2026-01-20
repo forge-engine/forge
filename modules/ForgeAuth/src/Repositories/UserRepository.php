@@ -10,9 +10,13 @@ use App\Modules\ForgeAuth\Models\User;
 use App\Modules\ForgeSqlOrm\ORM\Cache\QueryCache;
 use App\Modules\ForgeSqlOrm\ORM\Paginator;
 use App\Modules\ForgeSqlOrm\ORM\RecordRepository;
+use Forge\Core\Cache\Attributes\Cache;
+use Forge\Traits\CacheLifecycleHooks;
 
-final class UserRepository extends RecordRepository implements UserRepositoryInterface
+class UserRepository extends RecordRepository implements UserRepositoryInterface
 {
+  use CacheLifecycleHooks;
+
   protected function getModelClass(): string
   {
     return User::class;
@@ -37,50 +41,28 @@ final class UserRepository extends RecordRepository implements UserRepositoryInt
     return parent::create($data);
   }
 
+  #[Cache(key: 'find_by_{id}', ttl: 3600)]
   public function findById(int $id): ?User
   {
     return parent::find($id);
   }
 
+  #[Cache(key: 'pagination_{page}_{perPage}', ttl: 3600)]
   public function paginate(int $page = 1, int $perPage = 10, array $options = []): Paginator
   {
     return parent::paginate($page, $perPage, $options);
   }
 
+  #[Cache(key: 'user_identifier_{identifier}', ttl: 3600)]
   public function findByIdentifier(string $identifier): ?User
   {
-    $key = $this->cache->generateKey($this->tableName, 'findByIdentifier', $identifier);
-    $cached = $this->cache->get($key);
-
-    if ($cached !== null) {
-      return $cached;
-    }
-
-    $user = User::query()->where('identifier', '=', $identifier)->first();
-
-    if ($user !== null) {
-      $this->cache->set($key, $user);
-    }
-
-    return $user;
+    return User::query()->where('identifier', '=', $identifier)->first();
   }
 
+  #[Cache(key: 'user_email_{email}', ttl: 3600)]
   public function findByEmail(string $email): ?User
   {
-    $key = $this->cache->generateKey($this->tableName, 'findByEmail', $email);
-    $cached = $this->cache->get($key);
-
-    if ($cached !== null) {
-      return $cached;
-    }
-
-    $user = User::query()->where('email', '=', $email)->first();
-
-    if ($user !== null) {
-      $this->cache->set($key, $user);
-    }
-
-    return $user;
+    return User::query()->where('email', '=', $email)->first();
   }
 }
 

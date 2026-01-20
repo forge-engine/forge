@@ -60,6 +60,12 @@ trait CanLoadRelations
         /** @var Model $target */
         $target = $rel->target;
         $localValue = $this->{$rel->localKey};
+        
+        // Handle null local key by returning an impossible query that returns no results
+        if ($localValue === null) {
+            return $target::query()->where('1', '=', '0');
+        }
+        
         return $target::query()->where($rel->foreignKey, '=', $localValue);
     }
 
@@ -68,6 +74,12 @@ trait CanLoadRelations
         /** @var Model $target */
         $target = $rel->target;
         $localValue = $this->{$rel->localKey};
+        
+        // Handle null local key by returning an impossible query that returns no results
+        if ($localValue === null) {
+            return $target::query()->where('1', '=', '0');
+        }
+        
         return $target::query()->where($rel->foreignKey, '=', $localValue);
     }
 }

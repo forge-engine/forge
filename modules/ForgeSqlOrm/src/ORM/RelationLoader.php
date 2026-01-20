@@ -44,14 +44,17 @@ final class RelationLoader
         $parentIndexMap = [];
         
         foreach ($this->parents as $index => $p) {
-            $key = (string)$p->{$rel->localKey};
-            if ($key !== '' && $key !== '0') {
-                $localKeysMap[$key] = true;
-                if (!isset($parentIndexMap[$key])) {
-                    $parentIndexMap[$key] = [];
-                }
-                $parentIndexMap[$key][] = $index;
+            $key = $p->{$rel->localKey};
+            // Handle null keys properly
+            if ($key === null || $key === '' || $key === '0') {
+                continue;
             }
+            $stringKey = (string)$key;
+            $localKeysMap[$stringKey] = true;
+            if (!isset($parentIndexMap[$stringKey])) {
+                $parentIndexMap[$stringKey] = [];
+            }
+            $parentIndexMap[$stringKey][] = $index;
         }
 
         $localKeys = array_keys($localKeysMap);
@@ -84,8 +87,14 @@ final class RelationLoader
         }
 
         foreach ($this->parents as $index => $parent) {
-            $key = (string)$parent->{$rel->localKey};
-            $value = $bucket[$key] ?? ($kind === RelationKind::HasOne ? null : []);
+            $key = $parent->{$rel->localKey};
+            // Handle null keys properly
+            if ($key === null || $key === '' || $key === '0') {
+                $parent->setRelation($relation, $kind === RelationKind::HasOne ? null : []);
+                continue;
+            }
+            $stringKey = (string)$key;
+            $value = $bucket[$stringKey] ?? ($kind === RelationKind::HasOne ? null : []);
             $parent->setRelation($relation, $value);
             
             if (!empty($nested) && $value !== null) {
