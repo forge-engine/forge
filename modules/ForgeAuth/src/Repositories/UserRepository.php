@@ -7,12 +7,13 @@ namespace App\Modules\ForgeAuth\Repositories;
 use App\Modules\ForgeAuth\Contracts\UserRepositoryInterface;
 use App\Modules\ForgeAuth\Dto\CreateUserData;
 use App\Modules\ForgeAuth\Models\User;
-use App\Modules\ForgeSqlOrm\ORM\Cache\QueryCache;
 use App\Modules\ForgeSqlOrm\ORM\Paginator;
 use App\Modules\ForgeSqlOrm\ORM\RecordRepository;
 use Forge\Core\Cache\Attributes\Cache;
+use Forge\Core\Cache\Attributes\NoCache;
 use Forge\Traits\CacheLifecycleHooks;
 
+#[NoCache]
 class UserRepository extends RecordRepository implements UserRepositoryInterface
 {
   use CacheLifecycleHooks;

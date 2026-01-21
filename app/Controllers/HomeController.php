@@ -4,67 +4,38 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
-use App\Modules\ForgeAuth\Repositories\UserRepository;
-use App\Modules\ForgeAuth\Services\ForgeAuthService;
-use App\Modules\ForgeAuth\Validation\ForgeAuthValidate;
 use App\Modules\ForgeNotification\Services\ForgeNotificationService;
 use App\Modules\ForgeSqlOrm\ORM\QueryBuilder;
-use App\Services\UserService;
 use Forge\Core\Contracts\Database\DatabaseConnectionInterface;
-use Forge\Core\Helpers\Flash;
-use Forge\Core\Helpers\Redirect;
 use Forge\Core\Http\Attributes\Middleware;
 use Forge\Core\Http\Response;
 use Forge\Core\Routing\Route;
 use Forge\Core\Http\Request;
-use Forge\Exceptions\ValidationException;
 use Forge\Traits\ControllerHelper;
-use Forge\Traits\PaginationHelper;
 use Forge\Traits\SecurityHelper;
 
 #[Middleware("web")]
 final class HomeController
 {
   use ControllerHelper;
-  use PaginationHelper;
   use SecurityHelper;
 
   public function __construct(
-    public readonly ForgeAuthService $forgeAuthService,
-    public readonly UserService $userService,
-    public readonly UserRepository $userRepository,
-    public readonly QueryBuilder $builder,
+    public readonly QueryBuilder                $builder,
     public readonly DatabaseConnectionInterface $connection,
-    public readonly ForgeNotificationService $notification,
-  ) {
+    public readonly ForgeNotificationService    $notification,
+  )
+  {
     //
   }
 
   #[Route("/")]
   public function index(Request $request): Response
   {
-
-    $paginationParams = $this->getPaginationParamsForApi($request);
-
-    $paginator = $this->userRepository->paginate(
-      $paginationParams['page'],
-      $paginationParams['limit'],
-      [
-        'sort' => $paginationParams['column'],
-        'direction' => $paginationParams['direction'],
-        'search' => $paginationParams['search'],
-        'filters' => $paginationParams['filters'],
-        'baseUrl' => $paginationParams['baseUrl'],
-        'queryParams' => $paginationParams['queryParams'],
-      ]
-    );
-
     $data = [
-      "title" => "Welcome to Forge Framework",
-      "paginator" => $paginator,
+      "title" => "Welcome to Forge Kernel",
     ];
 
-    collect_message_data("HomeController@index", "info");
     return $this->view(view: 'pages/home/index', data: $data);
   }
 
@@ -146,34 +117,6 @@ final class HomeController
     return $this->jsonResponse($results);
   }
 
-  #[Route("/", "POST")]
-  public function register(Request $request): Response
-  {
-    try {
-      ForgeAuthValidate::register($request->postData);
-      $credentials = $this->sanitize($request->postData);
-      $this->forgeAuthService->register($credentials);
-
-      Flash::set("success", "User registered successfully");
-      return Redirect::to("/");
-    } catch (ValidationException) {
-      return Redirect::to("/");
-    }
-  }
-
-  #[Route("/{id}", "PATCH")]
-  #[Middleware("App\Modules\ForgeAuth\Middlewares\AuthMiddleware")]
-  public function updateUser(Request $request, string $id): Response
-  {
-    $id = (int) $id;
-    $data = [
-      "identifier" => $request->postData["identifier"],
-      "email" => $request->postData["email"],
-    ];
-    //$this->userRepository->update($id, $data);
-
-    return new Response("<h1> Successfully updated!</h1>", 401);
-  }
 
   #[Route("/examples/raw-sql")]
   public function rawSqlExamples(): Response
@@ -268,7 +211,7 @@ final class HomeController
     $checkBeforeStmt = $this->connection->prepare("SELECT COUNT(*) as count FROM example_table WHERE name = :name");
     $checkBeforeStmt->execute([':name' => 'transaction_test_rollback']);
     $beforeResult = $checkBeforeStmt->fetch();
-    $countBefore = (int) $beforeResult['count'];
+    $countBefore = (int)$beforeResult['count'];
 
     $this->connection->beginTransaction();
     try {
@@ -280,7 +223,7 @@ final class HomeController
       $checkAfterStmt = $this->connection->prepare("SELECT COUNT(*) as count FROM example_table WHERE name = :name");
       $checkAfterStmt->execute([':name' => 'transaction_test_rollback']);
       $afterResult = $checkAfterStmt->fetch();
-      $countAfter = (int) $afterResult['count'];
+      $countAfter = (int)$afterResult['count'];
       return [
         'status' => 'rolled_back',
         'message' => 'Transaction rolled back successfully',
