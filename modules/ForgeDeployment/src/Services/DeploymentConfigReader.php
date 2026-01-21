@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\ForgeDeployment\Services;
 
 use Forge\Core\DI\Attributes\Service;
+use Forge\Core\Helpers\FileExistenceCache;
 
 #[Service]
 final class DeploymentConfigReader
@@ -14,18 +15,31 @@ final class DeploymentConfigReader
 
   public function readConfig(?string $configPath = null): ?array
   {
-    if ($configPath !== null && file_exists($configPath)) {
+    $pathsToCheck = [];
+    if ($configPath !== null) {
+      $pathsToCheck[] = $configPath;
+    }
+    
+    $projectRoot = BASE_PATH;
+    $configFile = $projectRoot . '/' . self::CONFIG_FILE;
+    $pathsToCheck[] = $configFile;
+    
+    $configFileAlt = $projectRoot . '/' . self::CONFIG_FILE_ALT;
+    $pathsToCheck[] = $configFileAlt;
+    
+    if (!empty($pathsToCheck)) {
+      FileExistenceCache::preload($pathsToCheck);
+    }
+    
+    if ($configPath !== null && FileExistenceCache::exists($configPath)) {
       return $this->loadConfigFile($configPath);
     }
 
-    $projectRoot = BASE_PATH;
-    $configFile = $projectRoot . '/' . self::CONFIG_FILE;
-    if (file_exists($configFile)) {
+    if (FileExistenceCache::exists($configFile)) {
       return $this->loadConfigFile($configFile);
     }
 
-    $configFileAlt = $projectRoot . '/' . self::CONFIG_FILE_ALT;
-    if (file_exists($configFileAlt)) {
+    if (FileExistenceCache::exists($configFileAlt)) {
       return $this->loadConfigFile($configFileAlt);
     }
 
@@ -34,7 +48,7 @@ final class DeploymentConfigReader
 
   public function hasConfig(?string $configPath = null): bool
   {
-    if ($configPath !== null && file_exists($configPath)) {
+    if ($configPath !== null && FileExistenceCache::exists($configPath)) {
       return true;
     }
 
@@ -45,7 +59,7 @@ final class DeploymentConfigReader
 
   private function loadConfigFile(string $path): ?array
   {
-    if (!file_exists($path) || !is_readable($path)) {
+    if (!FileExistenceCache::exists($path) || !is_readable($path)) {
       return null;
     }
 

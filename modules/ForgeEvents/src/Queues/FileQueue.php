@@ -6,6 +6,7 @@ namespace App\Modules\ForgeEvents\Queues;
 
 use App\Modules\ForgeEvents\Contracts\QueueInterface;
 use App\Modules\ForgeEvents\Enums\QueuePriority;
+use Forge\Core\Helpers\FileExistenceCache;
 use Forge\Traits\FileHelper;
 
 final class FileQueue implements QueueInterface
@@ -66,8 +67,12 @@ final class FileQueue implements QueueInterface
             return $priorityA <=> $priorityB;
         });
 
+        if (!empty($files)) {
+            FileExistenceCache::preload($files);
+        }
+
         foreach ($files as $file) {
-            if (!file_exists($file)) {
+            if (!FileExistenceCache::exists($file)) {
                 continue;
             }
 
@@ -125,14 +130,23 @@ final class FileQueue implements QueueInterface
 
     public function count(): int
     {
-        return count(glob("{$this->queuePath}/*.job"));
+        $files = glob("{$this->queuePath}/*.job");
+        if (!empty($files)) {
+            FileExistenceCache::preload($files);
+        }
+        return count($files);
     }
 
     public function clear(): void
     {
         $files = glob("{$this->queuePath}/*.job");
+        if (!empty($files)) {
+            FileExistenceCache::preload($files);
+        }
         foreach ($files as $file) {
-            unlink($file);
+            if (FileExistenceCache::exists($file)) {
+                unlink($file);
+            }
         }
     }
 

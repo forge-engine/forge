@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\ForgeLogger\Drivers;
 
 use App\Modules\ForgeLogger\Contracts\LogDriverInterface;
+use Forge\Core\Helpers\FileExistenceCache;
 
 final class FileDriver implements LogDriverInterface
 {
@@ -15,7 +16,7 @@ final class FileDriver implements LogDriverInterface
     {
         $directory = dirname($this->logPath);
 
-        if (!is_dir($directory)) {
+        if (!FileExistenceCache::isDir($directory)) {
             mkdir($directory, 0755, true);
         }
 

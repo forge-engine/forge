@@ -2,6 +2,7 @@
 
 namespace App\Modules\ForgeTesting\Traits;
 
+use Forge\Core\Helpers\FileExistenceCache;
 use Forge\Core\Http\Response;
 use RuntimeException;
 
@@ -493,7 +494,7 @@ trait Assertions
         string $message = "",
     ): void
     {
-        if (!file_exists($filename)) {
+        if (!FileExistenceCache::exists($filename)) {
             throw new RuntimeException(
                 $message ?:
                     sprintf("Failed asserting that file '%s' exists.", $filename),

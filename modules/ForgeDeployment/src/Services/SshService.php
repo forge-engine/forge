@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\ForgeDeployment\Services;
 
 use Forge\Core\DI\Attributes\Service;
+use Forge\Core\Helpers\FileExistenceCache;
 
 #[Service]
 final class SshService

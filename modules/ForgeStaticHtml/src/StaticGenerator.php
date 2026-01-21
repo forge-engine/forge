@@ -2,7 +2,7 @@
 
 namespace App\Modules\ForgeStaticHtml;
 
-use Forge\Core\Database\Connection;
+use Forge\Core\Helpers\FileExistenceCache;
 use Forge\Core\DI\Container;
 use Forge\Core\Http\Request;
 use Forge\Core\Http\Response;
@@ -155,7 +155,7 @@ class StaticGenerator
             $filePath = $this->getOutputPath($route['uri']);
             $outputDir = dirname($filePath);
 
-            if (!is_dir($outputDir) && !mkdir($outputDir, 0755, true)) {
+            if (!FileExistenceCache::isDir($outputDir) && !mkdir($outputDir, 0755, true)) {
                 echo "  Error: Failed to create output directory: {$outputDir}\n";
                 return;
             }

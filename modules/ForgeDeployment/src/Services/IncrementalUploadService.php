@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\ForgeDeployment\Services;
 
 use Forge\Core\DI\Attributes\Service;
+use Forge\Core\Helpers\FileExistenceCache;
 
 #[Service]
 final class IncrementalUploadService
@@ -46,10 +47,8 @@ final class IncrementalUploadService
         continue;
       }
 
-      // Check if local file exists (it might be a deletion)
-      if (!file_exists($localFilePath)) {
-        // File was deleted - we could handle this in the future
-        // For now, skip it
+// Check if local file exists (it might be a deletion)
+      if (!FileExistenceCache::exists($localFilePath)) {
         $skippedCount++;
         if ($progressCallback !== null) {
           $progressCallback("Skipping deleted file: {$relativeFilePath}");
@@ -124,9 +123,9 @@ final class IncrementalUploadService
       $exitCode = 0;
       @exec($command, $output, $exitCode);
 
-      if ($exitCode !== 0 || !file_exists($tempFile) || filesize($tempFile) === 0) {
+      if ($exitCode !== 0 || !FileExistenceCache::exists($tempFile) || filesize($tempFile) === 0) {
         // File might not exist in that commit (was deleted), skip it
-        if (file_exists($tempFile)) {
+        if (FileExistenceCache::exists($tempFile)) {
           @unlink($tempFile);
         }
         $skippedCount++;

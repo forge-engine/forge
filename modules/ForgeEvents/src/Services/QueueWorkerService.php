@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\ForgeEvents\Services;
 
 use Forge\Core\DI\Attributes\Service;
+use Forge\Core\Helpers\FileExistenceCache;
 use Forge\Traits\FileHelper;
 
 #[Service]
@@ -19,7 +20,7 @@ final class QueueWorkerService
     {
         $filePath = BASE_PATH . '/' . self::STORAGE_FILE;
 
-        if (!file_exists($filePath)) {
+        if (!FileExistenceCache::exists($filePath)) {
             return [];
         }
 
@@ -64,7 +65,7 @@ final class QueueWorkerService
     {
         $filePath = BASE_PATH . '/' . self::STORAGE_FILE;
 
-        if (!file_exists($filePath)) {
+        if (!FileExistenceCache::exists($filePath)) {
             return null;
         }
 
@@ -157,7 +158,7 @@ final class QueueWorkerService
     {
         $filePath = BASE_PATH . '/' . self::STORAGE_FILE;
 
-        if (!file_exists($filePath)) {
+        if (!FileExistenceCache::exists($filePath)) {
             return false;
         }
 
@@ -223,7 +224,7 @@ final class QueueWorkerService
             file_put_contents($filePath, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES), LOCK_EX);
 
             $outputFile = $this->getOutputFilePath($id);
-            if (file_exists($outputFile)) {
+            if (FileExistenceCache::exists($outputFile)) {
                 @unlink($outputFile);
             }
 
@@ -317,7 +318,7 @@ final class QueueWorkerService
     {
         $filePath = BASE_PATH . '/' . self::STORAGE_FILE;
 
-        if (!file_exists($filePath)) {
+        if (!FileExistenceCache::exists($filePath)) {
             return false;
         }
 
@@ -451,7 +452,7 @@ final class QueueWorkerService
     {
         $outputFile = $this->getOutputFilePath($id);
 
-        if (!file_exists($outputFile) || filesize($outputFile) === 0) {
+        if (!FileExistenceCache::exists($outputFile) || filesize($outputFile) === 0) {
             return null;
         }
 
@@ -470,7 +471,7 @@ final class QueueWorkerService
     {
         $outputFile = $this->getOutputFilePath($id);
 
-        if (file_exists($outputFile)) {
+        if (FileExistenceCache::exists($outputFile)) {
             return file_put_contents($outputFile, '') !== false;
         }
 
@@ -481,8 +482,8 @@ final class QueueWorkerService
     {
         $outputFile = $this->getOutputFilePath($id);
 
-        if (file_exists($outputFile)) {
-            return filesize($outputFile);
+if (FileExistenceCache::exists($outputFile)) {
+            @unlink($outputFile);
         }
 
         return 0;
