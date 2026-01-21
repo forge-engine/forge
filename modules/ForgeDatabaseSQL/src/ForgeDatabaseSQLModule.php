@@ -24,7 +24,7 @@ use Forge\CLI\Traits\OutputHelper;
 
 #[Module(
   name: 'ForgeDatabaseSQL',
-  version: '0.7.0',
+  version: '0.8.0',
   description: 'SQL database support (SQLite, MySQL, PostgreSQL)',
   order: 0,
   author: 'Forge Team',
@@ -36,7 +36,7 @@ use Forge\CLI\Traits\OutputHelper;
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[Requires(interface: DatabaseConnectionInterface::class, version: '>=0.1.0')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
-#[Provides(interface: 'forge-database-sql', version: '0.7.0')]
+#[Provides(interface: 'forge-database-sql', version: '0.8.0')]
 #[ConfigDefaults(defaults: [
   "forge_database_sql" => []
 ])]
