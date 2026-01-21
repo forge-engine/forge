@@ -31,14 +31,53 @@ final class CommandService
         'up',
     ];
 
+    public function __construct(private CommandCacheService $cacheService)
+    {
+    }
+
     public function clearCache(): void
     {
         $this->cachedCommands = null;
+        $this->cacheService->clearCache();
+    }
+
+    public function getCacheStats(): array
+    {
+        $this->cacheService->loadCache();
+        
+        $commandsCached = $this->cacheService->getCachedCommands() !== null;
+        $phpExecutableCached = $this->cacheService->getCachedPhpExecutable() !== null;
+        
+        $stats = [
+            'commands_cached' => $commandsCached,
+            'php_executable_cached' => $phpExecutableCached,
+            'cache_files_exist' => [
+                'commands' => file_exists(CommandCacheService::COMMANDS_CACHE_FILE),
+                'arguments' => file_exists(CommandCacheService::ARGUMENTS_CACHE_FILE),
+                'php_executable' => file_exists(CommandCacheService::PHP_EXECUTABLE_CACHE_FILE),
+            ]
+        ];
+
+        // Add cached arguments count if available
+        $reflection = new ReflectionClass(CommandCacheService::class);
+        $argsCacheProperty = $reflection->getProperty('argumentsCache');
+        $argsCacheProperty->setAccessible(true);
+        $argsCache = $argsCacheProperty->getValue($this->cacheService);
+        $stats['cached_arguments_count'] = count($argsCache);
+
+        return $stats;
     }
 
     public function getAvailableCommands(): array
     {
         if ($this->cachedCommands !== null) {
+            return $this->cachedCommands;
+        }
+
+        // Try to load from cache first
+        $cachedCommands = $this->cacheService->getCachedCommands();
+        if ($cachedCommands !== null) {
+            $this->cachedCommands = $cachedCommands;
             return $this->cachedCommands;
         }
 
@@ -90,7 +129,13 @@ final class CommandService
                 ksort($grouped[$category]);
             }
 
+            // Cache the results with file timestamps
             $this->cachedCommands = $grouped;
+            $this->cacheService->setCachedCommands(
+                $grouped,
+                $this->cacheService->getCommandFilesTimestamps()
+            );
+
             return $this->cachedCommands;
         } catch (\Throwable $e) {
             error_log('CommandService::getAvailableCommands error: ' . $e->getMessage());
@@ -101,6 +146,12 @@ final class CommandService
 
     public function getCommandArguments(string $commandName): array
     {
+        // Try cache first
+        $cachedArguments = $this->cacheService->getCachedArguments($commandName);
+        if ($cachedArguments !== null) {
+            return $cachedArguments;
+        }
+
         try {
             $container = Container::getInstance();
             AppCommandSetup::getInstance($container);
@@ -136,6 +187,13 @@ final class CommandService
                     'default' => $arg->default,
                 ];
             }
+
+            // Cache the arguments
+            $this->cacheService->setCachedArguments(
+                $commandName,
+                $arguments,
+                $this->cacheService->getCommandFilesTimestamps()
+            );
 
             return $arguments;
         } catch (\Throwable $e) {
@@ -271,12 +329,22 @@ final class CommandService
 
     private function getPhpExecutable(): string
     {
-        static $phpPath = null;
-
-        if ($phpPath !== null) {
-            return $phpPath;
+        // Try cache first
+        $cachedPath = $this->cacheService->getCachedPhpExecutable();
+        if ($cachedPath !== null) {
+            return $cachedPath;
         }
 
+        $phpPath = $this->discoverPhpExecutable();
+        
+        // Cache the result
+        $this->cacheService->setCachedPhpExecutable($phpPath);
+        
+        return $phpPath;
+    }
+
+    private function discoverPhpExecutable(): string
+    {
         $possiblePaths = [];
 
         $whichOutput = [];
@@ -319,8 +387,7 @@ final class CommandService
                 @exec(escapeshellarg($path) . ' -v 2>/dev/null', $testOutput, $testReturnCode);
                 if ($testReturnCode === 0 && !empty($testOutput[0])) {
                     if (str_contains($testOutput[0], 'cli')) {
-                        $phpPath = $path;
-                        return $phpPath;
+                        return $path;
                     }
                 }
             }
@@ -331,14 +398,12 @@ final class CommandService
                 if (str_contains(strtolower($path), 'fpm')) {
                     continue;
                 }
-                $phpPath = $path;
-                return $phpPath;
+                return $path;
             }
         }
 
         error_log('CommandService: Could not find PHP CLI executable, falling back to "php" command');
-        $phpPath = 'php';
-        return $phpPath;
+        return 'php';
     }
 
     private function escapeCommand(string $command): string

@@ -49,6 +49,13 @@ final class CommandController
         return new ApiResponse(['commands' => $commands, 'message' => 'Commands refreshed successfully']);
     }
 
+    #[Route("/hub/commands/cache-stats")]
+    public function getCacheStats(): Response
+    {
+        $stats = $this->commandService->getCacheStats();
+        return new ApiResponse(['cache_stats' => $stats]);
+    }
+
     #[Route("/hub/commands/arguments")]
     public function getCommandArguments(Request $request): Response
     {
