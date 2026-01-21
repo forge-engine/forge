@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\ForgeHub\Controllers;
 
 use App\Modules\ForgeHub\Services\CacheService;
+use App\Modules\ForgeHub\Services\EnhancedCacheService;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Http\Attributes\Middleware;
 use Forge\Core\Http\Request;
@@ -21,7 +22,8 @@ final class CacheController
   use ControllerHelper;
 
   public function __construct(
-    private readonly CacheService $cacheService
+    private readonly CacheService $cacheService,
+    private readonly EnhancedCacheService $enhancedCacheService
   ) {
   }
 
@@ -29,10 +31,14 @@ final class CacheController
   public function index(Request $request): Response
   {
     $stats = $this->cacheService->getStats();
+    $details = $this->enhancedCacheService->getDetailedStats();
+    $tags = $this->enhancedCacheService->getAvailableTags();
 
     $data = [
       'title' => 'Cache Management',
       'stats' => $stats,
+      'details' => $details,
+      'tags' => $tags,
     ];
 
     return $this->view(view: "pages/cache", data: $data);
@@ -42,10 +48,26 @@ final class CacheController
   public function clear(Request $request): Response
   {
     $this->cacheService->clearAll();
-
+    
     return $this->jsonResponse([
       'success' => true,
       'message' => 'Cache cleared successfully',
+    ]);
+  }
+
+
+
+
+
+  #[Route("/hub/cache/clear-expired", "POST")]
+  public function clearExpired(Request $request): Response
+  {
+    $hours = (int)($request->postData['hours'] ?? 24);
+    $this->cacheService->clearExpired($hours);
+    
+    return $this->jsonResponse([
+      'success' => true,
+      'message' => "Cleared cache entries older than {$hours} hours",
     ]);
   }
 
@@ -61,7 +83,7 @@ final class CacheController
       ], 400);
     }
 
-    $this->cacheService->clearTag($tag);
+    $this->enhancedCacheService->clearByTag($tag);
 
     return $this->jsonResponse([
       'success' => true,
