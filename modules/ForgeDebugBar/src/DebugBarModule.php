@@ -32,7 +32,7 @@ use \App\Modules\ForgeDebugBar\DebugBar;
 #[Service]
 #[Module(
   name: 'ForgeDebugBar',
-  version: '1.2.0',
+  version: '1.3.0',
   description: 'A debug bar by Forge',
   order: 3,
   author: 'Forge Team',
@@ -41,7 +41,7 @@ use \App\Modules\ForgeDebugBar\DebugBar;
   tags: ['generic', 'debug', 'debug-bar', 'debug-bar-system', 'debug-bar-library', 'debug-bar-framework']
 )]
 #[HubItem(label: 'Debug Bar', route: '/hub/debugbar', icon: ForgeIcon::COG, order: 6)]
-#[Provides(\App\Modules\ForgeDebugBar\DebugBar::class, version: '1.2.0')]
+#[Provides(\App\Modules\ForgeDebugBar\DebugBar::class, version: '1.3.0')]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[ConfigDefaults(defaults: [
   'forge_debug_bar' => [
