@@ -28,7 +28,7 @@ tailwindcss
 /storage/framework/tmp/*
 /storage/framework/cache/*
 /storage/framework/cache/modules/*
-storage/framework/routes/*
+/storage/framework/routes/
 /storage/*.sqlite
 /storage/database/*
 /storage/framework/logs/*
