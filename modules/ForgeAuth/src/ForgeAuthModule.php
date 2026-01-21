@@ -24,7 +24,7 @@ use Forge\Core\Module\Attributes\Structure;
 #[Service]
 #[Module(
   name: 'ForgeAuth',
-  version: '0.6.0',
+  version: '0.7.0',
   description: 'An Auth module by forge.',
   order: 99,
   author: 'Forge Team',
