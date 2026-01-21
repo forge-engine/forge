@@ -18,7 +18,7 @@ use Forge\CLI\Traits\OutputHelper;
 
 #[Module(
   name: 'ForgeLogger',
-  version: '0.3.0',
+  version: '0.4.0',
   description: 'A logger by Forge.',
   order: 90,
   author: 'Forge Team',
@@ -27,7 +27,7 @@ use Forge\CLI\Traits\OutputHelper;
   tags: ['logging', 'logger', 'log', 'logging-system', 'logging-library', 'logging-framework']
 )]
 #[Service]
-#[Provides(ForgeLoggerInterface::class, version: '0.3.0')]
+#[Provides(ForgeLoggerInterface::class, version: '0.4.0')]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
 #[ConfigDefaults(defaults: [
