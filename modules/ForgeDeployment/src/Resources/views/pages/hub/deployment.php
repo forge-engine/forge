@@ -1,7 +1,6 @@
 <?php
 
-layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
-?>
+layout(name: "hub", fromModule: true, moduleName: "ForgeHub"); ?>
 <div class="space-y-6">
   <div class="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
     <div>
@@ -15,12 +14,16 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
         <i class="fa-solid fa-rotate" id="refreshIcon"></i>
         <span>Refresh</span>
       </button>
-      <button id="editConfigBtn" <?= $isProduction ? 'disabled' : '' ?>
-        class="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 text-sm font-medium transition-colors <?= $isProduction ? 'opacity-50 cursor-not-allowed' : '' ?>">
+      <button id="editConfigBtn" <?= $isProduction ? "disabled" : "" ?>
+        class="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 text-sm font-medium transition-colors <?= $isProduction
+            ? "opacity-50 cursor-not-allowed"
+            : "" ?>">
         Edit Config
       </button>
-      <button id="manageSecretsBtn" <?= $isProduction ? 'disabled' : '' ?>
-        class="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 text-sm font-medium transition-colors <?= $isProduction ? 'opacity-50 cursor-not-allowed' : '' ?>">
+      <button id="manageSecretsBtn" <?= $isProduction ? "disabled" : "" ?>
+        class="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 text-sm font-medium transition-colors <?= $isProduction
+            ? "opacity-50 cursor-not-allowed"
+            : "" ?>">
         Manage Secrets
       </button>
     </div>
@@ -29,36 +32,45 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
   <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
     <div class="p-6 bg-white rounded-xl border border-gray-200">
       <h2 class="mb-4 text-lg font-semibold text-gray-900">Deployment Status</h2>
-      <?php if ($status['has_state']): ?>
+      <?php if ($status["has_state"]): ?>
         <div class="space-y-4">
-          <?php if ($status['server_ip']): ?>
+          <?php if ($status["server_ip"]): ?>
             <div>
               <dt class="text-sm font-medium text-gray-500">Server IP</dt>
               <dd class="mt-1 text-sm font-semibold text-gray-900" id="status-server-ip">
-                <?= htmlspecialchars($status['server_ip']) ?>
+                <?= htmlspecialchars($status["server_ip"]) ?>
               </dd>
             </div>
           <?php endif; ?>
-          <?php if ($status['domain']): ?>
+          <?php if ($status["domain"]): ?>
             <div>
               <dt class="text-sm font-medium text-gray-500">Domain</dt>
               <dd class="mt-1 text-sm font-semibold text-gray-900" id="status-domain">
                 <?php
-                $isComplete = !empty($status['completed_steps']) && in_array('post_deployment_completed', $status['completed_steps']);
+                $isComplete =
+                    !empty($status["completed_steps"]) &&
+                    in_array(
+                        "post_deployment_completed",
+                        $status["completed_steps"],
+                    );
                 if ($isComplete):
-                  $domainUrl = 'https://' . htmlspecialchars($status['domain']);
-                  ?>
+                    $domainUrl =
+                        "https://" . htmlspecialchars($status["domain"]); ?>
                   <a href="<?= $domainUrl ?>" target="_blank" rel="noopener noreferrer"
                     class="inline-flex gap-1 items-center text-blue-600 hover:text-blue-800 hover:underline">
-                    <?= htmlspecialchars($status['domain']) ?>
+                    <?= htmlspecialchars($status["domain"]) ?>
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
                     </svg>
                   </a>
-                <?php else: ?>
-                  <?= htmlspecialchars($status['domain']) ?>
-                <?php endif; ?>
+                <?php
+                else:
+                     ?>
+                  <?= htmlspecialchars($status["domain"]) ?>
+                <?php
+                endif;
+                ?>
               </dd>
             </div>
           <?php endif; ?>
@@ -66,20 +78,24 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
             <div class="flex justify-between items-center mb-2">
               <dt class="text-sm font-medium text-gray-500">Progress</dt>
               <dd class="text-sm font-semibold text-gray-900" id="status-progress">
-                <?= htmlspecialchars((string) $status['progress_percentage']) ?>%
+                <?= htmlspecialchars(
+                    (string) $status["progress_percentage"],
+                ) ?>%
               </dd>
             </div>
             <div class="w-full h-2 bg-gray-200 rounded-full">
               <div class="h-2 bg-blue-600 rounded-full transition-all" id="status-progress-bar"
-                style="width: <?= htmlspecialchars((string) $status['progress_percentage']) ?>%"></div>
+                style="width: <?= htmlspecialchars(
+                    (string) $status["progress_percentage"],
+                ) ?>%"></div>
             </div>
           </div>
           <div>
             <dt class="mb-2 text-sm font-medium text-gray-500">Completed Steps</dt>
             <dd class="text-sm text-gray-900" id="status-completed-steps">
-              <?php if (!empty($status['completed_steps'])): ?>
+              <?php if (!empty($status["completed_steps"])): ?>
                 <ul class="space-y-1">
-                  <?php foreach ($status['completed_steps'] as $step): ?>
+                  <?php foreach ($status["completed_steps"] as $step): ?>
                     <li class="flex gap-2 items-center">
                       <i class="text-green-600 fa-solid fa-check"></i>
                       <span><?= htmlspecialchars($step) ?></span>
@@ -91,26 +107,26 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
               <?php endif; ?>
             </dd>
           </div>
-          <?php if ($status['current_step']): ?>
+          <?php if ($status["current_step"]): ?>
             <div>
               <dt class="text-sm font-medium text-gray-500">Current Step</dt>
               <dd class="mt-1 text-sm font-semibold text-blue-600" id="status-current-step">
-                <?= htmlspecialchars($status['current_step']) ?>
+                <?= htmlspecialchars($status["current_step"]) ?>
               </dd>
             </div>
           <?php endif; ?>
-          <?php if ($status['last_updated']): ?>
+          <?php if ($status["last_updated"]): ?>
             <div>
               <dt class="text-sm font-medium text-gray-500">Last Updated</dt>
               <dd class="mt-1 text-sm text-gray-900" id="status-last-updated">
-                <?= htmlspecialchars($status['last_updated']) ?>
+                <?= htmlspecialchars($status["last_updated"]) ?>
               </dd>
             </div>
           <?php endif; ?>
           <div>
             <dt class="text-sm font-medium text-gray-500">Server Status</dt>
             <dd class="mt-1">
-              <?php if ($status['is_accessible']): ?>
+              <?php if ($status["is_accessible"]): ?>
                 <span class="px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full"
                   id="status-accessible">Accessible</span>
               <?php else: ?>
@@ -145,12 +161,14 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
         <p class="mb-1 font-medium">PHP Command Info:</p>
         <p class="text-blue-700" id="phpInfoDisplay">
           <?php if (isset($php_info) && !empty($php_info)): ?>
-            <?php if ($php_info['is_default'] ?? false): ?>
+            <?php if ($php_info["is_default"] ?? false): ?>
               Using default PHP CLI command (<code class="px-1 bg-blue-100 rounded">php</code>).
             <?php else: ?>
-              Using PHP at <code class="px-1 bg-blue-100 rounded"><?= htmlspecialchars($php_info['path'] ?? 'php') ?></code>
-              <?php if (!empty($php_info['version'] ?? '')): ?>
-                (version <?= htmlspecialchars($php_info['version']) ?>)
+              Using PHP at <code class="px-1 bg-blue-100 rounded"><?= htmlspecialchars(
+                  $php_info["path"] ?? "php",
+              ) ?></code>
+              <?php if (!empty($php_info["version"] ?? "")): ?>
+                (version <?= htmlspecialchars($php_info["version"]) ?>)
               <?php endif; ?>
             <?php endif; ?>
           <?php else: ?>
@@ -169,13 +187,15 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
       <div class="space-y-3">
         <?php
         $isProduction = $is_production ?? false;
-        $deployDisabled = $isProduction ? 'disabled' : '';
-        $deployDisabledClass = $isProduction ? 'opacity-50 cursor-not-allowed' : '';
+        $deployDisabled = $isProduction ? "disabled" : "";
+        $deployDisabledClass = $isProduction
+            ? "opacity-50 cursor-not-allowed"
+            : "";
         ?>
         <button id="deployBtn" <?= $deployDisabled ?>
           class="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors flex items-center justify-center gap-2 <?= $deployDisabledClass ?>">
           <i class="fa-solid fa-rocket"></i>
-          <span><?= $isProduction ? 'Deployed' : 'Deploy' ?></span>
+          <span><?= $isProduction ? "Deployed" : "Deploy" ?></span>
         </button>
 
         <button id="updateBtn" <?= $deployDisabled ?>
@@ -209,38 +229,48 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
       <h2 class="mb-4 text-lg font-semibold text-gray-900">Configuration</h2>
       <?php if ($has_config && $config): ?>
         <div class="space-y-3">
-          <?php if (isset($config['server'])): ?>
+          <?php if (isset($config["server"])): ?>
             <div>
               <dt class="text-sm font-medium text-gray-500">Server</dt>
               <dd class="mt-1 text-sm text-gray-900">
-                <?php if (isset($config['server']['name'])): ?>
-                  <span><?= htmlspecialchars($config['server']['name']) ?></span>
+                <?php if (isset($config["server"]["name"])): ?>
+                  <span><?= htmlspecialchars(
+                      $config["server"]["name"],
+                  ) ?></span>
                 <?php endif; ?>
-                <?php if (isset($config['server']['region'])): ?>
-                  <span class="text-gray-400"> • <?= htmlspecialchars($config['server']['region']) ?></span>
+                <?php if (isset($config["server"]["region"])): ?>
+                  <span class="text-gray-400"> • <?= htmlspecialchars(
+                      $config["server"]["region"],
+                  ) ?></span>
                 <?php endif; ?>
               </dd>
             </div>
           <?php endif; ?>
-          <?php if (isset($config['provision'])): ?>
+          <?php if (isset($config["provision"])): ?>
             <div>
               <dt class="text-sm font-medium text-gray-500">Provision</dt>
               <dd class="mt-1 text-sm text-gray-900">
-                <?php if (isset($config['provision']['php_version'])): ?>
-                  <span>PHP <?= htmlspecialchars($config['provision']['php_version']) ?></span>
+                <?php if (isset($config["provision"]["php_version"])): ?>
+                  <span>PHP <?= htmlspecialchars(
+                      $config["provision"]["php_version"],
+                  ) ?></span>
                 <?php endif; ?>
-                <?php if (isset($config['provision']['database_type'])): ?>
-                  <span class="text-gray-400"> • <?= htmlspecialchars($config['provision']['database_type']) ?></span>
+                <?php if (isset($config["provision"]["database_type"])): ?>
+                  <span class="text-gray-400"> • <?= htmlspecialchars(
+                      $config["provision"]["database_type"],
+                  ) ?></span>
                 <?php endif; ?>
               </dd>
             </div>
           <?php endif; ?>
-          <?php if (isset($config['deployment'])): ?>
+          <?php if (isset($config["deployment"])): ?>
             <div>
               <dt class="text-sm font-medium text-gray-500">Deployment</dt>
               <dd class="mt-1 text-sm text-gray-900">
-                <?php if (isset($config['deployment']['domain'])): ?>
-                  <span><?= htmlspecialchars($config['deployment']['domain']) ?></span>
+                <?php if (isset($config["deployment"]["domain"])): ?>
+                  <span><?= htmlspecialchars(
+                      $config["deployment"]["domain"],
+                  ) ?></span>
                 <?php endif; ?>
               </dd>
             </div>
@@ -248,7 +278,9 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
           <?php if ($config_path): ?>
             <div class="pt-2 border-t border-gray-200">
               <dt class="text-sm font-medium text-gray-500">Config File</dt>
-              <dd class="mt-1 font-mono text-xs text-gray-600"><?= htmlspecialchars($config_path) ?></dd>
+              <dd class="mt-1 font-mono text-xs text-gray-600"><?= htmlspecialchars(
+                  $config_path,
+              ) ?></dd>
             </div>
           <?php endif; ?>
         </div>
@@ -261,22 +293,31 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
       <?php endif; ?>
     </div>
 
-    <?php if ($has_config && $config && isset($config['deployment'])): ?>
+    <?php if ($has_config && $config && isset($config["deployment"])): ?>
       <div class="p-6 bg-white rounded-xl border border-gray-200">
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-lg font-semibold text-gray-900">Post-Deployment Commands</h2>
           <?php $isProduction = $is_production ?? false; ?>
-          <button id="editPostCommandsBtn" <?= $isProduction ? 'disabled' : '' ?>
-            class="px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors <?= $isProduction ? 'opacity-50 cursor-not-allowed' : '' ?>">
+          <button id="editPostCommandsBtn" <?= $isProduction
+              ? "disabled"
+              : "" ?>
+            class="px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors <?= $isProduction
+                ? "opacity-50 cursor-not-allowed"
+                : "" ?>">
             <i class="fa-solid fa-edit"></i> Edit
           </button>
         </div>
-        <?php if (!empty($config['deployment']['post_deployment_commands'])): ?>
+        <?php if (!empty($config["deployment"]["post_deployment_commands"])): ?>
           <div class="overflow-y-auto pr-2 space-y-2 max-h-64" id="postCommandsDisplay">
-            <?php foreach ($config['deployment']['post_deployment_commands'] as $cmd): ?>
+            <?php foreach (
+                $config["deployment"]["post_deployment_commands"]
+                as $cmd
+            ): ?>
               <div class="flex gap-2 items-center p-2 bg-gray-50 rounded border border-gray-200">
                 <i class="text-xs text-gray-400 fa-solid fa-terminal"></i>
-                <span class="font-mono text-sm text-gray-900"><?= htmlspecialchars($cmd) ?></span>
+                <span class="font-mono text-sm text-gray-900"><?= htmlspecialchars(
+                    $cmd,
+                ) ?></span>
               </div>
             <?php endforeach; ?>
           </div>
@@ -291,24 +332,39 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-lg font-semibold text-gray-900">Environment Variables</h2>
           <?php $isProduction = $is_production ?? false; ?>
-          <button id="editEnvVarsBtn" <?= $isProduction ? 'disabled' : '' ?>
-            class="px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors <?= $isProduction ? 'opacity-50 cursor-not-allowed' : '' ?>">
+          <button id="editEnvVarsBtn" <?= $isProduction ? "disabled" : "" ?>
+            class="px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors <?= $isProduction
+                ? "opacity-50 cursor-not-allowed"
+                : "" ?>">
             <i class="fa-solid fa-edit"></i> Edit
           </button>
         </div>
-        <?php if (!empty($config['deployment']['env_vars'])): ?>
+        <?php if (!empty($config["deployment"]["env_vars"])): ?>
           <div class="overflow-y-auto pr-2 space-y-2 max-h-64" id="envVarsDisplay">
-            <?php foreach ($config['deployment']['env_vars'] as $key => $value): ?>
-              <?php
-              $displayValue = is_array($value)
-                ? '[' . implode(', ', array_map(fn($v) => '"' . addslashes((string) $v) . '"', $value)) . ']'
-                : (string) $value;
-              ?>
+            <?php foreach (
+                $config["deployment"]["env_vars"]
+                as $key => $value
+            ): ?>
+              <?php $displayValue = is_array($value)
+                  ? "[" .
+                      implode(
+                          ", ",
+                          array_map(
+                              fn($v) => '"' . addslashes((string) $v) . '"',
+                              $value,
+                          ),
+                      ) .
+                      "]"
+                  : (string) $value; ?>
               <div class="flex justify-between items-center p-2 bg-gray-50 rounded border border-gray-200">
                 <div class="flex flex-1 gap-2 items-center min-w-0">
-                  <span class="text-sm font-medium text-gray-700"><?= htmlspecialchars($key) ?></span>
+                  <span class="text-sm font-medium text-gray-700"><?= htmlspecialchars(
+                      $key,
+                  ) ?></span>
                   <span class="text-sm text-gray-400">=</span>
-                  <span class="font-mono text-sm text-gray-900 truncate"><?= htmlspecialchars($displayValue) ?></span>
+                  <span class="font-mono text-sm text-gray-900 truncate"><?= htmlspecialchars(
+                      $displayValue,
+                  ) ?></span>
                 </div>
               </div>
             <?php endforeach; ?>
@@ -328,10 +384,15 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
           <?php foreach ($recent_logs as $log): ?>
             <div class="flex justify-between items-center p-3 rounded-lg border border-gray-200 hover:bg-gray-50">
               <div class="flex-1 min-w-0">
-                <div class="text-sm font-medium text-gray-900 truncate"><?= htmlspecialchars($log['id']) ?></div>
-                <div class="text-xs text-gray-500"><?= date('M j, Y H:i:s', $log['modified']) ?></div>
+                <div class="text-sm font-medium text-gray-900 truncate"><?= htmlspecialchars(
+                    $log["id"],
+                ) ?></div>
+                <div class="text-xs text-gray-500"><?= date(
+                    "M j, Y H:i:s",
+                    $log["modified"],
+                ) ?></div>
               </div>
-              <button onclick="viewLogs('<?= htmlspecialchars($log['id']) ?>')"
+              <button onclick="viewLogs('<?= htmlspecialchars($log["id"]) ?>')"
                 class="px-3 py-1 ml-2 text-xs font-medium text-blue-600 rounded hover:text-blue-800 hover:bg-blue-50">
                 View
               </button>
@@ -350,7 +411,7 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
 
 <script>
   let currentDeploymentId = null;
-  const isProduction = <?= ($is_production ?? false) ? 'true' : 'false' ?>;
+  const isProduction = <?= $is_production ?? false ? "true" : "false" ?>;
 
   document.getElementById('refreshStatusBtn')?.addEventListener('click', async function () {
     const button = this;
@@ -526,6 +587,7 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
 
     const isComplete = status.completed_steps && status.completed_steps.includes('post_deployment_completed');
     const isDeleting = status.current_step && status.current_step.includes('Deleting server');
+    const hasState = status.has_state;
     const deployBtn = document.getElementById('deployBtn');
     const deployAppBtn = document.getElementById('deployAppBtn');
     const updateBtn = document.getElementById('updateBtn');
@@ -634,7 +696,7 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
     }
 
     if (deleteServerBtn) {
-      if (isComplete && !isDeleting) {
+      if (hasState && !isDeleting) {
         deleteServerBtn.disabled = false;
         deleteServerBtn.classList.remove('opacity-50', 'cursor-not-allowed');
         const span = deleteServerBtn.querySelector('span');
@@ -1809,7 +1871,7 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
   }
 
   let availablePhpBinaries = [];
-  let currentPhpPath = '<?= htmlspecialchars($php_info['path'] ?? '') ?>';
+  let currentPhpPath = '<?= htmlspecialchars($php_info["path"] ?? "") ?>';
 
   async function loadPhpBinaries() {
     try {

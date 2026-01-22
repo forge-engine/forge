@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'php_executable' => '/Users/acidlake/Library/Application Support/Herd/bin/php',
+    'php_executable' => '/Users/acidlake/Library/Application Support/Herd/bin/php84',
     'server' => [
         'name' => 'forge-kernel-demo',
         'region' => 'nyc1',
@@ -20,7 +20,7 @@ return [
         'database_password' => 'secret',
     ],
     'deployment' => [
-        'domain' => 'forge.upper.do',
+        'domain' => 'kernel.upper.do',
         'ssl_email' => 'jeremias2@gmail.com',
         'commands' => [],
         'post_deployment_commands' => [
@@ -36,7 +36,7 @@ return [
         'env_vars' => [
             'APP_ENV' => 'production',
             'APP_DEBUG' => 'true',
-            'CENTRAL_DOMAIN' => 'forge.upper.do',
+            'CENTRAL_DOMAIN' => 'kernel.upper.do',
             'CORS_ALLOWED_ORIGINS' => [
                 'https://forge.upper.do',
             ],

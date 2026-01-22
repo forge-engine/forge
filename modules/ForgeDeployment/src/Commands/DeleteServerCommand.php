@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeDeployment\Commands;
 
-use App\Modules\ForgeDeployment\Contracts\ProviderInterface;
+  use App\Modules\ForgeDeployment\Contracts\ProviderInterface;
 use App\Modules\ForgeDeployment\Dto\DeploymentState;
 use App\Modules\ForgeDeployment\Providers\DigitalOceanProvider;
 use App\Modules\ForgeDeployment\Services\CloudflareService;
@@ -32,7 +32,6 @@ final class DeleteServerCommand extends Command
 
   public function __construct(
     private readonly DeploymentStateService $stateService,
-    private readonly CloudflareService $cloudflareService,
     private readonly TemplateGenerator $templateGenerator,
     private readonly Config $config
   ) {
@@ -47,7 +46,7 @@ final class DeleteServerCommand extends Command
       return 1;
     }
 
-    if (!isset($args['skip-confirmation'])) {
+    if (!in_array('--skip-confirmation', $args)) {
       $this->line('');
       $this->line('⚠️  WARNING: This will permanently delete:');
       $this->line('   • The server (' . $state->serverIp . ')');
@@ -99,7 +98,8 @@ final class DeleteServerCommand extends Command
     if ($state->domain !== null && $state->domain !== '') {
       $progress('→ Removing DNS records from Cloudflare...');
       try {
-        $this->cloudflareService->deleteDnsRecords($state->domain);
+        $cloudflareService = $this->getCloudflareService();
+        $cloudflareService->deleteDnsRecords($state->domain);
         $progress('✓ DNS records removed successfully');
         $this->saveDeletionStep('dns_removed');
       } catch (\Exception $e) {
