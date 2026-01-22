@@ -196,6 +196,12 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
           <i class="fa-solid fa-file-code"></i>
           <span>Deploy Env</span>
         </button>
+        <button id="deleteServerBtn" <?= $deployDisabled ?>
+          class="flex gap-2 justify-center items-center px-4 py-3 w-full text-sm font-medium text-white bg-red-600 rounded-lg opacity-50 transition-colors cursor-not-allowed hover:bg-red-700"
+          disabled>
+          <i class="fa-solid fa-trash"></i>
+          <span>Delete Server</span>
+        </button>
       </div>
     </div>
 
@@ -431,6 +437,13 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
     }
     executeDeployment('deploy-env');
   });
+  document.getElementById('deleteServerBtn')?.addEventListener('click', () => {
+    if (isProduction) {
+      showNotification('error', 'Production Mode', 'Deployment actions are disabled in production mode');
+      return;
+    }
+    confirmDeleteServer();
+  });
   document.getElementById('editConfigBtn')?.addEventListener('click', () => {
     if (isProduction) {
       showNotification('error', 'Production Mode', 'Edit functionality is disabled in production mode');
@@ -512,11 +525,13 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
     }
 
     const isComplete = status.completed_steps && status.completed_steps.includes('post_deployment_completed');
+    const isDeleting = status.current_step && status.current_step.includes('Deleting server');
     const deployBtn = document.getElementById('deployBtn');
     const deployAppBtn = document.getElementById('deployAppBtn');
     const updateBtn = document.getElementById('updateBtn');
     const rollbackBtn = document.getElementById('rollbackBtn');
     const deployEnvBtn = document.getElementById('deployEnvBtn');
+    const deleteServerBtn = document.getElementById('deleteServerBtn');
 
     // In production mode, all deploy buttons should remain disabled
     if (isProduction) {
@@ -544,6 +559,11 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
         deployEnvBtn.disabled = true;
         deployEnvBtn.classList.add('opacity-50', 'cursor-not-allowed');
       }
+      if (deleteServerBtn) {
+        deleteServerBtn.disabled = true;
+        deleteServerBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+
       return;
     }
 
@@ -610,6 +630,24 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
       } else {
         deployEnvBtn.disabled = true;
         deployEnvBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+    }
+
+    if (deleteServerBtn) {
+      if (isComplete && !isDeleting) {
+        deleteServerBtn.disabled = false;
+        deleteServerBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        const span = deleteServerBtn.querySelector('span');
+        if (span) {
+          span.textContent = 'Delete Server';
+        }
+      } else {
+        deleteServerBtn.disabled = true;
+        deleteServerBtn.classList.add('opacity-50', 'cursor-not-allowed');
+        const span = deleteServerBtn.querySelector('span');
+        if (span) {
+          span.textContent = isDeleting ? 'Deleting...' : 'Delete Server';
+        }
       }
     }
   }
@@ -693,6 +731,62 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
       }
     } catch (error) {
       showNotification('error', 'Error', 'Error starting deployment: ' + error.message);
+    }
+  }
+
+  function confirmDeleteServer() {
+    if (isProduction) {
+      showNotification('error', 'Production Mode', 'Deployment actions are disabled in production mode');
+      return;
+    }
+    showConfirmation(
+      'Delete Server',
+      'Are you sure you want to delete the server? This will permanently remove the server, DNS records, deployment state, and all deployment files. This action cannot be undone.',
+      () => {
+        performDeleteServer();
+      }
+    );
+  }
+
+  async function performDeleteServer() {
+    if (isProduction) {
+      showNotification('error', 'Production Mode', 'Deployment actions are disabled in production mode');
+      return;
+    }
+
+    try {
+      const response = await fetch('/hub/deployment/delete-server', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': window.csrfToken || ''
+        }
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Unknown error occurred' }));
+        showNotification('error', 'Delete Server Failed', errorData.message || `HTTP ${response.status}: ${response.statusText}`);
+        return;
+      }
+
+      const data = await response.json();
+      if (data.success) {
+        currentDeploymentId = data.deployment_id;
+        const viewBtn = document.getElementById('viewDeploymentOutputBtn');
+        if (viewBtn) {
+          viewBtn.classList.remove('hidden');
+        }
+        showNotification('success', 'Server Deletion Started', `Server deletion started successfully. ID: ${data.deployment_id}`);
+        setTimeout(() => {
+          if (data.deployment_id) {
+            openDeploymentOutputModal(data.deployment_id, 'delete-server');
+          }
+        }, 500);
+      } else {
+        showNotification('error', 'Delete Server Failed', data.message || 'Unknown error occurred');
+      }
+    } catch (error) {
+      showNotification('error', 'Error', 'Error deleting server: ' + error.message);
     }
   }
 
@@ -1619,7 +1713,8 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
       'deploy': 'Deploy',
       'deploy-app': 'Deploy App',
       'update': 'Update',
-      'rollback': 'Rollback'
+      'rollback': 'Rollback',
+      'delete-server': 'Delete Server'
     };
     title.textContent = `${typeLabels[deploymentType] || 'Deployment'} Output`;
     modal.classList.remove('hidden');

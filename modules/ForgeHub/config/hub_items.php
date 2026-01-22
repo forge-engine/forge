@@ -14,7 +14,7 @@ return array (
     'hubItems' => 
     array (
     ),
-    'mtime' => 1768610467,
+    'mtime' => 1769034409,
     'modulePath' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/modules/ForgePackageManager',
   ),
   'App\\Modules\\ForgeSqlOrm\\ForgeSqlOrmModule' => 
@@ -22,7 +22,7 @@ return array (
     'hubItems' => 
     array (
     ),
-    'mtime' => 1768601084,
+    'mtime' => 1769034419,
     'modulePath' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/modules/ForgeSqlOrm',
   ),
   'App\\Modules\\ForgeErrorHandler\\ForgeErrorHandlerModule' => 
@@ -116,7 +116,7 @@ return array (
         ),
       ),
     ),
-    'mtime' => 1768711838,
+    'mtime' => 1769034377,
     'modulePath' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/modules/ForgeHub',
   ),
   'App\\Modules\\ForgeMarkDown\\ForgeMarkDownModule' => 
@@ -132,7 +132,7 @@ return array (
     'hubItems' => 
     array (
     ),
-    'mtime' => 1768610982,
+    'mtime' => 1769034385,
     'modulePath' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/modules/ForgeLogger',
   ),
   'App\\Modules\\ForgeAuth\\ForgeAuthModule' => 
@@ -202,7 +202,7 @@ return array (
     'hubItems' => 
     array (
     ),
-    'mtime' => 1768606504,
+    'mtime' => 1769034401,
     'modulePath' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/modules/ForgeNotification',
   ),
   'App\\Modules\\ForgeTailwind\\ForgeTailwindModule' => 
@@ -234,7 +234,7 @@ return array (
     'hubItems' => 
     array (
     ),
-    'mtime' => 1768805354,
+    'mtime' => 1769034444,
     'modulePath' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/modules/ForgeWire',
   ),
   'App\\Modules\\AppAuth\\AppAuthModule' => 
@@ -250,7 +250,7 @@ return array (
     'hubItems' => 
     array (
     ),
-    'mtime' => 1768601029,
+    'mtime' => 1769034436,
     'modulePath' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/modules/ForgeTesting',
   ),
   'App\\Modules\\ForgeNexus\\ForgeNexusModule' => 
@@ -282,7 +282,7 @@ return array (
     'hubItems' => 
     array (
     ),
-    'mtime' => 1768610902,
+    'mtime' => 1769034427,
     'modulePath' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/modules/ForgeStorage',
   ),
 );

@@ -161,6 +161,19 @@ final class DeleteServerCommand extends Command
     return new DigitalOceanProvider($apiToken);
   }
 
+  private function getCloudflareService(): CloudflareService
+  {
+    $cloudflareToken = $this->config->get("forge_deployment.cloudflare.api_token");
+    if (empty($cloudflareToken)) {
+      $cloudflareToken = $this->templateGenerator->askQuestion("Enter Cloudflare API token", '');
+      if (empty($cloudflareToken)) {
+        throw new \RuntimeException('Cloudflare API token is required');
+      }
+    }
+
+    return new CloudflareService($cloudflareToken);
+  }
+
   private function removeDeploymentLogs(): void
   {
     $logsDir = BASE_PATH . '/storage/framework/deployments';

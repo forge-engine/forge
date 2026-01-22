@@ -36,6 +36,32 @@ final class CloudflareService
     return $record['content'] === $ipAddress;
   }
 
+  public function deleteDnsRecords(string $domain): bool
+  {
+    $zoneId = $this->getZoneId($domain);
+    if ($zoneId === null) {
+      return false;
+    }
+
+    $response = $this->makeRequest('GET', "/zones/{$zoneId}/dns_records", [
+      'name' => $domain
+    ]);
+
+    if (!isset($response['result'])) {
+      return true;
+    }
+
+    $success = true;
+    foreach ($response['result'] as $record) {
+      $deleteResponse = $this->makeRequest('DELETE', "/zones/{$zoneId}/dns_records/{$record['id']}");
+      if (!isset($deleteResponse['result']['id'])) {
+        $success = false;
+      }
+    }
+
+    return $success;
+  }
+
   public function getZoneId(string $domain): ?string
   {
     $rootDomain = $this->extractRootDomain($domain);
