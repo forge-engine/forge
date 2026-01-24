@@ -16,9 +16,10 @@ use App\Modules\ForgeLogger\Services\ForgeLoggerService;
 use Forge\Core\DI\Attributes\Service;
 use Forge\CLI\Traits\OutputHelper;
 
+#[Service]
 #[Module(
   name: 'ForgeLogger',
-  version: '0.4.0',
+  version: '0.5.0',
   description: 'A logger by Forge.',
   order: 90,
   author: 'Forge Team',
@@ -26,8 +27,21 @@ use Forge\CLI\Traits\OutputHelper;
   type: 'logging',
   tags: ['logging', 'logger', 'log', 'logging-system', 'logging-library', 'logging-framework']
 )]
-#[Service]
-#[Provides(ForgeLoggerInterface::class, version: '0.4.0')]
+#[Structure(structure: [
+  'controllers' => 'src/Controllers',
+  'services' => 'src/Services',
+  'migrations' => 'src/Database/Migrations',
+  'views' => 'src/Resources/views',
+  'components' => 'src/Resources/components',
+  'commands' => 'src/Commands',
+  'events' => 'src/Events',
+  'tests' => 'src/tests',
+  'models' => 'src/Models',
+  'dto' => 'src/Dto',
+  'seeders' => 'src/Database/Seeders',
+  'middlewares' => 'src/Middlewares',
+])]
+#[Provides(ForgeLoggerInterface::class, version: '0.5.0')]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
 #[ConfigDefaults(defaults: [
