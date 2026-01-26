@@ -17,62 +17,61 @@ use Forge\Traits\ControllerHelper;
 use Forge\Traits\PaginationHelper;
 
 #[Service]
-#[Middleware('api')]
+#[Middleware("api")]
 final class ApiUserController
 {
     use ControllerHelper;
     use AuthorizeRequests;
     use PaginationHelper;
 
-    public function __construct()
-    {
-    }
+    public function __construct() {}
 
-    #[ApiRoute('/users', permissions: [Permission::UsersRead->value])]
+    #[ApiRoute("/users", permissions: [Permission::USER_READ->value])]
     public function index(Request $request): Response
     {
-        $this->authorize($request, [Permission::UsersRead->value]);
+        $this->authorize($request, [Permission::USER_READ->value]);
 
         $paginationParams = $this->getPaginationParamsForApi($request);
 
         // Define searchable fields for User model
-        $searchFields = ['email', 'identifier', 'status'];
+        $searchFields = ["email", "identifier", "status"];
 
         // Use the simple paginate method with search fields in options
         $paginator = User::paginate(
-            $paginationParams['page'],
-            $paginationParams['limit'],
-            $paginationParams['column'],
-            $paginationParams['direction'],
-            $paginationParams['search'],
+            $paginationParams["page"],
+            $paginationParams["limit"],
+            $paginationParams["column"],
+            $paginationParams["direction"],
+            $paginationParams["search"],
             [
-                'searchFields' => $searchFields,
-                'filters' => $paginationParams['filters'],
-                'baseUrl' => $paginationParams['baseUrl'],
-                'queryParams' => $paginationParams['queryParams'],
-            ]
+                "searchFields" => $searchFields,
+                "filters" => $paginationParams["filters"],
+                "baseUrl" => $paginationParams["baseUrl"],
+                "queryParams" => $paginationParams["queryParams"],
+            ],
         );
 
-        return $this->apiResponse($paginator->items())
-            ->withMeta($paginator->meta());
+        return $this->apiResponse($paginator->items())->withMeta(
+            $paginator->meta(),
+        );
     }
 
-    #[ApiRoute('/users/{id}', 'GET', ['api'])]
+    #[ApiRoute("/users/{id}", "GET", ["api"])]
     public function show(Request $request, string $id): Response
     {
-        $userId = (int)$id;
+        $userId = (int) $id;
         try {
             $user = User::findById($userId);
             return $this->apiResponse($user);
         } catch (UserNotFoundException $e) {
-            return $this->apiError('User not found', 404);
+            return $this->apiError("User not found", 404);
         }
     }
 
-    #[ApiRoute('/users/export', 'GET', ['api'])]
+    #[ApiRoute("/users/export", "GET", ["api"])]
     public function export(Request $request): Response
     {
         $data = [];
-        return $this->csvResponse($data, 'users_export.csv');
+        return $this->csvResponse($data, "users_export.csv");
     }
 }

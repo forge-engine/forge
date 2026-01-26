@@ -15,7 +15,7 @@ use App\Modules\ForgeSqlOrm\ORM\Attributes\{Table, Column, ProtectedFields};
 use App\Modules\ForgeSqlOrm\ORM\Model;
 
 #[Table("users")]
-#[ProtectedFields(['password'])]
+#[ProtectedFields(["password"])]
 class User extends Model
 {
     use HasTimeStamps;

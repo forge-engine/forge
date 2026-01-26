@@ -65,5 +65,40 @@ class UserRepository extends RecordRepository implements UserRepositoryInterface
   {
     return User::query()->where('email', '=', $email)->first();
   }
+
+  public function createUserWithRoles(
+    string $identifier,
+    string $email,
+    string $password,
+    string $status,
+    ?\App\Modules\ForgeAuth\Dto\UserMetadataDto $metadata = null,
+    array $roleIds = []
+  ): User {
+    $userData = new \App\Modules\ForgeAuth\Dto\CreateUserData();
+    $userData->identifier = $identifier;
+    $userData->email = $email;
+    $userData->password = $password;
+    $userData->status = $status;
+    $userData->metadata = $metadata;
+
+    $user = $this->create($userData);
+
+    if (!empty($roleIds)) {
+      $queryBuilder = \Forge\Core\DI\Container::getInstance()->get(\Forge\Core\Contracts\Database\QueryBuilderInterface::class);
+      foreach ($roleIds as $roleId) {
+        $queryBuilder
+          ->table('user_roles')
+          ->insert([
+            'user_id' => $user->id,
+            'role_id' => $roleId,
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s')
+          ]);
+      }
+      $this->cache->invalidate($this->tableName);
+    }
+
+    return $user;
+  }
 }
 

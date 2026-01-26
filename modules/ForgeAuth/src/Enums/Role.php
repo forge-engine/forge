@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeAuth\Enums;
 
-enum Permission: string
+enum Role : string
 {
-    case USER_READ = "user.read";
+    case USER = 'USER';
 }
