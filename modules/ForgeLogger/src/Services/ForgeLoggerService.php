@@ -6,7 +6,6 @@ namespace App\Modules\ForgeLogger\Services;
 
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Module\Attributes\Provides;
-use Forge\Core\Module\Attributes\Requires;
 use App\Modules\ForgeLogger\Contracts\ForgeLoggerInterface;
 use App\Modules\ForgeLogger\Contracts\LogDriverInterface;
 use App\Modules\ForgeLogger\Drivers\FileDriver;
@@ -16,7 +15,6 @@ use Forge\Core\Config\Config;
 
 #[Service]
 #[Provides(interface: ForgeLoggerInterface::class, version: '0.1.1')]
-#[Requires]
 final class ForgeLoggerService implements ForgeLoggerInterface
 {
   private array $drivers = [];

@@ -29,10 +29,20 @@
             "integrity": "6b59bfc2b8547a2440eeb5473185bed31e3927d0f5a28b0ae06be3f95601fb30"
         },
         "forge-auth": {
-            "version": "0.1.0",
+            "version": "0.7.0",
             "registry": "forge-engine-modules",
-            "url": "https://raw.githubusercontent.com/forge-engine/modules/main/modules/forge-auth/0.1.0/0.1.0.zip",
-            "integrity": "27d86c506a6785e0e635f328c44f935708c5054b8008273d276cccdb4006f2d7"
+            "module_path": "forge-auth/0.7.0",
+            "integrity": "7618534689bb99da98af7946005b363949280090198b2a470b9ebc924adfdaf8",
+            "source_type": "git",
+            "source_config": {
+                "name": "forge-engine-modules",
+                "type": "git",
+                "url": "https://github.com/forge-engine/modules",
+                "branch": "main",
+                "private": false,
+                "description": "Forge Kernel Official Modules",
+                "debug": false
+            }
         },
         "forge-testing": {
             "version": "0.1.4",

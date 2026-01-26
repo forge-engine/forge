@@ -10,8 +10,6 @@ use Forge\Core\Module\Attributes\Compatibility;
 use Forge\Core\Module\Attributes\ConfigDefaults;
 use Forge\Core\Module\Attributes\Module;
 use Forge\Core\Module\Attributes\Repository;
-use Forge\Core\Module\Attributes\LifecycleHook;
-use Forge\Core\Module\LifecycleHookName;
 use Forge\Core\Module\Attributes\HubItem;
 use Forge\Core\Module\ForgeIcon;
 use Forge\Core\DI\Attributes\Service;
@@ -44,6 +42,7 @@ use Forge\CLI\Traits\OutputHelper;
 final class ForgeDeploymentModule
 {
   use OutputHelper;
+
   public function register(Container $container): void
   {
     $this->setupConfigDefaults($container);

@@ -14,8 +14,8 @@ use Forge\Core\Routing\Route;
 use Forge\Core\Http\Request;
 use Forge\Core\Http\Response;
 
-#[Middleware("web")]
 #[Reactive]
+#[Middleware("web")]
 final class TodoListController
 {
     use ControllerHelper;

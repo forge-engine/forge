@@ -8,6 +8,7 @@ use App\Modules\ForgeDatabaseSQL\DB\DatabaseSetup;
 use Forge\Core\Config\Environment;
 use Forge\Core\Contracts\Database\DatabaseConnectionInterface;
 use Forge\Core\DI\Container;
+use Forge\Core\Module\Attributes\Structure;
 use Forge\Core\Session\Drivers\DatabaseSessionDriver;
 use Forge\Core\Session\Session;
 use Forge\Core\Session\SessionInterface;
@@ -22,9 +23,10 @@ use Forge\Core\Module\Attributes\Requires;
 use Forge\Core\DI\Attributes\Service;
 use Forge\CLI\Traits\OutputHelper;
 
+#[Service]
 #[Module(
   name: 'ForgeDatabaseSQL',
-  version: '0.8.0',
+  version: '0.9.0',
   description: 'SQL database support (SQLite, MySQL, PostgreSQL)',
   order: 0,
   author: 'Forge Team',
@@ -32,11 +34,24 @@ use Forge\CLI\Traits\OutputHelper;
   type: 'core',
   tags: ['database', 'sql', 'sqlite', 'mysql', 'postgresql']
 )]
-#[Service]
+#[Structure(structure: [
+  'controllers' => 'src/Controllers',
+  'services' => 'src/Services',
+  'migrations' => 'src/Database/Migrations',
+  'views' => 'src/Resources/views',
+  'components' => 'src/Resources/components',
+  'commands' => 'src/Commands',
+  'events' => 'src/Events',
+  'tests' => 'src/tests',
+  'models' => 'src/Models',
+  'dto' => 'src/Dto',
+  'seeders' => 'src/Database/Seeders',
+  'middlewares' => 'src/Middlewares',
+])]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[Requires(interface: DatabaseConnectionInterface::class, version: '>=0.1.0')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
-#[Provides(interface: 'forge-database-sql', version: '0.8.0')]
+#[Provides(interface: 'forge-database-sql', version: '0.9.0')]
 #[ConfigDefaults(defaults: [
   "forge_database_sql" => []
 ])]

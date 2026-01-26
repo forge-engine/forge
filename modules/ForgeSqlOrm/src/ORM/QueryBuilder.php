@@ -242,7 +242,7 @@ final class QueryBuilder implements QueryBuilderInterface
   {
     $sql = 'SELECT ' . ($this->select === [] ? '*' : implode(', ', $this->select))
       . " FROM {$this->table}";
-  
+
     foreach ($this->joins as $join) {
       $sql .= " {$join['type']} JOIN {$join['table']} ON {$join['first']} {$join['operator']} {$join['second']}";
     }
@@ -342,7 +342,14 @@ final class QueryBuilder implements QueryBuilderInterface
 
   private function aggregate(string $fn): mixed
   {
-    $sql = "SELECT {$fn} FROM {$this->table}" . $this->buildWhere();
+    $sql = "SELECT {$fn} FROM {$this->table}";
+
+    foreach ($this->joins as $join) {
+      $sql .= " {$join['type']} JOIN {$join['table']} ON {$join['first']} {$join['operator']} {$join['second']}";
+    }
+
+    $sql .= $this->buildWhere();
+
     $stmt = $this->conn->prepare($sql);
     $stmt->execute($this->params);
     return $stmt->fetchColumn();
@@ -405,13 +412,16 @@ final class QueryBuilder implements QueryBuilderInterface
 
   public function leftJoin(string $t, string $a, string $op, string $b): self
   {
-    $joins = [...$this->joins, [
-      'type' => 'LEFT',
-      'table' => $t,
-      'first' => $a,
-      'operator' => $op,
-      'second' => $b,
-    ]];
+    $joins = [
+      ...$this->joins,
+      [
+        'type' => 'LEFT',
+        'table' => $t,
+        'first' => $a,
+        'operator' => $op,
+        'second' => $b,
+      ]
+    ];
     return new self(
       $this->conn,
       table: $this->table,
@@ -428,13 +438,16 @@ final class QueryBuilder implements QueryBuilderInterface
 
   public function join(string $t, string $a, string $op, string $b, string $type = 'INNER'): self
   {
-    $joins = [...$this->joins, [
-      'type' => strtoupper($type),
-      'table' => $t,
-      'first' => $a,
-      'operator' => $op,
-      'second' => $b,
-    ]];
+    $joins = [
+      ...$this->joins,
+      [
+        'type' => strtoupper($type),
+        'table' => $t,
+        'first' => $a,
+        'operator' => $op,
+        'second' => $b,
+      ]
+    ];
     return new self(
       $this->conn,
       table: $this->table,
@@ -451,13 +464,16 @@ final class QueryBuilder implements QueryBuilderInterface
 
   public function rightJoin(string $t, string $a, string $op, string $b): self
   {
-    $joins = [...$this->joins, [
-      'type' => 'RIGHT',
-      'table' => $t,
-      'first' => $a,
-      'operator' => $op,
-      'second' => $b,
-    ]];
+    $joins = [
+      ...$this->joins,
+      [
+        'type' => 'RIGHT',
+        'table' => $t,
+        'first' => $a,
+        'operator' => $op,
+        'second' => $b,
+      ]
+    ];
     return new self(
       $this->conn,
       table: $this->table,

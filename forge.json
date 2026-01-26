@@ -8,7 +8,7 @@
         "forge-storage": "0.2.0",
         "forge-logger": "0.1.0",
         "forge-error-handler": "0.1.0",
-        "forge-auth": "0.1.0",
+        "forge-auth": "0.7.0",
         "forge-testing": "0.1.4",
         "forge-package-manager": "1.1.0",
         "forge-deployment": "0.4.0",

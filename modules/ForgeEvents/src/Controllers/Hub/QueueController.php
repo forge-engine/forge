@@ -23,7 +23,6 @@ use Forge\Traits\ControllerHelper;
 #[Middleware('web')]
 #[Middleware('auth')]
 #[Middleware('hub-permissions')]
-
 final class QueueController
 {
   use ControllerHelper;
@@ -74,7 +73,8 @@ final class QueueController
 
   public function __construct(
     private readonly QueueHubService $queueService
-  ) {
+  )
+  {
   }
 
   #[Route("/hub/queues")]
@@ -100,12 +100,6 @@ final class QueueController
       'jobDetails' => $this->jobDetails,
     ]);
   }
-
-  // Actions are now in traits - see QueueJobActions, QueueBulkActions, etc.
-
-  // ============================================================================
-  // Trait Implementation Methods
-  // ============================================================================
 
   protected function getQueueService(): QueueHubService
   {
@@ -201,11 +195,7 @@ final class QueueController
   {
     $this->showJobModal = $show;
   }
-
-  // ============================================================================
-  // Private Methods
-  // ============================================================================
-
+  
   private function loadJobs(): void
   {
     $filters = [
