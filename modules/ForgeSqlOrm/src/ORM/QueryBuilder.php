@@ -286,6 +286,11 @@ final class QueryBuilder implements QueryBuilderInterface
     return (int)$this->conn->getPdo()->lastInsertId();
   }
 
+  public function insertGetId(array $data): int
+  {
+    return $this->insert($data);
+  }
+
   public function update(array $data): int
   {
     $set = [];

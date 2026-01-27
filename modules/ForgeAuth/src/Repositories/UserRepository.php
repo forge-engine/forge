@@ -74,12 +74,13 @@ class UserRepository extends RecordRepository implements UserRepositoryInterface
     ?\App\Modules\ForgeAuth\Dto\UserMetadataDto $metadata = null,
     array $roleIds = []
   ): User {
-    $userData = new \App\Modules\ForgeAuth\Dto\CreateUserData();
-    $userData->identifier = $identifier;
-    $userData->email = $email;
-    $userData->password = $password;
-    $userData->status = $status;
-    $userData->metadata = $metadata;
+    $userData = new \App\Modules\ForgeAuth\Dto\CreateUserData(
+      $identifier,
+      $email,
+      $password,
+      $status,
+      $metadata
+    );
 
     $user = $this->create($userData);
 

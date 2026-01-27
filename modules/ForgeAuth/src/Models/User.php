@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\ForgeAuth\Models;
 
 use App\Modules\ForgeAuth\Dto\UserMetadataDto;
+use App\Modules\ForgeAuth\Traits\HasRoles;
 use App\Modules\ForgeSqlOrm\ORM\CanLoadRelations;
 use App\Modules\ForgeSqlOrm\ORM\Values\Cast;
 use App\Modules\ForgeSqlOrm\ORM\Values\Relate;
@@ -20,6 +21,7 @@ class User extends Model
 {
     use HasTimeStamps;
     use CanLoadRelations;
+    use HasRoles;
 
     #[Column(primary: true, cast: Cast::INT)]
     public ?int $id = null;
@@ -44,4 +46,24 @@ class User extends Model
     {
         return self::describe(__FUNCTION__);
     }
+
+    public function getRoles(): array
+    {
+        $roleService = \Forge\Core\DI\Container::getInstance()->get(\App\Modules\ForgeAuth\Services\RoleService::class);
+        return $roleService->getUserRoles($this);
+    }
+
+    public function hasRole(string $roleName): bool
+    {
+        $roleService = \Forge\Core\DI\Container::getInstance()->get(\App\Modules\ForgeAuth\Services\RoleService::class);
+        return $roleService->userHasRole($this, $roleName);
+    }
+
+    public function hasPermission(string $permission): bool
+    {
+        $roleService = \Forge\Core\DI\Container::getInstance()->get(\App\Modules\ForgeAuth\Services\RoleService::class);
+        return $roleService->userHasPermission($this, $permission);
+    }
+
+    
 }

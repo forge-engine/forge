@@ -7,6 +7,7 @@ namespace App\Modules\ForgeAuth\Commands;
 use App\Modules\ForgeAuth\Repositories\RoleRepository;
 use App\Modules\ForgeAuth\Repositories\PermissionRepository;
 use App\Modules\ForgeAuth\Services\RoleService;
+use App\Modules\ForgeAuth\Services\EnumGeneratorService;
 use Forge\CLI\Attributes\Cli;
 use Forge\CLI\Attributes\Arg;
 use Forge\CLI\Command;

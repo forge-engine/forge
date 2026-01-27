@@ -1,4 +1,6 @@
 <?php
+use App\Modules\ForgeAuth\Enums\Permission;
+use App\Modules\ForgeAuth\Enums\Role;
 
 layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
 ?>
@@ -6,7 +8,13 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
   <!-- Welcome Section -->
   <div>
     <h1 class="text-2xl font-bold text-gray-900">Welcome to ForgeHub</h1>
-    <p class="text-sm text-gray-500 mt-1">Your administration dashboard</p>
+    <p class="text-sm text-gray-500 mt-1">Your administration dashboard
+        <?php dd(
+            hasRole("USER"),
+            can([Permission::USER_READ, Permission::USER_WRITE]),
+            getAllUserPermissions(getCurrentUser()),
+        ); ?>
+    </p>
   </div>
 
   <!-- System Information Cards -->
@@ -16,7 +24,9 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
       <div class="flex items-center justify-between">
         <div>
           <p class="text-sm text-gray-500">PHP Version</p>
-          <p class="text-2xl font-bold text-gray-900 mt-1"><?= htmlspecialchars($phpVersion) ?></p>
+          <p class="text-2xl font-bold text-gray-900 mt-1"><?= htmlspecialchars(
+              $phpVersion,
+          ) ?></p>
         </div>
         <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
           <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -32,7 +42,9 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
       <div class="flex items-center justify-between">
         <div>
           <p class="text-sm text-gray-500">Kernel</p>
-          <p class="text-2xl font-bold text-gray-900 mt-1">v<?= htmlspecialchars($frameworkVersion) ?></p>
+          <p class="text-2xl font-bold text-gray-900 mt-1">v<?= htmlspecialchars(
+              $frameworkVersion,
+          ) ?></p>
         </div>
         <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
           <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -49,7 +61,9 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
       <div class="flex items-center justify-between">
         <div>
           <p class="text-sm text-gray-500">Modules</p>
-          <p class="text-2xl font-bold text-gray-900 mt-1"><?= htmlspecialchars((string) $moduleCount) ?></p>
+          <p class="text-2xl font-bold text-gray-900 mt-1"><?= htmlspecialchars(
+              (string) $moduleCount,
+          ) ?></p>
         </div>
         <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
           <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -65,7 +79,9 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
       <div class="flex items-center justify-between">
         <div>
           <p class="text-sm text-gray-500">Hub Items</p>
-          <p class="text-2xl font-bold text-gray-900 mt-1"><?= htmlspecialchars((string) $hubItemCount) ?></p>
+          <p class="text-2xl font-bold text-gray-900 mt-1"><?= htmlspecialchars(
+              (string) $hubItemCount,
+          ) ?></p>
         </div>
         <div class="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center">
           <svg class="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -84,7 +100,9 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
         <h3 class="text-sm font-medium text-gray-700">Log Files</h3>
         <a href="/hub/logs" class="text-xs text-blue-600 hover:text-blue-800 font-medium">View All →</a>
       </div>
-      <p class="text-3xl font-bold text-gray-900"><?= htmlspecialchars((string) $logFileCount) ?></p>
+      <p class="text-3xl font-bold text-gray-900"><?= htmlspecialchars(
+          (string) $logFileCount,
+      ) ?></p>
       <p class="text-xs text-gray-500 mt-1">Available log files</p>
     </div>
 
@@ -95,9 +113,13 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
           <h3 class="text-sm font-medium text-gray-700">Cache</h3>
           <a href="/hub/cache" class="text-xs text-blue-600 hover:text-blue-800 font-medium">Manage →</a>
         </div>
-        <p class="text-3xl font-bold text-gray-900"><?= htmlspecialchars((string) ($cacheStats['keys_count'] ?? 0)) ?></p>
+        <p class="text-3xl font-bold text-gray-900"><?= htmlspecialchars(
+            (string) ($cacheStats["keys_count"] ?? 0),
+        ) ?></p>
         <p class="text-xs text-gray-500 mt-1">Cached keys</p>
-        <p class="text-xs text-gray-400 mt-1 font-mono"><?= htmlspecialchars($cacheStats['driver'] ?? 'Unknown') ?></p>
+        <p class="text-xs text-gray-400 mt-1 font-mono"><?= htmlspecialchars(
+            $cacheStats["driver"] ?? "Unknown",
+        ) ?></p>
       </div>
     <?php endif; ?>
 
@@ -108,13 +130,19 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
           <h3 class="text-sm font-medium text-gray-700">Queue Jobs</h3>
           <a href="/hub/queues" class="text-xs text-blue-600 hover:text-blue-800 font-medium">View All →</a>
         </div>
-        <p class="text-3xl font-bold text-gray-900"><?= htmlspecialchars((string) ($queueStats['total'] ?? 0)) ?></p>
+        <p class="text-3xl font-bold text-gray-900"><?= htmlspecialchars(
+            (string) ($queueStats["total"] ?? 0),
+        ) ?></p>
         <p class="text-xs text-gray-500 mt-1">Total jobs</p>
         <div class="flex gap-2 mt-2">
           <span class="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded">Pending:
-            <?= htmlspecialchars((string) ($queueStats['pending'] ?? 0)) ?></span>
+            <?= htmlspecialchars(
+                (string) ($queueStats["pending"] ?? 0),
+            ) ?></span>
           <span class="text-xs px-2 py-1 bg-red-100 text-red-700 rounded">Failed:
-            <?= htmlspecialchars((string) ($queueStats['failed'] ?? 0)) ?></span>
+            <?= htmlspecialchars(
+                (string) ($queueStats["failed"] ?? 0),
+            ) ?></span>
         </div>
       </div>
     <?php endif; ?>
@@ -125,17 +153,23 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
     <h2 class="text-lg font-medium text-gray-800 mb-4">Quick Links</h2>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       <?php foreach ($hubItems as $item): ?>
-        <a href="<?= htmlspecialchars($item['route']) ?>"
+        <a href="<?= htmlspecialchars($item["route"]) ?>"
           class="flex items-center gap-3 p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors group">
           <div
             class="w-10 h-10 bg-gray-100 group-hover:bg-blue-100 rounded-lg flex items-center justify-center transition-colors">
             <i
-              class="fa-solid fa-<?= htmlspecialchars($item['icon'] ?? 'circle') ?> text-gray-600 group-hover:text-blue-600"></i>
+              class="fa-solid fa-<?= htmlspecialchars(
+                  $item["icon"] ?? "circle",
+              ) ?> text-gray-600 group-hover:text-blue-600"></i>
           </div>
           <div class="flex-1 min-w-0">
-            <p class="text-sm font-medium text-gray-900 group-hover:text-blue-900"><?= htmlspecialchars($item['label']) ?>
+            <p class="text-sm font-medium text-gray-900 group-hover:text-blue-900"><?= htmlspecialchars(
+                $item["label"],
+            ) ?>
             </p>
-            <p class="text-xs text-gray-500 truncate"><?= htmlspecialchars($item['route']) ?></p>
+            <p class="text-xs text-gray-500 truncate"><?= htmlspecialchars(
+                $item["route"],
+            ) ?></p>
           </div>
           <svg class="w-5 h-5 text-gray-400 group-hover:text-blue-600 transition-colors" fill="none" stroke="currentColor"
             viewBox="0 0 24 24">
@@ -152,15 +186,21 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
     <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
         <dt class="text-sm font-medium text-gray-500">PHP Version</dt>
-        <dd class="mt-1 text-sm text-gray-900 font-mono"><?= htmlspecialchars($phpVersion) ?></dd>
+        <dd class="mt-1 text-sm text-gray-900 font-mono"><?= htmlspecialchars(
+            $phpVersion,
+        ) ?></dd>
       </div>
       <div>
         <dt class="text-sm font-medium text-gray-500">Kernel Version</dt>
-        <dd class="mt-1 text-sm text-gray-900 font-mono">v<?= htmlspecialchars($frameworkVersion) ?></dd>
+        <dd class="mt-1 text-sm text-gray-900 font-mono">v<?= htmlspecialchars(
+            $frameworkVersion,
+        ) ?></dd>
       </div>
       <div>
         <dt class="text-sm font-medium text-gray-500">Server Time</dt>
-        <dd class="mt-1 text-sm text-gray-900 font-mono"><?= date('Y-m-d H:i:s') ?></dd>
+        <dd class="mt-1 text-sm text-gray-900 font-mono"><?= date(
+            "Y-m-d H:i:s",
+        ) ?></dd>
       </div>
       <div>
         <dt class="text-sm font-medium text-gray-500">Timezone</dt>
@@ -168,11 +208,15 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
       </div>
       <div>
         <dt class="text-sm font-medium text-gray-500">Memory Limit</dt>
-        <dd class="mt-1 text-sm text-gray-900 font-mono"><?= ini_get('memory_limit') ?></dd>
+        <dd class="mt-1 text-sm text-gray-900 font-mono"><?= ini_get(
+            "memory_limit",
+        ) ?></dd>
       </div>
       <div>
         <dt class="text-sm font-medium text-gray-500">Max Execution Time</dt>
-        <dd class="mt-1 text-sm text-gray-900 font-mono"><?= ini_get('max_execution_time') ?>s</dd>
+        <dd class="mt-1 text-sm text-gray-900 font-mono"><?= ini_get(
+            "max_execution_time",
+        ) ?>s</dd>
       </div>
     </dl>
   </div>

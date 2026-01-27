@@ -6,7 +6,7 @@ return array (
     'hubItems' => 
     array (
     ),
-    'mtime' => 1769034280,
+    'mtime' => 1769298827,
     'modulePath' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/modules/ForgeDatabaseSQL',
   ),
   'App\\Modules\\ForgePackageManager\\ForgePackageManager' => 
@@ -22,7 +22,7 @@ return array (
     'hubItems' => 
     array (
     ),
-    'mtime' => 1769034419,
+    'mtime' => 1769310557,
     'modulePath' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/modules/ForgeSqlOrm',
   ),
   'App\\Modules\\ForgeErrorHandler\\ForgeErrorHandlerModule' => 
@@ -116,7 +116,7 @@ return array (
         ),
       ),
     ),
-    'mtime' => 1769034377,
+    'mtime' => 1769043846,
     'modulePath' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/modules/ForgeHub',
   ),
   'App\\Modules\\ForgeMarkDown\\ForgeMarkDownModule' => 
@@ -132,7 +132,7 @@ return array (
     'hubItems' => 
     array (
     ),
-    'mtime' => 1769034385,
+    'mtime' => 1769299057,
     'modulePath' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/modules/ForgeLogger',
   ),
   'App\\Modules\\ForgeAuth\\ForgeAuthModule' => 
@@ -140,7 +140,7 @@ return array (
     'hubItems' => 
     array (
     ),
-    'mtime' => 1769034261,
+    'mtime' => 1769034260,
     'modulePath' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/modules/ForgeAuth',
   ),
   'App\\Modules\\ForgeComponents\\ForgeComponentsModule' => 
@@ -166,7 +166,7 @@ return array (
         ),
       ),
     ),
-    'mtime' => 1769034299,
+    'mtime' => 1769297700,
     'modulePath' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/modules/ForgeDeployment',
   ),
   'App\\Modules\\ForgeEvents\\ForgeEventsModule' => 
@@ -236,14 +236,6 @@ return array (
     ),
     'mtime' => 1769034444,
     'modulePath' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/modules/ForgeWire',
-  ),
-  'App\\Modules\\AppAuth\\AppAuthModule' => 
-  array (
-    'hubItems' => 
-    array (
-    ),
-    'mtime' => 1768601834,
-    'modulePath' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/modules/AppAuth',
   ),
   'App\\Modules\\ForgeTesting\\ForgeTestingModule' => 
   array (

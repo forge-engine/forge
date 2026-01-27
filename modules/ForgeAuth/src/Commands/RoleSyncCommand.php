@@ -159,6 +159,9 @@ final class RoleSyncCommand extends Command
                     $this->warning("Failed to add permission '{$enumPermission['name']}': " . $e->getMessage());
                 }
             }
+
+            $this->info('Creating role-permission relationships...');
+            $this->createRolePermissionRelationships($enumRoles, $enumPermissions);
         } else {
             $this->info('Would add roles/permissions from enum to database (dry run)');
         }
@@ -217,6 +220,30 @@ final class RoleSyncCommand extends Command
             return $permissions;
         } catch (\Exception $e) {
             return [];
+        }
+    }
+
+    private function createRolePermissionRelationships(array $enumRoles, array $enumPermissions): void
+    {
+        foreach ($enumRoles as $enumRole) {
+            $role = $this->roleRepository->findByName($enumRole['name']);
+            if (!$role) {
+                continue;
+            }
+
+            foreach ($enumPermissions as $enumPermission) {
+                $permission = $this->permissionRepository->findByName($enumPermission['name']);
+                if (!$permission) {
+                    continue;
+                }
+
+                try {
+                    $this->roleService->addPermissionToRole($role, $permission);
+                    $this->info("Added permission '{$enumPermission['name']}' to role '{$enumRole['name']}'");
+                } catch (Throwable $e) {
+                    $this->warning("Failed to add permission '{$enumPermission['name']}' to role '{$enumRole['name']}': " . $e->getMessage());
+                }
+            }
         }
     }
 

@@ -63,7 +63,7 @@ return [
         \Forge\Core\Http\Middlewares\ApiMiddleware::class,
     ],
     "api-auth" => [],
-    "auth" => [],
+    "auth" => [\App\Modules\ForgeAuth\Middlewares\AuthMiddleware::class],
     "hub-permissions" => [
         App\Modules\ForgeHub\Middlewares\HubPermissionMiddleware::class,
     ],
