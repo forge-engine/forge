@@ -41,16 +41,21 @@ class PermissionRepository extends RecordRepository
 
     public function createPermission(string $name, ?string $description = null): Permission
     {
+        $queryBuilder = \Forge\Core\DI\Container::getInstance()->get(\Forge\Core\Contracts\Database\QueryBuilderInterface::class);
+        
+        $data = [
+            'name' => $name,
+            'description' => $description ?? null
+        ];
+        
+        $id = $queryBuilder->table('permissions')->insertGetId($data);
+        
         $permission = new Permission();
+        $permission->id = $id;
         $permission->name = $name;
         $permission->description = $description;
-        
-        try {
-            $permission->save();
-            $this->cache->invalidate($this->tableName);
-        } catch (\Exception $e) {
-            throw new \RuntimeException("Failed to create permission: " . $e->getMessage(), 0, $e);
-        }
+
+        $this->cache->invalidate($this->tableName);
 
         return $permission;
     }

@@ -13,36 +13,61 @@ use Forge\CLI\Traits\Wizard;
 use Forge\Traits\StringHelper;
 use Throwable;
 
-#[Cli(
-    command: 'db:migrate',
-    description: 'Run database migrations',
-    usage: 'db:migrate [--type=app|engine|module|all] [--module=ModuleName] [--group=group_name] [--preview]',
-    examples: [
-        'db:migrate --type=all',
-        'db:migrate --type=app',
-        'db:migrate --type=module --module=Blog',
-        'db:migrate --type=module --module=Blog --group=users',
-        'db:migrate --preview',
-        'db:migrate   (starts wizard)',
-    ]
-)]
+#[
+    Cli(
+        command: "db:migrate",
+        description: "Run database migrations",
+        usage: "db:migrate [--type=app|engine|module|all] [--module=ModuleName] [--group=group_name] [--preview]",
+        examples: [
+            "db:migrate --type=all",
+            "db:migrate --type=app",
+            "db:migrate --type=module --module=Blog",
+            "db:migrate --type=module --module=Blog --group=users",
+            "db:migrate --preview",
+            "db:migrate   (starts wizard)",
+        ],
+    ),
+]
 final class MigrateCommand extends Command
 {
     use StringHelper;
     use Wizard;
 
-    #[Arg(name: 'type', description: 'Migration type: app, engine, module, all', required: true, validate: 'app|engine|module|all')]
+    #[
+        Arg(
+            name: "type",
+            description: "Migration type: app, engine, module, all",
+            required: true,
+            validate: "app|engine|module|all",
+        ),
+    ]
     private ?string $type = null;
-    #[Arg(name: 'module', description: 'Module name if type=module', required: false)]
+    #[
+        Arg(
+            name: "module",
+            description: "Module name if type=module",
+            required: false,
+        ),
+    ]
     private ?string $module = null;
-    #[Arg(name: 'group', description: 'Group name for specific migrations', required: false)]
+    #[
+        Arg(
+            name: "group",
+            description: "Group name for specific migrations",
+            required: false,
+        ),
+    ]
     private ?string $group = null;
-    #[Arg(name: 'preview', description: 'Preview migrations without running them', required: false)]
+    #[
+        Arg(
+            name: "preview",
+            description: "Preview migrations without running them",
+            required: false,
+        ),
+    ]
     private bool $preview = false;
 
-    public function __construct(private readonly Migrator $migrator)
-    {
-    }
+    public function __construct(private readonly Migrator $migrator) {}
 
     /**
      * @throws Exception|Throwable
@@ -51,29 +76,41 @@ final class MigrateCommand extends Command
     {
         $this->wizard($args);
 
-        $type = strtolower($this->type ?? 'app');
+        $type = strtolower($this->type ?? "app");
         $module = $this->module ? $this->toPascalCase($this->module) : null;
         $group = $this->group;
 
         $migratorScope = match ($type) {
-            'app' => 'app',
-            'module' => 'module',
-            'engine' => 'core',
-            default => 'all',
+            "app" => "app",
+            "module" => "module",
+            "engine" => "core",
+            default => "all",
         };
 
         $infoMessage = "Processing migrations for scope '{$migratorScope}'";
-        if ($module) $infoMessage .= " on module '{$module}'";
-        if ($group) $infoMessage .= " in group '{$group}'";
+        if ($module) {
+            $infoMessage .= " on module '{$module}'";
+        }
+        if ($group) {
+            $infoMessage .= " in group '{$group}'";
+        }
         $this->info($infoMessage . "...");
 
         if ($this->preview) {
-            $migrations = $this->migrator->previewRun($migratorScope, $module, $group);
+            $migrations = $this->migrator->previewRun(
+                $migratorScope,
+                $module,
+                $group,
+            );
 
             if (empty($migrations)) {
-                $this->info('No migrations are currently PENDING matching the specified criteria.');
+                $this->info(
+                    "No migrations are currently PENDING matching the specified criteria.",
+                );
             } else {
-                $this->info('The following migrations are PENDING and would be run:');
+                $this->info(
+                    "The following migrations are PENDING and would be run:",
+                );
                 foreach ($migrations as $migrationPath) {
                     $this->info("- " . basename($migrationPath));
                 }

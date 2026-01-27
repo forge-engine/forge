@@ -33,10 +33,8 @@ final class ApiUserController
 
         $paginationParams = $this->getPaginationParamsForApi($request);
 
-        // Define searchable fields for User model
         $searchFields = ["email", "identifier", "status"];
 
-        // Use the simple paginate method with search fields in options
         $paginator = User::paginate(
             $paginationParams["page"],
             $paginationParams["limit"],
