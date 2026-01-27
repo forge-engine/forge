@@ -12,10 +12,12 @@ use App\Modules\ForgeDatabaseSQL\DB\Schema\SqliteFormatter;
 use Forge\Core\Contracts\Database\DatabaseConnectionInterface;
 use Forge\Core\DI\Attributes\Migration as MigrationAttribute;
 use Forge\Core\DI\Container;
+use Forge\Core\Helpers\FileExistenceCache;
 use Forge\Core\Helpers\ModuleHelper;
 use Forge\Core\Services\AttributeDiscoveryService;
 use Forge\Core\Structure\StructureResolver;
 use Forge\Traits\StringHelper;
+use Forge\CLI\Traits\OutputHelper;
 use PDO;
 use ReflectionException;
 use RuntimeException;
@@ -25,6 +27,7 @@ use Throwable;
 final class Migrator
 {
     use StringHelper;
+    use OutputHelper;
 
     private const string MIGRATIONS_TABLE = "forge_migrations";
     private const string CORE_MIGRATIONS_PATH =
@@ -32,11 +35,13 @@ final class Migrator
     private const string MODULES_PATH = BASE_PATH . "/modules";
     private ?int $currentBatch = null;
     private ?StructureResolver $structureResolver = null;
+    private ?Container $container = null;
 
     public function __construct(
         private DatabaseConnectionInterface $connection,
         ?Container $container = null,
     ) {
+        $this->container = $container;
         $this->ensureMigrationsTable();
         if ($container && $container->has(StructureResolver::class)) {
             $this->structureResolver = $container->get(
@@ -233,7 +238,10 @@ final class Migrator
                     $reflection = new ReflectionClass($className);
                     if ($reflection->isSubclassOf(Migration::class)) {
                         $filepath = $metadata["file"] ?? "";
-                        if ($filepath && file_exists($filepath)) {
+                        if (
+                            $filepath &&
+                            FileExistenceCache::exists($filepath)
+                        ) {
                             if (
                                 $this->matchesScopeAndModule(
                                     $filepath,
@@ -606,15 +614,39 @@ final class Migrator
         ?string $scope = "all",
         ?string $module = null,
         ?string $group = null,
+        bool $forceSkip = false,
     ): void {
+        $pendingMigrations = $this->getPendingMigrations(
+            $scope,
+            $module,
+            $group,
+        );
+
+        if (empty($pendingMigrations)) {
+            $this->info(
+                "No migrations are currently PENDING matching the specified criteria.",
+            );
+            return;
+        }
+
+        // Check for existing tables not tracked in migrations
+        $untrackedTables = $this->detectUntrackedTables($pendingMigrations);
+        if (!empty($untrackedTables) && !$forceSkip) {
+            $this->handleUntrackedTables(
+                $untrackedTables,
+                $pendingMigrations,
+                $scope,
+                $module,
+                $group,
+            );
+            return;
+        }
+
         $this->currentBatch = $this->getNextBatchNumber();
         $this->connection->beginTransaction();
         try {
-            foreach (
-                $this->getPendingMigrations($scope, $module, $group)
-                as $migrationPath
-            ) {
-                $this->runMigration($migrationPath);
+            foreach ($pendingMigrations as $migrationPath) {
+                $this->runMigration($migrationPath, true);
             }
             $this->connection->commit();
         } catch (Throwable $e) {
@@ -761,25 +793,283 @@ final class Migrator
     }
 
     /**
-     * @throws ReflectionException
+     * Detect tables that exist but aren't tracked in migrations
      */
-    private function rollbackMigration(string $migration): void
+    private function detectUntrackedTables(array $pendingMigrations): array
     {
-        $path = $this->findMigrationPath($migration);
+        $existingTables = $this->getExistingTables();
+        $untrackedTables = [];
 
-        if (!$path) {
-            throw new RuntimeException(
-                "Migration file not found for rollback: $migration",
+        foreach ($pendingMigrations as $migrationPath) {
+            require_once $migrationPath;
+            $className = $this->getMigrationClassName($migrationPath);
+
+            if (!class_exists($className)) {
+                continue;
+            }
+
+            // Try to extract table name from migration
+            $tableName = $this->extractTableNameFromMigrationClass(
+                $className,
+                $migrationPath,
+            );
+
+            if ($tableName && in_array($tableName, $existingTables)) {
+                $migrationName = basename($migrationPath);
+                $untrackedTables[] = [
+                    "migration" => $migrationName,
+                    "path" => $migrationPath,
+                    "table" => $tableName,
+                ];
+
+                // Debug output
+                $this->info(
+                    "Conflict detected: Table '{$tableName}' exists for migration '{$migrationName}'",
+                );
+            }
+        }
+
+        if (!empty($untrackedTables)) {
+            $this->info(
+                "Found " .
+                    count($untrackedTables) .
+                    " untracked tables requiring resolution",
             );
         }
 
-        $this->resolveMigration($path)->down();
+        return $untrackedTables;
+    }
 
-        $stmt = $this->connection->prepare(
-            "DELETE FROM " . self::MIGRATIONS_TABLE . " WHERE migration = ?",
+    /**
+     * Extract table name from migration class
+     */
+    private function extractTableNameFromMigrationClass(
+        string $className,
+        string $migrationPath,
+    ): ?string {
+        // Try to get table name from filename first
+        $filename = basename($migrationPath, ".php");
+
+        if (preg_match("/Create(\w+)Table/", $filename, $matches)) {
+            return strtolower(
+                preg_replace("/([a-z])([A-Z])/", '$1_$2', $matches[1]),
+            );
+        }
+
+        // Try reflection for other methods
+        try {
+            $reflection = new ReflectionClass($className);
+            if (method_exists($reflection->getName(), "getTableName")) {
+                $instance = $reflection->newInstanceWithoutConstructor();
+                return $instance->getTableName();
+            }
+        } catch (\Throwable $e) {
+            // Ignore reflection errors
+        }
+
+        return null;
+    }
+
+    /**
+     * Get list of existing tables in database
+     */
+    private function getExistingTables(): array
+    {
+        try {
+            $stmt = $this->connection->query(
+                "SELECT name FROM sqlite_master WHERE type='table'",
+            );
+            return $stmt->fetchAll(PDO::FETCH_COLUMN);
+        } catch (\Throwable $e) {
+            return [];
+        }
+    }
+
+    /**
+     * Handle untracked tables with interactive options
+     */
+    private function handleUntrackedTables(
+        array $untrackedTables,
+        array $pendingMigrations,
+        ?string $scope,
+        ?string $module,
+        ?string $group,
+    ): void {
+        $messages = [];
+        foreach ($untrackedTables as $untracked) {
+            $messages[] = "Table '{$untracked["table"]}' exists but migration '{$untracked["migration"]}' is not recorded";
+        }
+
+        $this->showWarningBox("Migration Conflict Detected", $messages);
+
+        // Get TemplateGenerator from container (lazy initialization)
+        $templateGenerator = null;
+        if (
+            $this->container &&
+            $this->container->has(\Forge\Core\Services\TemplateGenerator::class)
+        ) {
+            $templateGenerator = $this->container->get(
+                \Forge\Core\Services\TemplateGenerator::class,
+            );
+        }
+
+        if (!$templateGenerator) {
+            // Fallback to basic text input if TemplateGenerator not available
+            $this->handleUntrackedTablesFallback(
+                $untrackedTables,
+                $pendingMigrations,
+                $scope,
+                $module,
+                $group,
+            );
+            return;
+        }
+
+        $choice = $templateGenerator->selectFromList(
+            "How would you like to proceed?",
+            [
+                "Drop tables and re-run migrations (DESTRUCTIVE - will delete all data)",
+                "Mark migrations as complete (SAFE - recommended)",
+                "Skip migrations",
+            ],
+            "Mark migrations as complete (SAFE - recommended)",
         );
 
-        $stmt->execute([basename($migration)]);
+        if ($choice === null) {
+            echo "Migration handling cancelled.\n";
+            return;
+        }
+
+        if (str_contains($choice, "Drop tables")) {
+            $this->dropUntrackedTablesAndRun(
+                $untrackedTables,
+                $pendingMigrations,
+                $scope,
+                $module,
+                $group,
+            );
+        } elseif (str_contains($choice, "Mark migrations as complete")) {
+            $this->markMigrationsAsComplete(
+                $untrackedTables,
+                $pendingMigrations,
+            );
+        } else {
+            echo "Skipping migrations.\n";
+        }
+    }
+
+    /**
+     * Fallback handler when TemplateGenerator is not available
+     */
+    private function handleUntrackedTablesFallback(
+        array $untrackedTables,
+        array $pendingMigrations,
+        ?string $scope,
+        ?string $module,
+        ?string $group,
+    ): void {
+        echo "\n\033[33mOptions:\033[0m\n";
+        echo "  1. \033[31m[DESTRUCTIVE]\033[0m Drop existing tables and re-run migrations (WILL DELETE DATA)\n";
+        echo "  2. \033[32m[SAFE]\033[0m Just mark migrations as complete (recommended)\n";
+        echo "  3. Skip migrations\n";
+
+        echo "\nPlease choose an option (1-3): ";
+        $handle = fopen("php://stdin", "r");
+        $choice = trim(fgets($handle));
+        fclose($handle);
+
+        switch ($choice) {
+            case "1":
+                $this->dropUntrackedTablesAndRun(
+                    $untrackedTables,
+                    $pendingMigrations,
+                    $scope,
+                    $module,
+                    $group,
+                );
+                break;
+            case "2":
+                $this->markMigrationsAsComplete(
+                    $untrackedTables,
+                    $pendingMigrations,
+                );
+                break;
+            case "3":
+                echo "Skipping migrations.\n";
+                break;
+            default:
+                echo "Invalid choice. Skipping migrations.\n";
+        }
+    }
+
+    /**
+     * Drop untracked tables and run migrations
+     */
+    private function dropUntrackedTablesAndRun(
+        array $untrackedTables,
+        array $pendingMigrations,
+        ?string $scope,
+        ?string $module,
+        ?string $group,
+    ): void {
+        echo "\n\033[31mDROPPING TABLES - This will delete all data!\033[0m\n";
+
+        foreach ($untrackedTables as $untracked) {
+            echo "Dropping table: {$untracked["table"]}\n";
+            $this->connection->exec(
+                "DROP TABLE IF EXISTS {$untracked["table"]}",
+            );
+        }
+
+        echo "Running migrations...\n";
+        $this->run($scope, $module, $group, true);
+    }
+
+    /**
+     * Mark migrations as complete without running them
+     */
+    private function markMigrationsAsComplete(
+        array $untrackedTables,
+        array $pendingMigrations,
+    ): void {
+        echo "\n\033[32mMarking migrations as complete...\033[0m\n";
+
+        $this->currentBatch = $this->getNextBatchNumber();
+        $this->connection->beginTransaction();
+
+        try {
+            foreach ($pendingMigrations as $migrationPath) {
+                $migrationName = basename($migrationPath);
+                [, $type, $module, $group] = $this->extractMigrationMetadata(
+                    $migrationPath,
+                );
+
+                echo "Marking migration as complete: {$migrationName}\n";
+
+                $stmt = $this->connection->prepare(
+                    "INSERT INTO " .
+                        self::MIGRATIONS_TABLE .
+                        " (migration, batch, type, module, migration_group)
+                VALUES (?, ?, ?, ?, ?)",
+                );
+
+                $stmt->execute([
+                    $migrationName,
+                    $this->currentBatch,
+                    $type,
+                    $module,
+                    $group,
+                ]);
+            }
+
+            $this->connection->commit();
+            echo "\n\033[32m✅ All migrations marked as complete successfully!\033[0m\n";
+        } catch (Throwable $e) {
+            $this->connection->rollBack();
+            echo "\n\033[31m❌ Failed to mark migrations as complete: " .
+                $e->getMessage() .
+                "\033[0m\n";
+        }
     }
 
     private function findMigrationPath(string $filename): ?string
@@ -793,5 +1083,37 @@ final class Migrator
         }
 
         return null;
+    }
+
+    /**
+     * Rollback a single migration
+     */
+    private function rollbackMigration(string $migration): void
+    {
+        require_once $migration;
+        $className = $this->getMigrationClassName($migration);
+        $reflection = new ReflectionClass($className);
+
+        $driver = $this->connection
+            ->getPdo()
+            ->getAttribute(PDO::ATTR_DRIVER_NAME);
+
+        $formatter = match ($driver) {
+            "mysql" => new MySqlFormatter(),
+            "sqlite" => new SqliteFormatter(),
+            "pgsql" => new PostgreSqlFormatter(),
+            default => throw new RuntimeException(
+                "Unsupported Database driver: $driver",
+            ),
+        };
+
+        $instance = $reflection->newInstance($this->connection, $formatter);
+        $instance->down();
+
+        $stmt = $this->connection->prepare(
+            "DELETE FROM " . self::MIGRATIONS_TABLE . " WHERE migration = ?",
+        );
+
+        $stmt->execute([basename($migration)]);
     }
 }
