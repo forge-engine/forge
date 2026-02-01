@@ -50,6 +50,7 @@ final class RoleAddPermissionCommand extends Command
         private readonly RoleService $roleService,
         private readonly TemplateGenerator $templateGenerator,
         private readonly ForgeLoggerService $logger,
+        private readonly EnumGeneratorService $enumGeneratorService,
     ) {}
 
     public function execute(array $args): int
@@ -294,6 +295,8 @@ final class RoleAddPermissionCommand extends Command
             $this->info("Operation completed:");
             $this->success("Successfully added: {$addedCount} permission(s)");
             if ($createdCount > 0) {
+                $this->info("Updating Permission Enum...");
+                $this->enumGeneratorService->generatePermissionEnum();
                 $this->info("Created: {$createdCount} new permission(s)");
             }
             if ($errorCount > 0) {

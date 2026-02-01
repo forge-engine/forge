@@ -155,7 +155,7 @@ final class RoleService
     {
         $roles = $this->getUserRoles($user);
         foreach ($roles as $role) {
-            if ($role->name === $roleName) {
+            if (strcasecmp($role->name, $roleName) === 0) {
                 return true;
             }
         }
@@ -168,7 +168,7 @@ final class RoleService
         foreach ($roles as $role) {
             $permissions = $this->getRolePermissions($role);
             foreach ($permissions as $perm) {
-                if ($perm->name === $permission) {
+                if (strcasecmp($perm->name, $permission) === 0) {
                     return true;
                 }
             }

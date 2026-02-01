@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeAuth\Middlewares;
 
-use App\Modules\ForgeAuth\Models\User;
 use App\Modules\ForgeAuth\Services\RoleService;
+use App\Modules\ForgeAuth\Traits\HasCurrentUser;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Http\Request;
 use Forge\Core\Http\Response;
@@ -13,20 +13,19 @@ use Forge\Core\Http\Response;
 #[Service]
 final class RoleMiddleware
 {
-    public function __construct(
-        private readonly RoleService $roleService
-    ) {
-    }
+    use HasCurrentUser;
+
+    public function __construct(private readonly RoleService $roleService) {}
 
     public function handle(Request $request, callable $next): Response
     {
-        $user = $this->getCurrentUser($request);
-        
+        $user = $this->getCurrentUser();
+
         if (!$user) {
-            return new Response('Unauthorized', 401);
+            return new Response("Unauthorized", 401);
         }
 
-        $requiredRoles = $request->getAttribute('required_roles') ?? [];
+        $requiredRoles = $request->getAttribute("required_roles") ?? [];
         if (empty($requiredRoles)) {
             return $next($request);
         }
@@ -37,19 +36,11 @@ final class RoleMiddleware
             }
         }
 
-        return new Response('Forbidden - Insufficient role permissions', 403);
-    }
+        ob_start();
+        $errorCode = 403;
+        require BASE_PATH . "/engine/Templates/Views/error_page.php";
+        $content = ob_get_clean();
 
-    private function getCurrentUser(Request $request): ?User
-    {
-        $session = $request->getSession();
-        $userId = $session->get('user_id');
-        
-        if (!$userId) {
-            return null;
-        }
-
-        $userRepository = \Forge\Core\DI\Container::getInstance()->get(\App\Modules\ForgeAuth\Repositories\UserRepository::class);
-        return $userRepository->findById($userId);
+        return new Response($content, (int)$errorCode);
     }
 }

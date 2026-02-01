@@ -49,7 +49,6 @@ if (!function_exists("can")) {
             return false;
         }
 
-        // Check resource ownership first
         if ($resource) {
             if (
                 method_exists($resource, "getOwnerId") &&
@@ -71,7 +70,6 @@ if (!function_exists("can")) {
             }
         }
 
-        // Get all user permissions once and check against them
         $userPermissions = getAllUserPermissions($user);
 
         if (is_string($permissions) || $permissions instanceof Permission) {
@@ -81,12 +79,12 @@ if (!function_exists("can")) {
 
         foreach ($permissions as $permission) {
             $permissionName = $permission instanceof Permission ? $permission->value : $permission;
-            if (in_array($permissionName, $userPermissions)) {
-                return true;
+            if (!in_array($permissionName, $userPermissions)) {
+                return false;
             }
         }
 
-        return false;
+        return true;
     }
 }
 
@@ -96,14 +94,14 @@ if (!function_exists("getAllUserPermissions")) {
         $roleService = Container::getInstance()->get(RoleService::class);
         $userRoles = $roleService->getUserRoles($user);
         $permissions = [];
-        
+
         foreach ($userRoles as $role) {
             $rolePermissions = $roleService->getRolePermissions($role);
             foreach ($rolePermissions as $permission) {
                 $permissions[] = $permission->name;
             }
         }
-        
+
         return array_unique($permissions);
     }
 }
@@ -116,7 +114,6 @@ if (!function_exists("canAny")) {
             return false;
         }
 
-        // Check resource ownership first
         if ($resource) {
             if (
                 method_exists($resource, "getOwnerId") &&
@@ -138,9 +135,8 @@ if (!function_exists("canAny")) {
             }
         }
 
-        // Get all user permissions once and check against them
         $userPermissions = getAllUserPermissions($user);
-        
+
         foreach ($permissions as $permission) {
             $permissionName = $permission instanceof Permission ? $permission->value : $permission;
             if (in_array($permissionName, $userPermissions)) {
@@ -160,7 +156,6 @@ if (!function_exists("canAll")) {
             return false;
         }
 
-        // Check resource ownership first
         if ($resource) {
             if (
                 method_exists($resource, "getOwnerId") &&
@@ -182,9 +177,8 @@ if (!function_exists("canAll")) {
             }
         }
 
-        // Get all user permissions once and check against them
         $userPermissions = getAllUserPermissions($user);
-        
+
         foreach ($permissions as $permission) {
             $permissionName = $permission instanceof Permission ? $permission->value : $permission;
             if (!in_array($permissionName, $userPermissions)) {

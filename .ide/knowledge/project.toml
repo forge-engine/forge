@@ -1,0 +1,11 @@
+[meta]
+name = "My Project"
+version = "1.0.0"
+description = "Custom project knowledge"
+
+[php.globals]
+functions = ["my_custom_function"]
+constants = ["MY_CONSTANT"]
+
+[html.custom_tags]
+"my-tag" = { attributes = ["attr1"], description = "A custom project tag" }

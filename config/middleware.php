@@ -58,13 +58,12 @@ return [
     ],
     "api" => [
         \Forge\Core\Http\Middlewares\IpWhiteListMiddleware::class,
-
         \Forge\Core\Http\Middlewares\CookieMiddleware::class,
         \Forge\Core\Http\Middlewares\ApiMiddleware::class,
     ],
     "api-auth" => [],
     "auth" => [\App\Modules\ForgeAuth\Middlewares\AuthMiddleware::class],
-    "hub-permissions" => [
-        App\Modules\ForgeHub\Middlewares\HubPermissionMiddleware::class,
+    "role" => [
+      \App\Modules\ForgeAuth\Middlewares\RoleMiddleware::class,
     ],
 ];

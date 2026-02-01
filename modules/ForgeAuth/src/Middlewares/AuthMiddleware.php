@@ -17,15 +17,13 @@ final class AuthMiddleware extends Middleware
 {
     public function __construct(
         private readonly ForgeAuthService $forgeAuthService,
-        private readonly RedirectHandlerService $redirectHandler
-    ) {
-    }
+        private readonly RedirectHandlerService $redirectHandler,
+    ) {}
 
     public function handle(Request $request, callable $next): Response
     {
         if (!$this->forgeAuthService->user()) {
-            // Store the intended URL before redirecting to login
-            $intendedUrl = $request->serverParams['REQUEST_URI'] ?? '/';
+            $intendedUrl = $request->serverParams["REQUEST_URI"] ?? "/";
             $this->redirectHandler->storeIntendedUrl($intendedUrl);
 
             return Redirect::to("/auth/login", 401);
