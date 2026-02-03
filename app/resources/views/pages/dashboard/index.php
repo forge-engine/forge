@@ -9,7 +9,7 @@ use Forge\Core\View\View;
  * @var User $user
  */
 
-View::layout(name: "main", loadFromModule: false);
+layout(name: "main");
 ?>
 <section class="container">
     <h2>User area</h2>
