@@ -13,14 +13,46 @@ final class PostgreSqlFormatter implements FormatterInterface
 
     public function formatColumn(string $name, array $attributes): string
     {
-        $typeMapping = [
+        $dbType = $this->formatType($attributes);
+
+        $parts = [
+            "\"$name\"",
+            $dbType,
+            $attributes['nullable'] ? 'NULL' : 'NOT NULL',
+            $this->getPrimaryKeyClause($attributes),
+            $attributes['unique'] ? 'UNIQUE' : '',
+            isset($attributes['check']) ? "CHECK ({$attributes['check']})" : '',
+            isset($attributes['default']) ?
+                $this->formatDefault($attributes['default']) : ''
+        ];
+
+        $definition = implode(' ', array_filter($parts));
+
+        // PostgreSQL uses COMMENT ON statement separately
+        if (isset($attributes['comment'])) {
+            $this->columnComments[] = [
+                'column' => $name,
+                'comment' => $attributes['comment']
+            ];
+        }
+
+        return $definition;
+    }
+
+    private array $columnComments = [];
+
+    private function formatType(array $attributes): string
+    {
+        $type = $attributes['type'];
+
+        return match ($type) {
             'UUID' => 'UUID',
-            'STRING' => 'VARCHAR(255)',
+            'STRING' => isset($attributes['length']) ? "VARCHAR({$attributes['length']})" : 'VARCHAR(255)',
             'TEXT' => 'TEXT',
-            'INTEGER' => 'INTEGER',
+            'INTEGER' => $this->formatInteger($attributes),
             'BOOLEAN' => 'BOOLEAN',
             'FLOAT' => 'REAL',
-            'DECIMAL' => 'DECIMAL',
+            'DECIMAL' => $this->formatDecimal($attributes),
             'DATE' => 'DATE',
             'DATETIME' => 'TIMESTAMP',
             'TIMESTAMP' => 'TIMESTAMP',
@@ -28,21 +60,20 @@ final class PostgreSqlFormatter implements FormatterInterface
             'JSON' => 'JSONB',
             'BLOB' => 'BYTEA',
             'ARRAY' => 'TEXT[]',
-        ];
+            default => $type
+        };
+    }
 
-        $dbType = $typeMapping[$attributes['type']] ?? $attributes['type'];
+    private function formatInteger(array $attributes): string
+    {
+        return ($attributes['unsigned'] ?? false) ? 'INTEGER' : 'INTEGER';
+    }
 
-        $definition = [
-            "\"$name\"",
-            $dbType,
-            $attributes['nullable'] ? 'NULL' : 'NOT NULL',
-            $this->getPrimaryKeyClause($attributes),
-            $attributes['unique'] ? 'UNIQUE' : '',
-            isset($attributes['default']) ?
-                $this->formatDefault($attributes['default']) : ''
-        ];
-
-        return implode(' ', array_filter($definition));
+    private function formatDecimal(array $attributes): string
+    {
+        $precision = $attributes['precision'] ?? 10;
+        $scale = $attributes['scale'] ?? 2;
+        return "DECIMAL($precision, $scale)";
     }
 
     private function formatEnum(array $attributes): string
@@ -118,14 +149,33 @@ final class PostgreSqlFormatter implements FormatterInterface
             return '';
         }
 
-        return implode(";\n", array_map(
+        $sql = implode(";\n", array_map(
             fn($rel) => match ($rel['type']) {
                 'belongsTo' => $this->formatBelongsTo($table, $rel['config']),
+                'hasOne' => $this->formatHasOneOrHasMany($rel['config']),
+                'hasMany' => $this->formatHasOneOrHasMany($rel['config']),
                 'manyToMany' => $this->formatManyToMany($rel['config']),
                 default => ''
             },
             $this->relationships
         ));
+
+        // Add column comments
+        if (!empty($this->columnComments)) {
+            $commentSql = [];
+            foreach ($this->columnComments as $comment) {
+                $commentSql[] = sprintf(
+                    'COMMENT ON COLUMN "%s"."%s" IS \'%s\'',
+                    $table,
+                    $comment['column'],
+                    $comment['comment']
+                );
+            }
+            $sql .= ";\n" . implode(";\n", $commentSql);
+            $this->columnComments = [];
+        }
+
+        return $sql;
     }
 
     private function formatBelongsTo(string $table, array $config): string
@@ -135,6 +185,17 @@ final class PostgreSqlFormatter implements FormatterInterface
             $table,
             $config['foreignKey'],
             $config['relatedTable'],
+            $config['onDelete']
+        );
+    }
+
+    private function formatHasOneOrHasMany(array $config): string
+    {
+        return sprintf(
+            'ALTER TABLE "%s" ADD FOREIGN KEY ("%s") REFERENCES "%s"(id) ON DELETE %s',
+            $config['relatedTable'],
+            $config['foreignKey'],
+            $config['sourceTable'],
             $config['onDelete']
         );
     }
@@ -158,6 +219,74 @@ final class PostgreSqlFormatter implements FormatterInterface
             $config['sourceTable'],
             $config['relatedKey'],
             $config['relatedTable']
+        );
+    }
+
+    public function formatAddColumn(string $table, string $column, array $attributes, ?string $after = null, bool $first = false): string
+    {
+        $columnDef = $this->formatColumn($column, $attributes);
+        
+        // PostgreSQL doesn't support AFTER/FIRST, column is always added at the end
+        return sprintf(
+            'ALTER TABLE "%s" ADD COLUMN %s',
+            $table,
+            $columnDef
+        );
+    }
+
+    public function formatDropColumn(string $table, string $column): string
+    {
+        return sprintf(
+            'ALTER TABLE "%s" DROP COLUMN "%s"',
+            $table,
+            $column
+        );
+    }
+
+    public function formatRenameColumn(string $table, string $old, string $new): string
+    {
+        return sprintf(
+            'ALTER TABLE "%s" RENAME COLUMN "%s" TO "%s"',
+            $table,
+            $old,
+            $new
+        );
+    }
+
+    public function formatAlterColumn(string $table, string $column, array $attributes): string
+    {
+        $parts = [];
+        
+        // Build ALTER COLUMN statements for each changed property
+        if (isset($attributes['type'])) {
+            $dbType = $this->formatType($attributes);
+            $parts[] = sprintf('ALTER COLUMN "%s" SET DATA TYPE %s', $column, $dbType);
+        }
+        
+        if (array_key_exists('nullable', $attributes)) {
+            if ($attributes['nullable']) {
+                $parts[] = sprintf('ALTER COLUMN "%s" DROP NOT NULL', $column);
+            } else {
+                $parts[] = sprintf('ALTER COLUMN "%s" SET NOT NULL', $column);
+            }
+        }
+        
+        if (array_key_exists('default', $attributes)) {
+            if ($attributes['default'] === null) {
+                $parts[] = sprintf('ALTER COLUMN "%s" DROP DEFAULT', $column);
+            } else {
+                $parts[] = sprintf('ALTER COLUMN "%s" SET %s', $column, $this->formatDefault($attributes['default']));
+            }
+        }
+        
+        if (empty($parts)) {
+            return '';
+        }
+        
+        return sprintf(
+            'ALTER TABLE "%s" %s',
+            $table,
+            implode(', ', $parts)
         );
     }
 }
