@@ -4,11 +4,16 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeDatabaseSQL\DB\Migrations;
 
+use App\Modules\ForgeDatabaseSQL\DB\Attributes\AddColumn;
 use App\Modules\ForgeDatabaseSQL\DB\Attributes\Column;
+use App\Modules\ForgeDatabaseSQL\DB\Attributes\DropColumn;
 use App\Modules\ForgeDatabaseSQL\DB\Attributes\Index;
 use App\Modules\ForgeDatabaseSQL\DB\Attributes\MetaData;
 use App\Modules\ForgeDatabaseSQL\DB\Attributes\Relations\BelongsTo;
+use App\Modules\ForgeDatabaseSQL\DB\Attributes\Relations\HasOne;
+use App\Modules\ForgeDatabaseSQL\DB\Attributes\Relations\HasMany;
 use App\Modules\ForgeDatabaseSQL\DB\Attributes\Relations\ManyToMany;
+use App\Modules\ForgeDatabaseSQL\DB\Attributes\RenameColumn;
 use App\Modules\ForgeDatabaseSQL\DB\Attributes\SoftDelete;
 use App\Modules\ForgeDatabaseSQL\DB\Attributes\Status;
 use App\Modules\ForgeDatabaseSQL\DB\Attributes\Table;
@@ -87,6 +92,27 @@ abstract class Migration
                 ) {
                     $this->schema["columns"][$columnName]["enum"] =
                         $column->enum;
+                }
+                // DECIMAL precision and scale
+                if ($columnType === ColumnType::DECIMAL) {
+                    if ($column->precision !== null) {
+                        $this->schema["columns"][$columnName]["precision"] = $column->precision;
+                    }
+                    if ($column->scale !== null) {
+                        $this->schema["columns"][$columnName]["scale"] = $column->scale;
+                    }
+                }
+                // Unsigned for integers
+                if ($column->unsigned && in_array($columnType, [ColumnType::INTEGER])) {
+                    $this->schema["columns"][$columnName]["unsigned"] = true;
+                }
+                // Comment
+                if ($column->comment !== null) {
+                    $this->schema["columns"][$columnName]["comment"] = $column->comment;
+                }
+                // Check constraint
+                if ($column->check !== null) {
+                    $this->schema["columns"][$columnName]["check"] = $column->check;
                 }
                 $columnOrder[] = $columnName;
             }
@@ -226,6 +252,34 @@ abstract class Migration
             ]);
         }
 
+        foreach ($reflector->getAttributes(HasOne::class) as $attr) {
+            $relation = $attr->newInstance();
+            $this->formatter->addRelationship("hasOne", [
+                "foreignKey" =>
+                    $relation->foreignKey ?:
+                    Strings::toSnakeCase($this->schema["table"]) . "_id",
+                "relatedTable" => Strings::toPlural(
+                    Strings::toSnakeCase($relation->related),
+                ),
+                "sourceTable" => $this->schema["table"],
+                "onDelete" => $relation->onDelete,
+            ]);
+        }
+
+        foreach ($reflector->getAttributes(HasMany::class) as $attr) {
+            $relation = $attr->newInstance();
+            $this->formatter->addRelationship("hasMany", [
+                "foreignKey" =>
+                    $relation->foreignKey ?:
+                    Strings::toSnakeCase($this->schema["table"]) . "_id",
+                "relatedTable" => Strings::toPlural(
+                    Strings::toSnakeCase($relation->related),
+                ),
+                "sourceTable" => $this->schema["table"],
+                "onDelete" => $relation->onDelete,
+            ]);
+        }
+
         foreach ($reflector->getAttributes(ManyToMany::class) as $attr) {
             $relation = $attr->newInstance();
             $this->formatter->addRelationship("manyToMany", [
@@ -242,10 +296,18 @@ abstract class Migration
 
     public function up(): void
     {
-        if (empty($this->schema) || !isset($this->schema["table"])) {
+        // Check if this is a CREATE TABLE migration (has Table attribute)
+        if (!empty($this->schema) && isset($this->schema["table"])) {
+            $this->executeCreateTable();
             return;
         }
 
+        // Check for ALTER TABLE operations
+        $this->executeAlterOperations();
+    }
+
+    private function executeCreateTable(): void
+    {
         $columnDefinitions = [];
         foreach ($this->columnOrder as $columnName) {
             if (isset($this->schema["columns"][$columnName])) {
@@ -284,6 +346,95 @@ abstract class Migration
         }
 
         $this->execute($sql);
+    }
+
+    private function executeAlterOperations(): void
+    {
+        $reflector = new ReflectionClass($this);
+        $alterTable = null;
+
+        // Process AddColumn attributes
+        foreach ($reflector->getAttributes(AddColumn::class) as $attr) {
+            $addColumn = $attr->newInstance();
+            $alterTable = $addColumn->table;
+            $sql = $this->formatter->formatAddColumn(
+                $addColumn->table,
+                $addColumn->name,
+                $this->buildColumnAttributes($addColumn),
+                $addColumn->after,
+                $addColumn->first
+            );
+            $this->execute($sql);
+        }
+
+        // Process DropColumn attributes
+        foreach ($reflector->getAttributes(DropColumn::class) as $attr) {
+            $dropColumn = $attr->newInstance();
+            $alterTable = $dropColumn->table;
+            $sql = $this->formatter->formatDropColumn($dropColumn->table, $dropColumn->name);
+            if ($sql !== null && $sql !== '') {
+                $this->execute($sql);
+            }
+        }
+
+        // Process RenameColumn attributes
+        foreach ($reflector->getAttributes(RenameColumn::class) as $attr) {
+            $renameColumn = $attr->newInstance();
+            $alterTable = $renameColumn->table;
+            $sql = $this->formatter->formatRenameColumn($renameColumn->table, $renameColumn->old, $renameColumn->new);
+            $this->execute($sql);
+        }
+
+        // Process Index attributes for ALTER operations
+        foreach ($reflector->getAttributes(Index::class) as $indexAttribute) {
+            $index = $indexAttribute->newInstance();
+            if ($alterTable !== null) {
+                $sql = $this->formatter->formatIndex([
+                    "name" => $index->name,
+                    "columns" => $index->columns,
+                    "unique" => $index->unique,
+                    "table" => $alterTable,
+                ]);
+                $this->execute($sql);
+            }
+        }
+    }
+
+    private function buildColumnAttributes(AddColumn $column): array
+    {
+        $columnType = $this->resolveColumnType($column->type);
+        
+        $attributes = [
+            "type" => $columnType->value,
+            "primary" => false,
+            "nullable" => $column->nullable,
+            "unique" => false,
+            "default" => $column->default,
+            "autoIncrement" => false,
+        ];
+
+        if ($column->length !== null && $columnType === ColumnType::STRING) {
+            $attributes["length"] = $column->length;
+        }
+
+        if ($columnType === ColumnType::DECIMAL) {
+            if ($column->precision !== null) {
+                $attributes["precision"] = $column->precision;
+            }
+            if ($column->scale !== null) {
+                $attributes["scale"] = $column->scale;
+            }
+        }
+
+        if ($column->unsigned && $columnType === ColumnType::INTEGER) {
+            $attributes["unsigned"] = true;
+        }
+
+        if ($column->comment !== null) {
+            $attributes["comment"] = $column->comment;
+        }
+
+        return $attributes;
     }
 
     protected function execute(string $sql): void
@@ -405,6 +556,218 @@ abstract class Migration
             $quotedReferencedTable,
             $quotedReferencedColumn,
             $onDelete
+        );
+    }
+
+    /**
+     * Add a column to an existing table
+     * 
+     * @param string $tableName The name of the table
+     * @param string $columnName The name of the new column
+     * @param string $type The column type (e.g., 'VARCHAR(255)', 'INTEGER', 'DECIMAL(10,2)')
+     * @param bool $nullable Whether the column allows NULL values
+     * @param mixed $default Default value for the column
+     * @param string|null $after Column to insert after (MySQL only)
+     * @param bool $first Insert at the beginning (MySQL only)
+     * @return string The generated SQL
+     */
+    public function addColumn(
+        string $tableName,
+        string $columnName,
+        string $type,
+        bool $nullable = false,
+        mixed $default = null,
+        ?string $after = null,
+        bool $first = false
+    ): string {
+        $driver = $this->pdo->getDriver();
+        $identifierQuote = $this->getIdentifierQuote($driver);
+        
+        $nullableClause = $nullable ? 'NULL' : 'NOT NULL';
+        $defaultClause = '';
+        
+        if ($default !== null) {
+            $defaultClause = is_string($default) ? "DEFAULT '$default'" : "DEFAULT $default";
+        } elseif ($nullable) {
+            $defaultClause = 'DEFAULT NULL';
+        }
+        
+        $positionClause = '';
+        if ($driver === 'mysql') {
+            if ($first) {
+                $positionClause = ' FIRST';
+            } elseif ($after !== null) {
+                $positionClause = " AFTER {$identifierQuote}{$after}{$identifierQuote}";
+            }
+        }
+        
+        return sprintf(
+            'ALTER TABLE %s%s%s ADD COLUMN %s%s %s %s%s',
+            $identifierQuote,
+            $tableName,
+            $identifierQuote,
+            $identifierQuote,
+            $columnName,
+            $identifierQuote,
+            $type,
+            $nullableClause,
+            $defaultClause ? ' ' . $defaultClause : '',
+            $positionClause
+        );
+    }
+
+    /**
+     * Drop a column from an existing table
+     * 
+     * @param string $tableName The name of the table
+     * @param string $columnName The name of the column to drop
+     * @return string|null The generated SQL, or null if not supported (SQLite)
+     */
+    public function dropColumn(string $tableName, string $columnName): ?string
+    {
+        $driver = $this->pdo->getDriver();
+        
+        // SQLite doesn't support DROP COLUMN
+        if ($driver === 'sqlite') {
+            return null;
+        }
+        
+        $identifierQuote = $this->getIdentifierQuote($driver);
+        
+        return sprintf(
+            'ALTER TABLE %s%s%s DROP COLUMN %s%s%s',
+            $identifierQuote,
+            $tableName,
+            $identifierQuote,
+            $identifierQuote,
+            $columnName,
+            $identifierQuote
+        );
+    }
+
+    /**
+     * Rename a column in an existing table
+     * 
+     * @param string $tableName The name of the table
+     * @param string $oldName The current column name
+     * @param string $newName The new column name
+     * @return string The generated SQL
+     */
+    public function renameColumn(string $tableName, string $oldName, string $newName): string
+    {
+        $driver = $this->pdo->getDriver();
+        $identifierQuote = $this->getIdentifierQuote($driver);
+        
+        if ($driver === 'mysql') {
+            return sprintf(
+                'ALTER TABLE %s%s%s RENAME COLUMN %s%s%s TO %s%s%s',
+                $identifierQuote,
+                $tableName,
+                $identifierQuote,
+                $identifierQuote,
+                $oldName,
+                $identifierQuote,
+                $identifierQuote,
+                $newName,
+                $identifierQuote
+            );
+        }
+        
+        // PostgreSQL and SQLite 3.25.0+
+        return sprintf(
+            'ALTER TABLE %s%s%s RENAME COLUMN %s%s%s TO %s%s%s',
+            $identifierQuote,
+            $tableName,
+            $identifierQuote,
+            $identifierQuote,
+            $oldName,
+            $identifierQuote,
+            $identifierQuote,
+            $newName,
+            $identifierQuote
+        );
+    }
+
+    /**
+     * Change/modify a column definition
+     * 
+     * @param string $tableName The name of the table
+     * @param string $columnName The name of the column to modify
+     * @param string $type The new column type
+     * @param bool $nullable Whether the column allows NULL values
+     * @param mixed $default Default value for the column
+     * @return string|null The generated SQL, or null if not supported (SQLite)
+     */
+    public function changeColumn(
+        string $tableName,
+        string $columnName,
+        string $type,
+        bool $nullable = false,
+        mixed $default = null
+    ): ?string {
+        $driver = $this->pdo->getDriver();
+        
+        // SQLite doesn't support ALTER COLUMN
+        if ($driver === 'sqlite') {
+            return null;
+        }
+        
+        $identifierQuote = $this->getIdentifierQuote($driver);
+        $nullableClause = $nullable ? 'NULL' : 'NOT NULL';
+        $defaultClause = '';
+        
+        if ($default !== null) {
+            $defaultClause = is_string($default) ? "DEFAULT '$default'" : "DEFAULT $default";
+        }
+        
+        if ($driver === 'mysql') {
+            return sprintf(
+                'ALTER TABLE %s%s%s MODIFY COLUMN %s%s%s %s %s%s',
+                $identifierQuote,
+                $tableName,
+                $identifierQuote,
+                $identifierQuote,
+                $columnName,
+                $identifierQuote,
+                $type,
+                $nullableClause,
+                $defaultClause ? ' ' . $defaultClause : ''
+            );
+        }
+        
+        // PostgreSQL
+        return sprintf(
+            'ALTER TABLE %s%s%s ALTER COLUMN %s%s%s SET DATA TYPE %s',
+            $identifierQuote,
+            $tableName,
+            $identifierQuote,
+            $identifierQuote,
+            $columnName,
+            $identifierQuote,
+            $type
+        );
+    }
+
+    /**
+     * Rename a table
+     * 
+     * @param string $oldName The current table name
+     * @param string $newName The new table name
+     * @return string The generated SQL
+     */
+    public function renameTable(string $oldName, string $newName): string
+    {
+        $driver = $this->pdo->getDriver();
+        $identifierQuote = $this->getIdentifierQuote($driver);
+        
+        return sprintf(
+            'ALTER TABLE %s%s%s RENAME TO %s%s%s',
+            $identifierQuote,
+            $oldName,
+            $identifierQuote,
+            $identifierQuote,
+            $newName,
+            $identifierQuote
         );
     }
 

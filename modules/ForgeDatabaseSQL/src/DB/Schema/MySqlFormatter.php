@@ -13,24 +13,7 @@ final class MySqlFormatter implements FormatterInterface
 
     public function formatColumn(string $name, array $attributes): string
     {
-        $typeMapping = [
-            'UUID' => 'CHAR(36)',
-            'STRING' => 'VARCHAR(255)',
-            'TEXT' => 'TEXT',
-            'INTEGER' => 'INT',
-            'BOOLEAN' => 'BOOLEAN',
-            'FLOAT' => 'FLOAT',
-            'DECIMAL' => 'DECIMAL',
-            'DATE' => 'DATE',
-            'DATETIME' => 'DATETIME',
-            'TIMESTAMP' => 'TIMESTAMP',
-            'ENUM' => $this->formatEnum($attributes),
-            'JSON' => 'JSON',
-            'BLOB' => 'BLOB',
-            'ARRAY' => 'JSON',
-        ];
-
-        $dbType = $typeMapping[$attributes['type']] ?? $attributes['type'];
+        $dbType = $this->formatType($attributes);
 
         $definition = [
             "`$name`",
@@ -38,11 +21,49 @@ final class MySqlFormatter implements FormatterInterface
             $attributes['nullable'] ? 'NULL' : 'NOT NULL',
             $this->getPrimaryKeyClause($attributes),
             $attributes['unique'] ? 'UNIQUE' : '',
+            isset($attributes['check']) ? "CHECK ({$attributes['check']})" : '',
             isset($attributes['default']) ?
-                $this->formatDefault($attributes['default']) : ''
+                $this->formatDefault($attributes['default']) : '',
+            isset($attributes['comment']) ? "COMMENT '{$attributes['comment']}'" : ''
         ];
 
         return implode(' ', array_filter($definition));
+    }
+
+    private function formatType(array $attributes): string
+    {
+        $type = $attributes['type'];
+
+        return match ($type) {
+            'UUID' => 'CHAR(36)',
+            'STRING' => isset($attributes['length']) ? "VARCHAR({$attributes['length']})" : 'VARCHAR(255)',
+            'TEXT' => 'TEXT',
+            'INTEGER' => $this->formatInteger($attributes),
+            'BOOLEAN' => 'BOOLEAN',
+            'FLOAT' => 'FLOAT',
+            'DECIMAL' => $this->formatDecimal($attributes),
+            'DATE' => 'DATE',
+            'DATETIME' => 'DATETIME',
+            'TIMESTAMP' => 'TIMESTAMP',
+            'ENUM' => $this->formatEnum($attributes),
+            'JSON' => 'JSON',
+            'BLOB' => 'BLOB',
+            'ARRAY' => 'JSON',
+            default => $type
+        };
+    }
+
+    private function formatInteger(array $attributes): string
+    {
+        $unsigned = ($attributes['unsigned'] ?? false) ? ' UNSIGNED' : '';
+        return 'INT' . $unsigned;
+    }
+
+    private function formatDecimal(array $attributes): string
+    {
+        $precision = $attributes['precision'] ?? 10;
+        $scale = $attributes['scale'] ?? 2;
+        return "DECIMAL($precision, $scale)";
     }
 
     private function formatEnum(array $attributes): string
@@ -123,6 +144,8 @@ final class MySqlFormatter implements FormatterInterface
         return implode(";\n", array_map(
             fn($rel) => match ($rel['type']) {
                 'belongsTo' => $this->formatBelongsTo($table, $rel['config']),
+                'hasOne' => $this->formatHasOneOrHasMany($rel['config']),
+                'hasMany' => $this->formatHasOneOrHasMany($rel['config']),
                 'manyToMany' => $this->formatManyToMany($rel['config']),
                 default => ''
             },
@@ -137,6 +160,17 @@ final class MySqlFormatter implements FormatterInterface
             $table,
             $config['foreignKey'],
             $config['relatedTable'],
+            $config['onDelete']
+        );
+    }
+
+    private function formatHasOneOrHasMany(array $config): string
+    {
+        return sprintf(
+            'ALTER TABLE `%s` ADD FOREIGN KEY (`%s`) REFERENCES `%s`(id) ON DELETE %s',
+            $config['relatedTable'],
+            $config['foreignKey'],
+            $config['sourceTable'],
             $config['onDelete']
         );
     }
@@ -160,6 +194,55 @@ final class MySqlFormatter implements FormatterInterface
             $config['sourceTable'],
             $config['relatedKey'],
             $config['relatedTable']
+        );
+    }
+
+    public function formatAddColumn(string $table, string $column, array $attributes, ?string $after = null, bool $first = false): string
+    {
+        $columnDef = $this->formatColumn($column, $attributes);
+        
+        $position = '';
+        if ($first) {
+            $position = ' FIRST';
+        } elseif ($after !== null) {
+            $position = " AFTER `{$after}`";
+        }
+        
+        return sprintf(
+            'ALTER TABLE `%s` ADD COLUMN %s%s',
+            $table,
+            $columnDef,
+            $position
+        );
+    }
+
+    public function formatDropColumn(string $table, string $column): string
+    {
+        return sprintf(
+            'ALTER TABLE `%s` DROP COLUMN `%s`',
+            $table,
+            $column
+        );
+    }
+
+    public function formatRenameColumn(string $table, string $old, string $new): string
+    {
+        return sprintf(
+            'ALTER TABLE `%s` RENAME COLUMN `%s` TO `%s`',
+            $table,
+            $old,
+            $new
+        );
+    }
+
+    public function formatAlterColumn(string $table, string $column, array $attributes): string
+    {
+        $columnDef = $this->formatColumn($column, $attributes);
+        
+        return sprintf(
+            'ALTER TABLE `%s` MODIFY COLUMN %s',
+            $table,
+            $columnDef
         );
     }
 }

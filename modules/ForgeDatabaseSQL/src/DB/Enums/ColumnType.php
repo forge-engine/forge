@@ -27,6 +27,14 @@ enum ColumnType: string
         };
     }
 
+    public function withPrecisionScale(int $precision, int $scale): string
+    {
+        return match ($this) {
+            self::DECIMAL => "DECIMAL($precision, $scale)",
+            default => $this->value,
+        };
+    }
+
     public function defaultValue(): mixed
     {
         return match ($this) {
