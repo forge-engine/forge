@@ -21,7 +21,7 @@ You’re not a user. You’re a builder.
 - I’ll keep publishing modules and improvements that help me build real-world apps. You’re free to take what helps,
   ignore what doesn’t.
 
-This isn’t a product. This is a toolbox...
+This isn’t a product. This is a toolbox.
 
 ---
 
