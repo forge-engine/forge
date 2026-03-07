@@ -29,10 +29,10 @@
             "integrity": "6b59bfc2b8547a2440eeb5473185bed31e3927d0f5a28b0ae06be3f95601fb30"
         },
         "forge-auth": {
-            "version": "0.7.0",
+            "version": "1.0.0",
             "registry": "forge-engine-modules",
-            "module_path": "forge-auth/0.7.0",
-            "integrity": "7618534689bb99da98af7946005b363949280090198b2a470b9ebc924adfdaf8",
+            "module_path": "forge-auth/1.0.0",
+            "integrity": "bc33bfd1efafca192987486736be033b72c08cdc0aa9c5284a71b780771f8e19",
             "source_type": "git",
             "source_config": {
                 "name": "forge-engine-modules",
@@ -128,6 +128,54 @@
             "registry": "forge-engine-modules",
             "module_path": "forge-wire/2.4.0",
             "integrity": "487460b153dc93fa3e908114d9242e3d0835bc52b377fc73e24519476b81d947",
+            "source_type": "git",
+            "source_config": {
+                "name": "forge-engine-modules",
+                "type": "git",
+                "url": "https://github.com/forge-engine/modules",
+                "branch": "main",
+                "private": false,
+                "description": "Forge Kernel Official Modules",
+                "debug": false
+            }
+        },
+        "app-auth": {
+            "version": "1.1.0",
+            "registry": "forge-engine-modules",
+            "module_path": "app-auth/1.1.0",
+            "integrity": "502339cc2a3927f7afe6ad94dabf98501807869a112824839f9937750d51c2b8",
+            "source_type": "git",
+            "source_config": {
+                "name": "forge-engine-modules",
+                "type": "git",
+                "url": "https://github.com/forge-engine/modules",
+                "branch": "main",
+                "private": false,
+                "description": "Forge Kernel Official Modules",
+                "debug": false
+            }
+        },
+        "forge-multi-tenant": {
+            "version": "0.3.0",
+            "registry": "forge-engine-modules",
+            "module_path": "forge-multi-tenant/0.3.0",
+            "integrity": "f3bb4212981a18652ff0c47b7010f41d5b3316aecfa991cc9b8e7a29f6d94eac",
+            "source_type": "git",
+            "source_config": {
+                "name": "forge-engine-modules",
+                "type": "git",
+                "url": "https://github.com/forge-engine/modules",
+                "branch": "main",
+                "private": false,
+                "description": "Forge Kernel Official Modules",
+                "debug": false
+            }
+        },
+        "forge-hub": {
+            "version": "2.5.0",
+            "registry": "forge-engine-modules",
+            "module_path": "forge-hub/2.5.0",
+            "integrity": "9d2a8a8b12bcaf87e9a41d98bba033091f62725b168a50655e2353a479387f77",
             "source_type": "git",
             "source_config": {
                 "name": "forge-engine-modules",

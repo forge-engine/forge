@@ -140,7 +140,7 @@ return array (
     'hubItems' => 
     array (
     ),
-    'mtime' => 1769034260,
+    'mtime' => 1770135074,
     'modulePath' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/modules/ForgeAuth',
   ),
   'App\\Modules\\ForgeComponents\\ForgeComponentsModule' => 

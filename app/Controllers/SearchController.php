@@ -27,11 +27,15 @@ final class SearchController
     #[Route("/search")]
     public function index(Request $request): Response
     {
+        define("TEST", true);
+
         $results = $this->search($this->query);
         $data = [
             "results" => $results,
             "query" => $this->query
         ];
+
+        echo TEST;
 
         return $this->view("pages/search/index", $data);
     }
@@ -44,9 +48,9 @@ final class SearchController
         }
 
         return [
-            (object) ['title' => "Result for: $query 1"],
-            (object) ['title' => "Result for: $query 2"],
-            (object) ['title' => "Result for: $query 3"],
+            (object)['title' => "Result for: $query 1"],
+            (object)['title' => "Result for: $query 2"],
+            (object)['title' => "Result for: $query 3"],
         ];
     }
 }

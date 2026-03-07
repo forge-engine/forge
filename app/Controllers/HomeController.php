@@ -35,7 +35,7 @@ final class HomeController
     $data = [
       "title" => "Welcome to Forge Kernel",
     ];
-
+    
     return $this->view(view: 'pages/home/index', data: $data);
   }
 
