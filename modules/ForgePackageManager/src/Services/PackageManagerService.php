@@ -431,7 +431,7 @@ final class PackageManagerService implements PackageManagerInterface
 
     private function generateModuleInstallFolderName(string $fullName): string
     {
-        return Strings::toPascalCase($fullName);
+        return self::toPascalCase($fullName);
     }
 
     private function getCachePath(): string
