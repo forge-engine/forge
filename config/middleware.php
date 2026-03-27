@@ -64,6 +64,6 @@ return [
     "api-auth" => [],
     "auth" => [\App\Modules\ForgeAuth\Middlewares\AuthMiddleware::class],
     "role" => [
-      \App\Modules\ForgeAuth\Middlewares\RoleMiddleware::class,
+        \App\Modules\ForgeAuth\Middlewares\RoleMiddleware::class,
     ],
 ];

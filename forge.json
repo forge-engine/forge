@@ -2,7 +2,7 @@
     "name": "Forge Framework",
     "engine": {
         "name": "forge-engine",
-        "version": "latest"
+        "version": "4.13.0"
     },
     "modules": {
         "forge-storage": "0.2.0",

@@ -118,7 +118,7 @@ final class EventDispatcher
             ]);
         }
     }
-    
+
     /**
      * Extract serializable data from an event object
      */
@@ -126,14 +126,14 @@ final class EventDispatcher
     {
         $data = [];
         $reflection = new ReflectionClass($event);
-        
+
         // Extract public properties
         foreach ($reflection->getProperties(\ReflectionProperty::IS_PUBLIC) as $property) {
             $propertyName = $property->getName();
-            
+
             if ($property->isInitialized($event)) {
                 $value = $property->getValue($event);
-                
+
                 // Skip unserializable resources
                 if ($this->isSerializable($value)) {
                     $data[$propertyName] = $value;
@@ -143,7 +143,7 @@ final class EventDispatcher
                 }
             }
         }
-        
+
         // Try using toArray() method if available
         if (method_exists($event, 'toArray')) {
             $toArray = $event->toArray();
@@ -151,10 +151,10 @@ final class EventDispatcher
                 $data = array_merge($data, $toArray);
             }
         }
-        
+
         return $data;
     }
-    
+
     /**
      * Check if a value is safely serializable
      */
@@ -164,17 +164,17 @@ final class EventDispatcher
         if (is_resource($value)) {
             return false;
         }
-        
+
         if (is_object($value)) {
             // Skip common unserializable types
             if ($value instanceof \PDO) {
                 return false;
             }
-            
+
             if ($value instanceof \Closure) {
                 return false;
             }
-            
+
             // Try to serialize to see if it works
             try {
                 @serialize($value);
@@ -183,10 +183,10 @@ final class EventDispatcher
                 return false;
             }
         }
-        
+
         return true;
     }
-    
+
     /**
      * Convert unserializable values to safe string representations
      */
@@ -195,15 +195,15 @@ final class EventDispatcher
         if (is_object($value)) {
             return '[Object: ' . get_class($value) . ']';
         }
-        
+
         if (is_resource($value)) {
             return '[Resource: ' . get_resource_type($value) . ']';
         }
-        
+
         if (is_array($value)) {
             return '[Array: ' . count($value) . ' items]';
         }
-        
+
         return '[Unknown]';
     }
 
@@ -216,8 +216,9 @@ final class EventDispatcher
 
         $payload = unserialize($job['payload']);
 
-        $this->handleEvent($payload, $job['id'] ?? null);
-        return (string)$job['id'];
+        $jobId = $job['id'] ?? null;
+        $this->handleEvent($payload, $jobId);
+        return (string) $jobId;
     }
 
     private function handleEvent(array $payload, ?int $jobId): void
@@ -251,7 +252,7 @@ final class EventDispatcher
             }
         }
     }
-    
+
     /**
      * Reconstruct an event from serialized data
      */
@@ -261,13 +262,13 @@ final class EventDispatcher
         if (is_object($eventData)) {
             return $eventData;
         }
-        
+
         // If it's an array, reconstruct the event
         if (is_array($eventData)) {
             try {
                 // Try to create new instance with the array data
                 $reflection = new ReflectionClass($eventClass);
-                
+
                 if ($reflection->isReadOnly()) {
                     // For readonly classes, we need to use reflection
                     return $reflection->newInstanceWithoutConstructor();
@@ -293,12 +294,13 @@ final class EventDispatcher
             } catch (\Throwable $e) {
                 $this->error("Failed to reconstruct event {$eventClass}: " . $e->getMessage());
                 // Return a minimal fallback
-                return new class($eventData) {
-                    public function __construct(public array $data) {}
+                return new class ($eventData) {
+                    public function __construct(public array $data)
+                    {}
                 };
             }
         }
-        
+
         throw new \RuntimeException("Cannot reconstruct event from data of type: " . gettype($eventData));
     }
 
@@ -344,7 +346,7 @@ final class EventDispatcher
             'processAfter' => $retryProcessAfter,
             'attempts' => $payload['attempts'],
             $payload['metadata']->queue
-        ]), QueuePriority::LOW->value, (int)($retryDelaySeconds * 1000));
+        ]), QueuePriority::LOW->value, (int) ($retryDelaySeconds * 1000));
 
         $this->warning("Retrying event {$payload['class']} (attempt {$payload['attempts']})");
     }

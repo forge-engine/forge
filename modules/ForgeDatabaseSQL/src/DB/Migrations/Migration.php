@@ -23,12 +23,14 @@ use App\Modules\ForgeDatabaseSQL\DB\Schema\FormatterInterface;
 use Forge\Core\Contracts\Database\DatabaseConnectionInterface;
 use Forge\Core\Contracts\Database\QueryBuilderInterface;
 use Forge\Core\Helpers\FileExistenceCache;
-use Forge\Core\Helpers\Strings;
+use Forge\Traits\StringHelper;
 use PDOException;
 use ReflectionClass;
 
 abstract class Migration
 {
+    use StringHelper;
+
     protected array $schema = [];
     protected array $indexes = [];
     protected array $relationships = [];
@@ -40,7 +42,9 @@ abstract class Migration
         protected FormatterInterface $formatter,
     ) {
         if (class_exists(\App\Modules\ForgeSqlOrm\ORM\QueryBuilder::class)) {
-            $this->queryBuilder = new \App\Modules\ForgeSqlOrm\ORM\QueryBuilder($this->pdo);
+            $this->queryBuilder = new \App\Modules\ForgeSqlOrm\ORM\QueryBuilder(
+                $this->pdo,
+            );
         }
         $this->formatter = $formatter;
 
@@ -96,23 +100,30 @@ abstract class Migration
                 // DECIMAL precision and scale
                 if ($columnType === ColumnType::DECIMAL) {
                     if ($column->precision !== null) {
-                        $this->schema["columns"][$columnName]["precision"] = $column->precision;
+                        $this->schema["columns"][$columnName]["precision"] =
+                            $column->precision;
                     }
                     if ($column->scale !== null) {
-                        $this->schema["columns"][$columnName]["scale"] = $column->scale;
+                        $this->schema["columns"][$columnName]["scale"] =
+                            $column->scale;
                     }
                 }
                 // Unsigned for integers
-                if ($column->unsigned && in_array($columnType, [ColumnType::INTEGER])) {
+                if (
+                    $column->unsigned &&
+                    in_array($columnType, [ColumnType::INTEGER])
+                ) {
                     $this->schema["columns"][$columnName]["unsigned"] = true;
                 }
                 // Comment
                 if ($column->comment !== null) {
-                    $this->schema["columns"][$columnName]["comment"] = $column->comment;
+                    $this->schema["columns"][$columnName]["comment"] =
+                        $column->comment;
                 }
                 // Check constraint
                 if ($column->check !== null) {
-                    $this->schema["columns"][$columnName]["check"] = $column->check;
+                    $this->schema["columns"][$columnName]["check"] =
+                        $column->check;
                 }
                 $columnOrder[] = $columnName;
             }
@@ -123,7 +134,7 @@ abstract class Migration
             if ($instance instanceof Status) {
                 $columnName = $instance->column;
                 $this->schema["columns"][$columnName] = [
-                    "type" => ColumnType::ENUM ->value,
+                    "type" => ColumnType::ENUM->value,
                     "enum" => $instance->values,
                     "nullable" => $instance->nullable,
                     "default" => "PENDING",
@@ -216,7 +227,8 @@ abstract class Migration
         }
 
         $multiTenantFile =
-            BASE_PATH . "/modules/ForgeMultiTenant/src/ForgeMultiTenantModule.php";
+            BASE_PATH .
+            "/modules/ForgeMultiTenant/src/ForgeMultiTenantModule.php";
 
         $multitenantReady = FileExistenceCache::exists($multiTenantFile);
         if ($multitenantReady) {
@@ -224,14 +236,12 @@ abstract class Migration
             foreach ($reflector->getAttributes() as $attribute) {
                 if (
                     $attribute->getName() ===
-                    'App\\Modules\\ForgeMultiTenant\\Attributes\\TenantScoped'
+                    "App\\Modules\\ForgeMultiTenant\\Attributes\\TenantScoped"
                 ) {
                     $tenantScoped = true;
                     break;
                 }
             }
-
-
         }
     }
 
@@ -244,9 +254,9 @@ abstract class Migration
             $this->formatter->addRelationship("belongsTo", [
                 "foreignKey" =>
                     $relation->foreignKey ?:
-                    Strings::toSnakeCase($relation->related) . "_id",
-                "relatedTable" => Strings::toPlural(
-                    Strings::toSnakeCase($relation->related),
+                    self::toSnakeCase($relation->related) . "_id",
+                "relatedTable" => self::toPlural(
+                    self::toSnakeCase($relation->related),
                 ),
                 "onDelete" => $relation->onDelete,
             ]);
@@ -257,9 +267,9 @@ abstract class Migration
             $this->formatter->addRelationship("hasOne", [
                 "foreignKey" =>
                     $relation->foreignKey ?:
-                    Strings::toSnakeCase($this->schema["table"]) . "_id",
-                "relatedTable" => Strings::toPlural(
-                    Strings::toSnakeCase($relation->related),
+                    self::toSnakeCase($this->schema["table"]) . "_id",
+                "relatedTable" => self::toPlural(
+                    self::toSnakeCase($relation->related),
                 ),
                 "sourceTable" => $this->schema["table"],
                 "onDelete" => $relation->onDelete,
@@ -271,9 +281,9 @@ abstract class Migration
             $this->formatter->addRelationship("hasMany", [
                 "foreignKey" =>
                     $relation->foreignKey ?:
-                    Strings::toSnakeCase($this->schema["table"]) . "_id",
-                "relatedTable" => Strings::toPlural(
-                    Strings::toSnakeCase($relation->related),
+                    self::toSnakeCase($this->schema["table"]) . "_id",
+                "relatedTable" => self::toPlural(
+                    self::toSnakeCase($relation->related),
                 ),
                 "sourceTable" => $this->schema["table"],
                 "onDelete" => $relation->onDelete,
@@ -287,8 +297,8 @@ abstract class Migration
                 "foreignKey" => $relation->foreignKey,
                 "relatedKey" => $relation->relatedKey,
                 "sourceTable" => $this->schema["table"],
-                "relatedTable" => Strings::toPlural(
-                    Strings::toSnakeCase($relation->related),
+                "relatedTable" => self::toPlural(
+                    self::toSnakeCase($relation->related),
                 ),
             ]);
         }
@@ -322,7 +332,8 @@ abstract class Migration
 
         $driver = $this->pdo->getDriver();
         $identifierQuote = $this->getIdentifierQuote($driver);
-        $quotedTableName = $identifierQuote . $this->schema["table"] . $identifierQuote;
+        $quotedTableName =
+            $identifierQuote . $this->schema["table"] . $identifierQuote;
         $sql = "CREATE TABLE IF NOT EXISTS {$quotedTableName} (\n{$columnsSql}\n)";
 
         if (!empty($this->indexes)) {
@@ -362,7 +373,7 @@ abstract class Migration
                 $addColumn->name,
                 $this->buildColumnAttributes($addColumn),
                 $addColumn->after,
-                $addColumn->first
+                $addColumn->first,
             );
             $this->execute($sql);
         }
@@ -371,8 +382,11 @@ abstract class Migration
         foreach ($reflector->getAttributes(DropColumn::class) as $attr) {
             $dropColumn = $attr->newInstance();
             $alterTable = $dropColumn->table;
-            $sql = $this->formatter->formatDropColumn($dropColumn->table, $dropColumn->name);
-            if ($sql !== null && $sql !== '') {
+            $sql = $this->formatter->formatDropColumn(
+                $dropColumn->table,
+                $dropColumn->name,
+            );
+            if ($sql !== null && $sql !== "") {
                 $this->execute($sql);
             }
         }
@@ -381,7 +395,11 @@ abstract class Migration
         foreach ($reflector->getAttributes(RenameColumn::class) as $attr) {
             $renameColumn = $attr->newInstance();
             $alterTable = $renameColumn->table;
-            $sql = $this->formatter->formatRenameColumn($renameColumn->table, $renameColumn->old, $renameColumn->new);
+            $sql = $this->formatter->formatRenameColumn(
+                $renameColumn->table,
+                $renameColumn->old,
+                $renameColumn->new,
+            );
             $this->execute($sql);
         }
 
@@ -403,7 +421,7 @@ abstract class Migration
     private function buildColumnAttributes(AddColumn $column): array
     {
         $columnType = $this->resolveColumnType($column->type);
-        
+
         $attributes = [
             "type" => $columnType->value,
             "primary" => false,
@@ -441,10 +459,12 @@ abstract class Migration
     {
         if (empty(trim($sql))) {
             throw new MigrationException(
-                "Migration " . static::class . " attempted to execute empty SQL. " .
-                "For raw migrations, ensure your SQL is properly built before calling execute(). " .
-                "The QueryBuilder's createTable() and getSql() methods are not implemented - " .
-                "build SQL strings manually instead.",
+                "Migration " .
+                    static::class .
+                    " attempted to execute empty SQL. " .
+                    "For raw migrations, ensure your SQL is properly built before calling execute(). " .
+                    "The QueryBuilder's createTable() and getSql() methods are not implemented - " .
+                    "build SQL strings manually instead.",
                 $sql,
             );
         }
@@ -471,21 +491,29 @@ abstract class Migration
 
     /**
      * Create a table with the given columns
-     * 
+     *
      * @param string $tableName The name of the table
      * @param array<string, string> $columns Array of column definitions (e.g., ['id' => 'INTEGER PRIMARY KEY AUTOINCREMENT'])
      * @param bool $ifNotExists Whether to add IF NOT EXISTS clause
      * @return string The generated SQL
      */
-    public function createTable(string $tableName, array $columns, bool $ifNotExists = false): string
-    {
+    public function createTable(
+        string $tableName,
+        array $columns,
+        bool $ifNotExists = false,
+    ): string {
         $driver = $this->pdo->getDriver();
-        return $this->buildCreateTableSql($tableName, $columns, $ifNotExists, $driver);
+        return $this->buildCreateTableSql(
+            $tableName,
+            $columns,
+            $ifNotExists,
+            $driver,
+        );
     }
 
     /**
      * Drop a table
-     * 
+     *
      * @param string $tableName The name of the table to drop
      * @return string The generated SQL
      */
@@ -497,35 +525,42 @@ abstract class Migration
 
     /**
      * Create an index on a table
-     * 
+     *
      * @param string $tableName The name of the table
      * @param string $indexName The name of the index
      * @param array<string> $columns Array of column names
      * @param bool $unique Whether the index is unique
      * @return string The generated SQL
      */
-    public function createIndex(string $tableName, string $indexName, array $columns, bool $unique = false): string
-    {
+    public function createIndex(
+        string $tableName,
+        string $indexName,
+        array $columns,
+        bool $unique = false,
+    ): string {
         $driver = $this->pdo->getDriver();
         $identifierQuote = $this->getIdentifierQuote($driver);
-        $quotedColumns = array_map(fn($col) => $identifierQuote . $col . $identifierQuote, $columns);
+        $quotedColumns = array_map(
+            fn($col) => $identifierQuote . $col . $identifierQuote,
+            $columns,
+        );
         $quotedTableName = $identifierQuote . $tableName . $identifierQuote;
         $quotedIndexName = $identifierQuote . $indexName . $identifierQuote;
 
-        $uniqueClause = $unique ? 'UNIQUE ' : '';
+        $uniqueClause = $unique ? "UNIQUE " : "";
 
         return sprintf(
-            'CREATE %sINDEX IF NOT EXISTS %s ON %s (%s)',
+            "CREATE %sINDEX IF NOT EXISTS %s ON %s (%s)",
             $uniqueClause,
             $quotedIndexName,
             $quotedTableName,
-            implode(', ', $quotedColumns)
+            implode(", ", $quotedColumns),
         );
     }
 
     /**
      * Add a foreign key constraint
-     * 
+     *
      * @param string $tableName The name of the table
      * @param string $foreignKey The foreign key column name
      * @param string $referencedTable The referenced table name
@@ -533,12 +568,17 @@ abstract class Migration
      * @param string $onDelete The ON DELETE action (default: 'CASCADE')
      * @return string|null The generated SQL, or null if SQLite (foreign keys skipped)
      */
-    public function addForeignKey(string $tableName, string $foreignKey, string $referencedTable, string $referencedColumn = 'id', string $onDelete = 'CASCADE'): ?string
-    {
+    public function addForeignKey(
+        string $tableName,
+        string $foreignKey,
+        string $referencedTable,
+        string $referencedColumn = "id",
+        string $onDelete = "CASCADE",
+    ): ?string {
         $driver = $this->pdo->getDriver();
 
         // SQLite foreign keys are handled differently - skip ALTER TABLE for SQLite
-        if ($driver === 'sqlite') {
+        if ($driver === "sqlite") {
             return null;
         }
 
@@ -546,22 +586,24 @@ abstract class Migration
 
         $quotedTable = $identifierQuote . $tableName . $identifierQuote;
         $quotedForeignKey = $identifierQuote . $foreignKey . $identifierQuote;
-        $quotedReferencedTable = $identifierQuote . $referencedTable . $identifierQuote;
-        $quotedReferencedColumn = $identifierQuote . $referencedColumn . $identifierQuote;
+        $quotedReferencedTable =
+            $identifierQuote . $referencedTable . $identifierQuote;
+        $quotedReferencedColumn =
+            $identifierQuote . $referencedColumn . $identifierQuote;
 
         return sprintf(
-            'ALTER TABLE %s ADD FOREIGN KEY (%s) REFERENCES %s(%s) ON DELETE %s',
+            "ALTER TABLE %s ADD FOREIGN KEY (%s) REFERENCES %s(%s) ON DELETE %s",
             $quotedTable,
             $quotedForeignKey,
             $quotedReferencedTable,
             $quotedReferencedColumn,
-            $onDelete
+            $onDelete,
         );
     }
 
     /**
      * Add a column to an existing table
-     * 
+     *
      * @param string $tableName The name of the table
      * @param string $columnName The name of the new column
      * @param string $type The column type (e.g., 'VARCHAR(255)', 'INTEGER', 'DECIMAL(10,2)')
@@ -578,31 +620,33 @@ abstract class Migration
         bool $nullable = false,
         mixed $default = null,
         ?string $after = null,
-        bool $first = false
+        bool $first = false,
     ): string {
         $driver = $this->pdo->getDriver();
         $identifierQuote = $this->getIdentifierQuote($driver);
-        
-        $nullableClause = $nullable ? 'NULL' : 'NOT NULL';
-        $defaultClause = '';
-        
+
+        $nullableClause = $nullable ? "NULL" : "NOT NULL";
+        $defaultClause = "";
+
         if ($default !== null) {
-            $defaultClause = is_string($default) ? "DEFAULT '$default'" : "DEFAULT $default";
+            $defaultClause = is_string($default)
+                ? "DEFAULT '$default'"
+                : "DEFAULT $default";
         } elseif ($nullable) {
-            $defaultClause = 'DEFAULT NULL';
+            $defaultClause = "DEFAULT NULL";
         }
-        
-        $positionClause = '';
-        if ($driver === 'mysql') {
+
+        $positionClause = "";
+        if ($driver === "mysql") {
             if ($first) {
-                $positionClause = ' FIRST';
+                $positionClause = " FIRST";
             } elseif ($after !== null) {
                 $positionClause = " AFTER {$identifierQuote}{$after}{$identifierQuote}";
             }
         }
-        
+
         return sprintf(
-            'ALTER TABLE %s%s%s ADD COLUMN %s%s %s %s%s',
+            "ALTER TABLE %s%s%s ADD COLUMN %s%s %s %s%s",
             $identifierQuote,
             $tableName,
             $identifierQuote,
@@ -611,14 +655,14 @@ abstract class Migration
             $identifierQuote,
             $type,
             $nullableClause,
-            $defaultClause ? ' ' . $defaultClause : '',
-            $positionClause
+            $defaultClause ? " " . $defaultClause : "",
+            $positionClause,
         );
     }
 
     /**
      * Drop a column from an existing table
-     * 
+     *
      * @param string $tableName The name of the table
      * @param string $columnName The name of the column to drop
      * @return string|null The generated SQL, or null if not supported (SQLite)
@@ -626,41 +670,44 @@ abstract class Migration
     public function dropColumn(string $tableName, string $columnName): ?string
     {
         $driver = $this->pdo->getDriver();
-        
+
         // SQLite doesn't support DROP COLUMN
-        if ($driver === 'sqlite') {
+        if ($driver === "sqlite") {
             return null;
         }
-        
+
         $identifierQuote = $this->getIdentifierQuote($driver);
-        
+
         return sprintf(
-            'ALTER TABLE %s%s%s DROP COLUMN %s%s%s',
+            "ALTER TABLE %s%s%s DROP COLUMN %s%s%s",
             $identifierQuote,
             $tableName,
             $identifierQuote,
             $identifierQuote,
             $columnName,
-            $identifierQuote
+            $identifierQuote,
         );
     }
 
     /**
      * Rename a column in an existing table
-     * 
+     *
      * @param string $tableName The name of the table
      * @param string $oldName The current column name
      * @param string $newName The new column name
      * @return string The generated SQL
      */
-    public function renameColumn(string $tableName, string $oldName, string $newName): string
-    {
+    public function renameColumn(
+        string $tableName,
+        string $oldName,
+        string $newName,
+    ): string {
         $driver = $this->pdo->getDriver();
         $identifierQuote = $this->getIdentifierQuote($driver);
-        
-        if ($driver === 'mysql') {
+
+        if ($driver === "mysql") {
             return sprintf(
-                'ALTER TABLE %s%s%s RENAME COLUMN %s%s%s TO %s%s%s',
+                "ALTER TABLE %s%s%s RENAME COLUMN %s%s%s TO %s%s%s",
                 $identifierQuote,
                 $tableName,
                 $identifierQuote,
@@ -669,13 +716,13 @@ abstract class Migration
                 $identifierQuote,
                 $identifierQuote,
                 $newName,
-                $identifierQuote
+                $identifierQuote,
             );
         }
-        
+
         // PostgreSQL and SQLite 3.25.0+
         return sprintf(
-            'ALTER TABLE %s%s%s RENAME COLUMN %s%s%s TO %s%s%s',
+            "ALTER TABLE %s%s%s RENAME COLUMN %s%s%s TO %s%s%s",
             $identifierQuote,
             $tableName,
             $identifierQuote,
@@ -684,13 +731,13 @@ abstract class Migration
             $identifierQuote,
             $identifierQuote,
             $newName,
-            $identifierQuote
+            $identifierQuote,
         );
     }
 
     /**
      * Change/modify a column definition
-     * 
+     *
      * @param string $tableName The name of the table
      * @param string $columnName The name of the column to modify
      * @param string $type The new column type
@@ -703,26 +750,28 @@ abstract class Migration
         string $columnName,
         string $type,
         bool $nullable = false,
-        mixed $default = null
+        mixed $default = null,
     ): ?string {
         $driver = $this->pdo->getDriver();
-        
+
         // SQLite doesn't support ALTER COLUMN
-        if ($driver === 'sqlite') {
+        if ($driver === "sqlite") {
             return null;
         }
-        
+
         $identifierQuote = $this->getIdentifierQuote($driver);
-        $nullableClause = $nullable ? 'NULL' : 'NOT NULL';
-        $defaultClause = '';
-        
+        $nullableClause = $nullable ? "NULL" : "NOT NULL";
+        $defaultClause = "";
+
         if ($default !== null) {
-            $defaultClause = is_string($default) ? "DEFAULT '$default'" : "DEFAULT $default";
+            $defaultClause = is_string($default)
+                ? "DEFAULT '$default'"
+                : "DEFAULT $default";
         }
-        
-        if ($driver === 'mysql') {
+
+        if ($driver === "mysql") {
             return sprintf(
-                'ALTER TABLE %s%s%s MODIFY COLUMN %s%s%s %s %s%s',
+                "ALTER TABLE %s%s%s MODIFY COLUMN %s%s%s %s %s%s",
                 $identifierQuote,
                 $tableName,
                 $identifierQuote,
@@ -731,26 +780,26 @@ abstract class Migration
                 $identifierQuote,
                 $type,
                 $nullableClause,
-                $defaultClause ? ' ' . $defaultClause : ''
+                $defaultClause ? " " . $defaultClause : "",
             );
         }
-        
+
         // PostgreSQL
         return sprintf(
-            'ALTER TABLE %s%s%s ALTER COLUMN %s%s%s SET DATA TYPE %s',
+            "ALTER TABLE %s%s%s ALTER COLUMN %s%s%s SET DATA TYPE %s",
             $identifierQuote,
             $tableName,
             $identifierQuote,
             $identifierQuote,
             $columnName,
             $identifierQuote,
-            $type
+            $type,
         );
     }
 
     /**
      * Rename a table
-     * 
+     *
      * @param string $oldName The current table name
      * @param string $newName The new table name
      * @return string The generated SQL
@@ -759,40 +808,49 @@ abstract class Migration
     {
         $driver = $this->pdo->getDriver();
         $identifierQuote = $this->getIdentifierQuote($driver);
-        
+
         return sprintf(
-            'ALTER TABLE %s%s%s RENAME TO %s%s%s',
+            "ALTER TABLE %s%s%s RENAME TO %s%s%s",
             $identifierQuote,
             $oldName,
             $identifierQuote,
             $identifierQuote,
             $newName,
-            $identifierQuote
+            $identifierQuote,
         );
     }
 
     /**
      * Build CREATE TABLE SQL based on database driver
      */
-    private function buildCreateTableSql(string $tableName, array $columns, bool $ifNotExists, string $driver): string
-    {
+    private function buildCreateTableSql(
+        string $tableName,
+        array $columns,
+        bool $ifNotExists,
+        string $driver,
+    ): string {
         $identifierQuote = $this->getIdentifierQuote($driver);
         $quotedTableName = $identifierQuote . $tableName . $identifierQuote;
 
         $columnDefinitions = [];
         foreach ($columns as $columnName => $columnDef) {
-            $quotedColumnName = $identifierQuote . $columnName . $identifierQuote;
-            $normalizedDef = $this->normalizeColumnDefinition($columnDef, $driver);
-            $columnDefinitions[] = $quotedColumnName . ' ' . $normalizedDef;
+            $quotedColumnName =
+                $identifierQuote . $columnName . $identifierQuote;
+            $normalizedDef = $this->normalizeColumnDefinition(
+                $columnDef,
+                $driver,
+            );
+            $columnDefinitions[] = $quotedColumnName . " " . $normalizedDef;
         }
 
         $columnsSql = implode(",\n    ", $columnDefinitions);
-        $ifNotExistsClause = $ifNotExists ? ' IF NOT EXISTS' : '';
+        $ifNotExistsClause = $ifNotExists ? " IF NOT EXISTS" : "";
 
         $sql = "CREATE TABLE{$ifNotExistsClause} {$quotedTableName} (\n    {$columnsSql}\n)";
 
-        if ($driver === 'mysql') {
-            $sql .= ' ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci';
+        if ($driver === "mysql") {
+            $sql .=
+                " ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci";
         }
 
         return $sql;
@@ -801,8 +859,10 @@ abstract class Migration
     /**
      * Build DROP TABLE SQL based on database driver
      */
-    private function buildDropTableSql(string $tableName, string $driver): string
-    {
+    private function buildDropTableSql(
+        string $tableName,
+        string $driver,
+    ): string {
         $identifierQuote = $this->getIdentifierQuote($driver);
         $quotedTableName = $identifierQuote . $tableName . $identifierQuote;
         return "DROP TABLE {$quotedTableName}";
@@ -814,8 +874,8 @@ abstract class Migration
     private function getIdentifierQuote(string $driver): string
     {
         return match ($driver) {
-            'mysql' => '`',
-            'sqlite', 'pgsql' => '"',
+            "mysql" => "`",
+            "sqlite", "pgsql" => '"',
             default => '"',
         };
     }
@@ -823,25 +883,72 @@ abstract class Migration
     /**
      * Normalize column definition based on database driver
      */
-    private function normalizeColumnDefinition(string $definition, string $driver): string
-    {
+    private function normalizeColumnDefinition(
+        string $definition,
+        string $driver,
+    ): string {
         $definition = trim($definition);
 
-        if ($driver === 'pgsql') {
-            if (preg_match('/\bINTEGER\b/i', $definition) && preg_match('/\b(?:AUTO_INCREMENT|AUTOINCREMENT)\b/i', $definition)) {
-                $definition = preg_replace('/\bINTEGER\b/i', 'SERIAL', $definition);
-                $definition = preg_replace('/\s+(?:AUTO_INCREMENT|AUTOINCREMENT)\b/i', '', $definition);
-            } elseif (preg_match('/\bBIGINT\b/i', $definition) && preg_match('/\b(?:AUTO_INCREMENT|AUTOINCREMENT)\b/i', $definition)) {
-                $definition = preg_replace('/\bBIGINT\b/i', 'BIGSERIAL', $definition);
-                $definition = preg_replace('/\s+(?:AUTO_INCREMENT|AUTOINCREMENT)\b/i', '', $definition);
+        if ($driver === "pgsql") {
+            if (
+                preg_match("/\bINTEGER\b/i", $definition) &&
+                preg_match(
+                    "/\b(?:AUTO_INCREMENT|AUTOINCREMENT)\b/i",
+                    $definition,
+                )
+            ) {
+                $definition = preg_replace(
+                    "/\bINTEGER\b/i",
+                    "SERIAL",
+                    $definition,
+                );
+                $definition = preg_replace(
+                    "/\s+(?:AUTO_INCREMENT|AUTOINCREMENT)\b/i",
+                    "",
+                    $definition,
+                );
+            } elseif (
+                preg_match("/\bBIGINT\b/i", $definition) &&
+                preg_match(
+                    "/\b(?:AUTO_INCREMENT|AUTOINCREMENT)\b/i",
+                    $definition,
+                )
+            ) {
+                $definition = preg_replace(
+                    "/\bBIGINT\b/i",
+                    "BIGSERIAL",
+                    $definition,
+                );
+                $definition = preg_replace(
+                    "/\s+(?:AUTO_INCREMENT|AUTOINCREMENT)\b/i",
+                    "",
+                    $definition,
+                );
             }
-        } elseif ($driver === 'mysql') {
-            $definition = preg_replace('/\bAUTOINCREMENT\b/i', 'AUTO_INCREMENT', $definition);
-            if (preg_match('/\bINTEGER\b(?!\s+(?:UNSIGNED|ZEROFILL))/i', $definition)) {
-                $definition = preg_replace('/\bINTEGER\b/i', 'INT', $definition);
+        } elseif ($driver === "mysql") {
+            $definition = preg_replace(
+                "/\bAUTOINCREMENT\b/i",
+                "AUTO_INCREMENT",
+                $definition,
+            );
+            if (
+                preg_match(
+                    "/\bINTEGER\b(?!\s+(?:UNSIGNED|ZEROFILL))/i",
+                    $definition,
+                )
+            ) {
+                $definition = preg_replace(
+                    "/\bINTEGER\b/i",
+                    "INT",
+                    $definition,
+                );
             }
-        } elseif ($driver === 'sqlite') {
-            $definition = preg_replace('/\bAUTO_INCREMENT\b/i', 'AUTOINCREMENT', $definition);
+        } elseif ($driver === "sqlite") {
+            $definition = preg_replace(
+                "/\bAUTO_INCREMENT\b/i",
+                "AUTOINCREMENT",
+                $definition,
+            );
         }
 
         return $definition;
@@ -850,9 +957,8 @@ abstract class Migration
     /**
      * Resolve column type from ColumnType enum or string
      */
-    private function resolveColumnType(
-        string|ColumnType $type,
-    ): ColumnType {
+    private function resolveColumnType(string|ColumnType $type): ColumnType
+    {
         if ($type instanceof ColumnType) {
             return $type;
         }

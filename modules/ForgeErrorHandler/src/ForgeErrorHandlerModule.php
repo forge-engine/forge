@@ -22,7 +22,7 @@ use Forge\CLI\Traits\OutputHelper;
   core: true,
   author: 'Forge Team',
   license: 'MIT',
-  type: 'error',
+  type: 'core',
   tags: ['error', 'handler', 'error-handler', 'error-management', 'error-logging', 'error-logging-system', 'error-logging-library', 'error-logging-framework']
 )]
 #[Service]

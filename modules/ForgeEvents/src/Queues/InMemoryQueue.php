@@ -10,13 +10,13 @@ use SplPriorityQueue;
 
 final class InMemoryQueue implements Queueinterface
 {
-    private SplPriorityQueue $queues;
+    /** @var array<string, \SplPriorityQueue> */
+    private array $queues = [];
     private int $insertionCount = 0;
 
     public function __construct()
     {
-        $this->queues = new SplPriorityQueue();
-        $this->queues->setExtractFlags(SplPriorityQueue::EXTR_DATA);
+        $this->queues = [];
     }
 
     public function push(
@@ -28,12 +28,13 @@ final class InMemoryQueue implements Queueinterface
     ): void {
         if (!isset($this->queues[$queue])) {
             $this->queues[$queue] = new \SplPriorityQueue();
+            $this->queues[$queue]->setExtractFlags(\SplPriorityQueue::EXTR_DATA);
         }
         $this->queues[$queue]->insert([
-           'payload' => $payload,
-           'attempts' => 0,
-           'queue'  => $queue,
-       ], [$priority, -$this->insertionCount++]);
+            'payload' => $payload,
+            'attempts' => 0,
+            'queue' => $queue,
+        ], [$priority, -$this->insertionCount++]);
     }
 
     public function pop(string $queue = 'default'): ?array
@@ -46,12 +47,16 @@ final class InMemoryQueue implements Queueinterface
 
     public function count(): int
     {
-        return $this->queues->count();
+        $count = 0;
+        foreach ($this->queues as $q) {
+            $count += $q->count();
+        }
+        return $count;
     }
 
     public function clear(): void
     {
-        $this->queues = new SplPriorityQueue();
+        $this->queues = [];
         $this->insertionCount = 0;
     }
 

@@ -12,6 +12,7 @@ use App\Modules\ForgeTesting\Attributes\Group;
 use App\Modules\ForgeTesting\Attributes\Incomplete;
 use App\Modules\ForgeTesting\Attributes\Skip;
 use App\Modules\ForgeTesting\Attributes\Test;
+use App\Modules\ForgeTesting\TestCase;
 use Forge\CLI\Traits\OutputHelper;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\DI\Container;
@@ -70,6 +71,11 @@ final class TestRunnerService
     public function runTests(): array
     {
         $this->__construct();
+
+        // Ensure TestCase is loaded so the Autoloader doesn't block parsing *Test classes
+        if (!class_exists(TestCase::class)) {
+            // Unreachable fallback
+        }
 
         foreach ($this->testClasses as $testClass) {
             if (!class_exists($testClass)) {
@@ -178,7 +184,7 @@ final class TestRunnerService
             if (is_array($returnValue) && isset($returnValue['avg'])) {
                 $this->results['benchmarks'][$fullMethodName] = $returnValue;
                 //iterations count for test method calculation
-                 // $this->results['benchmarks'][$fullMethodName]['iterations'] = $iterations_variable;
+                // $this->results['benchmarks'][$fullMethodName]['iterations'] = $iterations_variable;
             }
 
             $this->results['passed']++;
@@ -284,11 +290,12 @@ final class TestRunnerService
     {
         $this->renderBenchmarkResults();
         $this->renderTestDurations();
-        $this->renderSummaryTable();
+
         $this->renderPassedTests();
         $this->renderFailureDetails();
         $this->renderSkippedTests();
         $this->renderIncompleteTests();
+        $this->renderSummaryTable();
     }
 
     private function renderBenchmarkResults(): void
@@ -342,9 +349,9 @@ final class TestRunnerService
             $tableData = [];
             foreach ($slowest as $methodName => $duration) {
                 $tableData[] = [
-                      'Test' => $methodName,
-                      'Duration' => number_format($duration * 1000, 2) . ' ms'
-                  ];
+                    'Test' => $methodName,
+                    'Duration' => number_format($duration * 1000, 2) . ' ms'
+                ];
             }
 
             if (!empty($tableData)) {
@@ -359,12 +366,12 @@ final class TestRunnerService
         $this->line("Test Results:");
         $headers = ['Total', 'Passed', 'Failed', 'Skipped', 'Incomplete'];
         $rowData = [
-                'Total' => $this->results['total'],
-                'Passed' => $this->results['passed'],
-                'Failed' => $this->results['failed'],
-                'Skipped' => $this->results['skipped'],
-                'Incomplete' => $this->results['incomplete']
-           ];
+            'Total' => $this->results['total'],
+            'Passed' => $this->results['passed'],
+            'Failed' => $this->results['failed'],
+            'Skipped' => $this->results['skipped'],
+            'Incomplete' => $this->results['incomplete']
+        ];
         $this->table($headers, [$rowData]);
     }
 
@@ -375,8 +382,8 @@ final class TestRunnerService
             foreach ($this->results['failures'] as $failure) {
                 $methodName = $failure['class'] . '::' . $failure['method'];
                 $durationMs = isset($this->results['durations'][$methodName])
-                     ? ' (' . number_format($this->results['durations'][$methodName] * 1000, 0) . ' ms)'
-                     : '';
+                    ? ' (' . number_format($this->results['durations'][$methodName] * 1000, 0) . ' ms)'
+                    : '';
 
                 $this->line(sprintf(
                     "%s%s\n%s\n%s:%d\n",
@@ -440,8 +447,8 @@ final class TestRunnerService
             foreach ($this->results['skipped_tests'] as $skippedTest) {
                 $methodName = $skippedTest['class'] . '::' . ($skippedTest['method'] ?? '{class}');
                 $durationMs = isset($this->results['durations'][$methodName])
-                     ? ' (' . number_format($this->results['durations'][$methodName] * 1000, 0) . ' ms)'
-                     : '';
+                    ? ' (' . number_format($this->results['durations'][$methodName] * 1000, 0) . ' ms)'
+                    : '';
 
                 $this->line(sprintf(
                     "%s%s\nReason: %s\n",

@@ -148,17 +148,6 @@ final class TestCommand extends Command
   private function getValidatedCache(array $testDirs): array
   {
     $currentHashes = $this->getDirectoryHashes($testDirs);
-
-    if (file_exists(self::CACHE_FILE)) {
-      $cache = include self::CACHE_FILE;
-      if (
-        $cache['meta']['hashes'] === $currentHashes &&
-        time() - $cache['meta']['timestamp'] < self::CACHE_TTL
-      ) {
-        return $cache;
-      }
-    }
-
     return [
       'meta' => ['hashes' => $currentHashes, 'timestamp' => time()],
       'classes' => $this->scanTestClasses($testDirs)
