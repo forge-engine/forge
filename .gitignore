@@ -112,3 +112,5 @@ todo-2.md
 contract.md
 conventions.md
 OPENCODE_AGENT_GUIDE.MD
+.forge/*
+.clippy/*
