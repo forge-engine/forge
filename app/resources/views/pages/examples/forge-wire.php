@@ -12,6 +12,7 @@
       <h1 class="text-4xl font-bold text-gray-900 mb-2">ForgeWire Examples</h1>
       <p class="text-lg text-gray-600">Comprehensive examples of all ForgeWire directives and modifiers</p>
     </div>
+    
 
     <div class="space-y-8">
       <!-- Polling Counter -->

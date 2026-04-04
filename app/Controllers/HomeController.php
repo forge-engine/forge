@@ -32,6 +32,7 @@ final class HomeController
   #[Route("/")]
   public function index(Request $request): Response
   {
+    
     $data = [
       "title" => "Welcome to Forge Kernel",
     ];
