@@ -218,7 +218,7 @@ function verifyFileIntegrity(string $filePath, string $expectedHash): bool
  */
 function extractZip(string $zipPath, string $destinationPath): bool
 {
-    $zip = new ZipArchive();
+    $zip = new \ZipArchive();
     if ($zip->open($zipPath) === true) {
         if (!is_dir($destinationPath)) {
             mkdir($destinationPath, 0755, true);
@@ -243,8 +243,8 @@ function recursiveDeleteDirectory(string $dirPath): bool
         return false;
     }
 
-    $files = new RecursiveIteratorIterator(
-        new RecursiveDirectoryIterator($dirPath, FilesystemIterator::SKIP_DOTS),
+    $files = new \RecursiveIteratorIterator(
+        new \RecursiveDirectoryIterator($dirPath, FilesystemIterator::SKIP_DOTS),
         RecursiveIteratorIterator::CHILD_FIRST
     );
 

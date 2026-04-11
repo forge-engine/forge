@@ -35,8 +35,6 @@ final class SearchController
             "query" => $this->query
         ];
 
-        echo TEST;
-
         return $this->view("pages/search/index", $data);
     }
 
