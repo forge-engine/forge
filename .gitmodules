@@ -19,3 +19,9 @@
 [submodule "forge-vscode-extension"]
 	path = forge-vscode-extension
 	url = git@github.com:forge-engine/vs-code-extension.git
+[submodule "forge-ire"]
+	path = modules/ForgeWire
+	url = git@github.com:forge-engine/forge-wire.git
+[submodule "modules/ForgeWire"]
+	path = modules/ForgeWire
+	url = git@github.com:forge-engine/forge-wire.git
