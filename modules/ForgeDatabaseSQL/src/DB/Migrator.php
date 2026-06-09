@@ -1090,8 +1090,13 @@ final class Migrator
      */
     private function rollbackMigration(string $migration): void
     {
-        require_once $migration;
-        $className = $this->getMigrationClassName($migration);
+        $path = $this->findMigrationPath($migration);
+        if (!$path) {
+            throw new RuntimeException("Migration file not found: $migration");
+        }
+
+        require_once $path;
+        $className = $this->getMigrationClassName($path);
         $reflection = new ReflectionClass($className);
 
         $driver = $this->connection
