@@ -22,3 +22,6 @@
 [submodule "modules/ForgeWire"]
 	path = modules/ForgeWire
 	url = git@github.com:forge-engine/forge-wire.git
+[submodule "engine"]
+	path = engine
+	url = git@github.com:forge-engine/framework.git
