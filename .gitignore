@@ -114,3 +114,4 @@ conventions.md
 OPENCODE_AGENT_GUIDE.MD
 .forge/*
 .clippy/*
+engine/*
