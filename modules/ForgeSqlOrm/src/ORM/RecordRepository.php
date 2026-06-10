@@ -54,9 +54,9 @@ abstract class RecordRepository implements Repository
     return $result;
   }
 
-  public function delete(Model|int $record): bool
+  public function delete(Model|int|string $record): bool
   {
-    if (is_int($record)) {
+    if (is_int($record) || is_string($record)) {
       $record = $this->find($record);
       if ($record === null) {
         return false;
@@ -76,7 +76,7 @@ abstract class RecordRepository implements Repository
     return $result;
   }
 
-  public function find(int $id): ?Model
+  public function find(int|string $id): ?Model
   {
     $key = $this->cache->generateKey($this->tableName, 'find', $id);
     $cached = $this->cache->get($key);
