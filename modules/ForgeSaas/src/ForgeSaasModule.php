@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeSaas;
 
+use App\Modules\ForgeDatabaseSQL\DB\Connection;
 use App\Modules\ForgeSaas\Contracts\SubscriptionManagerInterface;
 use App\Modules\ForgeSaas\Services\SubscriptionManager;
+use App\Modules\ForgeSqlOrm\ORM\QueryBuilder;
+use Forge\Core\Contracts\Database\DatabaseConfigInterface;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\DI\Container;
 use Forge\Core\Module\Attributes\Compatibility;
@@ -28,7 +31,7 @@ use Forge\Core\Module\Attributes\Structure;
 #[Service]
 #[Module(
     name: 'ForgeSaas',
-    version: '0.1.0',
+    version: '0.1.1',
     description: 'SaaS plans, subscriptions, and feature gating for Forge Kernel',
     order: 3,
     author: 'Forge Team',
@@ -45,6 +48,13 @@ final class ForgeSaasModule
 {
     public function register(Container $container): void
     {
-        $container->bind(SubscriptionManagerInterface::class, SubscriptionManager::class);
+        $config = $container->get(DatabaseConfigInterface::class);
+        $centralQueryBuilder = new QueryBuilder(new Connection($config));
+
+        $container->bind(
+            SubscriptionManagerInterface::class,
+            fn() => new SubscriptionManager($centralQueryBuilder),
+            singleton: true,
+        );
     }
 }
