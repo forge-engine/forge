@@ -70,7 +70,7 @@ abstract class Seeder
             }
 
             $stmt = $pdo->prepare("INSERT INTO {$table} ({$colList}) VALUES " .
-                implode(' ', array_fill(0, count($chunk), $placeholders)));
+                implode(',', array_fill(0, count($chunk), $placeholders)));
             $stmt->execute($values);
         }
     }
