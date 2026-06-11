@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeDatabaseSQL\DB;
 
+use App\Modules\ForgeSqlOrm\ORM\QueryBuilder;
 use Forge\Core\Config\Environment;
+use Forge\Core\Contracts\Database\CentralQueryBuilderInterface;
 use Forge\Core\Contracts\Database\DatabaseConfigInterface;
 use Forge\Core\Contracts\Database\DatabaseConnectionInterface;
 use Forge\Core\Debug\Metrics;
@@ -63,6 +65,10 @@ final class DatabaseSetup
             return new Migrator($container->get(DatabaseConnectionInterface::class), $container);
         });
 
+        $container->singleton(CentralQueryBuilderInterface::class, function () use ($container) {
+            $config = $container->get(DatabaseConfigInterface::class);
+            return new QueryBuilder(new Connection($config));
+        });
     }
 
 }

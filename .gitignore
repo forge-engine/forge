@@ -115,3 +115,4 @@ OPENCODE_AGENT_GUIDE.MD
 .forge/*
 .clippy/*
 engine/*
+/public/assets/modules/*

@@ -25,62 +25,62 @@ use Forge\CLI\Traits\OutputHelper;
 
 #[Service]
 #[Module(
-  name: 'ForgeDatabaseSQL',
-  version: '0.9.5',
-  description: 'SQL database support (SQLite, MySQL, PostgreSQL)',
-  order: 0,
-  author: 'Forge Team',
-  license: 'MIT',
-  type: 'core',
-  tags: ['database', 'sql', 'sqlite', 'mysql', 'postgresql']
+    name: 'ForgeDatabaseSQL',
+    version: '0.9.5',
+    description: 'SQL database support (SQLite, MySQL, PostgreSQL)',
+    order: 0,
+    author: 'Forge Team',
+    license: 'MIT',
+    type: 'core',
+    tags: ['database', 'sql', 'sqlite', 'mysql', 'postgresql']
 )]
 #[Structure(structure: [
-  'controllers' => 'src/Controllers',
-  'services' => 'src/Services',
-  'migrations' => 'src/Database/Migrations',
-  'views' => 'src/Resources/views',
-  'components' => 'src/Resources/components',
-  'commands' => 'src/Commands',
-  'events' => 'src/Events',
-  'tests' => 'src/tests',
-  'models' => 'src/Models',
-  'dto' => 'src/Dto',
-  'seeders' => 'src/Database/Seeders',
-  'middlewares' => 'src/Middlewares',
+    'controllers' => 'src/Controllers',
+    'services' => 'src/Services',
+    'migrations' => 'src/Database/Migrations',
+    'views' => 'src/Resources/views',
+    'components' => 'src/Resources/components',
+    'commands' => 'src/Commands',
+    'events' => 'src/Events',
+    'tests' => 'src/tests',
+    'models' => 'src/Models',
+    'dto' => 'src/Dto',
+    'seeders' => 'src/Database/Seeders',
+    'middlewares' => 'src/Middlewares',
 ])]
 #[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
 #[Requires(interface: DatabaseConnectionInterface::class, version: '>=0.1.0')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
 #[Provides(interface: 'forge-database-sql', version: '0.9.5')]
 #[ConfigDefaults(defaults: [
-  "forge_database_sql" => []
+    "forge_database_sql" => []
 ])]
 #[PostInstall(command: 'forge-database-sql:greet', args: [])]
 #[PostUninstall(command: 'forge-database-sql:greet', args: ['--post-uninstall'])]
 final class ForgeDatabaseSQLModule
 {
-  use OutputHelper;
+    use OutputHelper;
 
-  public function register(Container $container): void
-  {
-    $env = Environment::getInstance();
-    DatabaseSetup::setup($container, $env);
-    $this->setupDatabaseSessionDriver($container, $env);
-  }
-
-  private function setupDatabaseSessionDriver(Container $container, Environment $env): void
-  {
-    $driverName = strtolower($env->get('SESSION_DRIVER', 'file'));
-    if ($driverName === 'database') {
-      try {
-        if ($container->has(DatabaseConnectionInterface::class)) {
-          $driver = new DatabaseSessionDriver();
-          $session = new Session($driver);
-          $container->setInstance(SessionInterface::class, $session);
-        }
-      } catch (\Throwable $e) {
-      }
+    public function register(Container $container): void
+    {
+        $env = Environment::getInstance();
+        DatabaseSetup::setup($container, $env);
+        $this->setupDatabaseSessionDriver($container, $env);
     }
-  }
+
+    private function setupDatabaseSessionDriver(Container $container, Environment $env): void
+    {
+        $driverName = strtolower($env->get('SESSION_DRIVER', 'file'));
+        if ($driverName === 'database') {
+            try {
+                if ($container->has(DatabaseConnectionInterface::class)) {
+                    $driver = new DatabaseSessionDriver();
+                    $session = new Session($driver);
+                    $container->setInstance(SessionInterface::class, $session);
+                }
+            } catch (\Throwable $e) {
+            }
+        }
+    }
 
 }
