@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Controllers\Admin;
 
 use App\Modules\ForgeAuth\Services\ForgeAuthService;
+use App\Modules\ForgeMultiTenant\Attributes\TenantScope;
 use Forge\Core\Http\Attributes\Middleware;
 use Forge\Core\Http\Response;
 use Forge\Core\Routing\Route;
 use Forge\Traits\ControllerHelper;
 use Forge\Traits\SecurityHelper;
 
+#[TenantScope("tenant")]
 #[Middleware("web")]
 final class DashboardController
 {

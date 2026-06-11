@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Modules\ForgeMultiTenant\Attributes\TenantScope;
 use App\Modules\ForgeNotification\Services\ForgeNotificationService;
 use App\Modules\ForgeSqlOrm\ORM\QueryBuilder;
 use Forge\Core\Contracts\Database\DatabaseConnectionInterface;
@@ -15,32 +16,32 @@ use Forge\Traits\ControllerHelper;
 use Forge\Traits\SecurityHelper;
 use Exception;
 
+#[TenantScope("central")]
 #[Middleware("web")]
 final class HomeController
 {
-use ControllerHelper;
-use SecurityHelper;
+  use ControllerHelper;
+  use SecurityHelper;
 
-public function __construct(
-    public readonly QueryBuilder                $builder,
+  public function __construct(
+    public readonly QueryBuilder $builder,
     public readonly DatabaseConnectionInterface $connection,
-    public readonly ForgeNotificationService    $notification,
-  )
-  {
+    public readonly ForgeNotificationService $notification,
+  ) {
     //
   }
 
   #[Route("/")]
-  public function index(Request $request):Response
-  { 
+  public function index(Request $request): Response
+  {
     $data = [
       "title" => "Welcome to Forge Kernel",
     ];
-    
+
     return $this->view(view: 'pages/home/index', data: $data);
   }
 
-#[Route("/test/email")]
+  #[Route("/test/email")]
   public function testEmail(Request $request): Response
   {
     notify()->email()
@@ -52,7 +53,7 @@ public function __construct(
     return $this->jsonResponse(["message" => "Email message sent"]);
   }
 
-#[Route("/test/notifications")]
+  #[Route("/test/notifications")]
   public function testNotifications(Request $request): Response
   {
     $results = [];
@@ -99,7 +100,7 @@ public function __construct(
       $results['email_queued'] = ['status' => 'error', 'message' => $e->getMessage()];
     }
 
-  try {
+    try {
       // Test 4: Email with CC and BCC
       notify()->email()
         ->to('test@example.com')
@@ -111,7 +112,7 @@ public function __construct(
         ->send();
 
       $results['email_cc_bcc'] = ['status' => 'success', 'message' => 'Email with CC/BCC sent'];
-  } catch (Exception $e) {
+    } catch (Exception $e) {
       $results['email_cc_bcc'] = ['status' => 'error', 'message' => $e->getMessage()];
     }
 
@@ -146,32 +147,32 @@ public function __construct(
     return $this->jsonResponse($examples);
   }
 
-private function forgeDatabaseSQLExecExample(): array
+  private function forgeDatabaseSQLExecExample(): array
   {
     $this->connection->exec("CREATE TABLE IF NOT EXISTS example_table (id INTEGER PRIMARY KEY, name TEXT)");
     return ['status' => 'exec executed'];
   }
 
-private function forgeDatabaseSQLQueryExample(): array
+  private function forgeDatabaseSQLQueryExample(): array
   {
     $stmt = $this->connection->query("SELECT * FROM users LIMIT 5");
     return $stmt->fetchAll();
   }
 
-private function forgeDatabaseSQLPrepareExample(): array
+  private function forgeDatabaseSQLPrepareExample(): array
   {
     $stmt = $this->connection->prepare("SELECT * FROM users WHERE id = :id");
     $stmt->execute([':id' => 1]);
     return $stmt->fetchAll();
   }
 
-private function forgeSqlOrmRawExample(): array
+  private function forgeSqlOrmRawExample(): array
   {
     $results = $this->builder->raw("SELECT * FROM users WHERE status = :status", [':status' => 'active']);
     return $results;
   }
 
-private function forgeSqlOrmWhereRawExample(): array
+  private function forgeSqlOrmWhereRawExample(): array
   {
     $results = $this->builder
       ->table('users')
@@ -180,7 +181,7 @@ private function forgeSqlOrmWhereRawExample(): array
     return $results;
   }
 
-private function forgeSqlOrmCombinedExample(): array
+  private function forgeSqlOrmCombinedExample(): array
   {
     $results = $this->builder
       ->table('users')
@@ -193,38 +194,38 @@ private function forgeSqlOrmCombinedExample(): array
     return $results;
   }
 
-private function forgeDatabaseSQLTransactionCommit(): array
+  private function forgeDatabaseSQLTransactionCommit(): array
   {
     $this->connection->beginTransaction();
-try {
+    try {
       $stmt = $this->connection->prepare("INSERT INTO example_table (name) VALUES (:name)");
       $stmt->execute([':name' => 'transaction_test_commit']);
       $this->connection->commit();
       return ['status' => 'committed', 'message' => 'Transaction committed successfully'];
-} catch (Exception $e) {
+    } catch (Exception $e) {
       $this->connection->rollBack();
       return ['status' => 'error', 'message' => $e->getMessage()];
     }
   }
 
-private function forgeDatabaseSQLTransactionRollback(): array
+  private function forgeDatabaseSQLTransactionRollback(): array
   {
     $checkBeforeStmt = $this->connection->prepare("SELECT COUNT(*) as count FROM example_table WHERE name = :name");
     $checkBeforeStmt->execute([':name' => 'transaction_test_rollback']);
     $beforeResult = $checkBeforeStmt->fetch();
-    $countBefore = (int)$beforeResult['count'];
+    $countBefore = (int) $beforeResult['count'];
 
     $this->connection->beginTransaction();
-try {
+    try {
       $stmt = $this->connection->prepare("INSERT INTO example_table (name) VALUES (:name)");
       $stmt->execute([':name' => 'transaction_test_rollback']);
       throw new \Exception('Simulated error to trigger rollback');
-} catch (Exception $e) {
+    } catch (Exception $e) {
       $this->connection->rollBack();
       $checkAfterStmt = $this->connection->prepare("SELECT COUNT(*) as count FROM example_table WHERE name = :name");
       $checkAfterStmt->execute([':name' => 'transaction_test_rollback']);
       $afterResult = $checkAfterStmt->fetch();
-      $countAfter = (int)$afterResult['count'];
+      $countAfter = (int) $afterResult['count'];
       return [
         'status' => 'rolled_back',
         'message' => 'Transaction rolled back successfully',
@@ -236,32 +237,32 @@ try {
     }
   }
 
-private function forgeSqlOrmTransactionCommit(): array
+  private function forgeSqlOrmTransactionCommit(): array
   {
-try {
+    try {
       $this->builder->beginTransaction();
       $id = $this->builder->table('example_table')->insert(['name' => 'orm_transaction_commit']);
       $this->builder->commit();
       return ['status' => 'committed', 'inserted_id' => $id];
-} catch (Exception $e) {
+    } catch (Exception $e) {
       $this->builder->rollback();
       return ['status' => 'error', 'message' => $e->getMessage()];
     }
   }
 
-private function forgeSqlOrmTransactionRollback(): array
+  private function forgeSqlOrmTransactionRollback(): array
   {
     $countBefore = $this->builder
       ->table('example_table')
       ->where('name', '=', 'orm_transaction_rollback')
       ->count();
 
-try {
+    try {
       $this->builder->beginTransaction();
       $this->builder->table('example_table')->insert(['name' => 'orm_transaction_rollback']);
       throw new Exception('Simulated error to trigger rollback');
       $this->builder->commit();
-} catch (Exception $e) {
+    } catch (Exception $e) {
       $this->builder->rollback();
       $countAfter = $this->builder
         ->table('example_table')
