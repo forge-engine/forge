@@ -42,7 +42,7 @@ final class FeatureGateMiddleware extends Middleware
         $manager = $container->get(SubscriptionManagerInterface::class);
 
         $methodRef = new ReflectionMethod($class, $method);
-        $classRef  = new ReflectionClass($class);
+        $classRef = new ReflectionClass($class);
 
         $feature = $this->firstAttribute($methodRef, $classRef, RequiresFeature::class);
         if ($feature !== null && !$manager->hasFeature($feature->feature)) {

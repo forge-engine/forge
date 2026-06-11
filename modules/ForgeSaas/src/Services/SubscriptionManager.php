@@ -10,16 +10,17 @@ use App\Modules\ForgeSaas\Dto\SaasSubscription;
 use App\Modules\ForgeSaas\Enums\SubscriptionStatus;
 use App\Modules\ForgeMultiTenant\DTO\Tenant;
 use Forge\Core\Contracts\Database\QueryBuilderInterface;
-use Forge\Core\DI\Attributes\Service;
-use Forge\Core\DI\Container;
+use Forge\Core\Helpers\UUID;
 
-#[Service]
 final class SubscriptionManager implements SubscriptionManagerInterface
 {
     private ?SaasSubscription $subscription = null;
     private bool $loaded = false;
 
-    public function __construct(private readonly Container $container) {}
+    public function __construct(
+        private readonly QueryBuilderInterface $centralQueryBuilder,
+    ) {
+    }
 
     public function forTenant(Tenant $tenant): static
     {
@@ -78,18 +79,16 @@ final class SubscriptionManager implements SubscriptionManagerInterface
     private function fetchSubscription(string $tenantId): ?SaasSubscription
     {
         try {
-            $qb = $this->container->get(QueryBuilderInterface::class);
-
-            $sub = $qb->setTable('tenant_subscriptions')
-                ->whereRaw('tenant_id = ?', [$tenantId])
+            $sub = $this->centralQueryBuilder->setTable('tenant_subscriptions')
+                ->where('tenant_id', '=', $tenantId)
                 ->first();
 
             if (!$sub) {
                 return null;
             }
 
-            $plan = $qb->setTable('saas_plans')
-                ->whereRaw('id = ?', [$sub['plan_id']])
+            $plan = $this->centralQueryBuilder->setTable('saas_plans')
+                ->where('id', '=', $sub['plan_id'])
                 ->first();
 
             if (!$plan) {
@@ -116,5 +115,123 @@ final class SubscriptionManager implements SubscriptionManagerInterface
         } catch (\Throwable) {
             return null;
         }
+    }
+
+    public function getAllPlans(): array
+    {
+        $rows = $this->centralQueryBuilder->setTable('saas_plans')->get();
+
+        $plans = [];
+        foreach ($rows as $row) {
+            $plans[] = new SaasPlan(
+                id: $row['id'],
+                name: $row['name'],
+                slug: $row['slug'],
+                features: json_decode($row['features'], true) ?? [],
+                limits: json_decode($row['limits'], true) ?? [],
+                isActive: (bool) $row['is_active'],
+            );
+        }
+
+        return $plans;
+    }
+
+    public function createPlan(string $name, string $slug, array $features, array $limits): SaasPlan
+    {
+        $id = 'plan-' . $slug;
+
+        $data = [
+            'id' => $id,
+            'name' => $name,
+            'slug' => $slug,
+            'features' => json_encode($features),
+            'limits' => json_encode($limits),
+            'is_active' => 1,
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s'),
+        ];
+
+        $this->centralQueryBuilder->setTable('saas_plans')->insert($data);
+
+        return new SaasPlan(
+            id: $id,
+            name: $name,
+            slug: $slug,
+            features: $features,
+            limits: $limits,
+            isActive: true
+        );
+    }
+
+    public function deletePlan(string $id): bool
+    {
+        $count = $this->centralQueryBuilder->setTable('tenant_subscriptions')
+            ->where('plan_id', '=', $id)
+            ->count();
+
+        if ($count > 0) {
+            throw new \RuntimeException("Cannot delete plan {$id} because it has active subscriptions.");
+        }
+
+        return $this->centralQueryBuilder->setTable('saas_plans')->where('id', '=', $id)->delete();
+    }
+
+    public function disablePlan(string $id): bool
+    {
+        return $this->centralQueryBuilder->setTable('saas_plans')
+            ->where('id', '=', $id)
+            ->update([
+                'is_active' => 0,
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+    }
+
+    public function assignPlanToTenant(string $tenantId, string $planId, SubscriptionStatus $status = SubscriptionStatus::ACTIVE): SaasSubscription
+    {
+        $planRow = $this->centralQueryBuilder->setTable('saas_plans')->where('id', '=', $planId)->first();
+        if (!$planRow) {
+            throw new \RuntimeException("Plan {$planId} not found.");
+        }
+
+        $existing = $this->centralQueryBuilder->setTable('tenant_subscriptions')->where('tenant_id', '=', $tenantId)->first();
+
+        if ($existing) {
+            $this->centralQueryBuilder->setTable('tenant_subscriptions')
+                ->where('id', '=', $existing['id'])
+                ->update([
+                    'plan_id' => $planId,
+                    'status' => $status->value,
+                    'updated_at' => date('Y-m-d H:i:s'),
+                ]);
+            $subId = $existing['id'];
+        } else {
+            $subId = UUID::generate();
+            $this->centralQueryBuilder->setTable('tenant_subscriptions')->insert([
+                'id' => $subId,
+                'tenant_id' => $tenantId,
+                'plan_id' => $planId,
+                'status' => $status->value,
+                'created_at' => date('Y-m-d H:i:s'),
+                'updated_at' => date('Y-m-d H:i:s'),
+            ]);
+        }
+
+        $planDto = new SaasPlan(
+            id: $planRow['id'],
+            name: $planRow['name'],
+            slug: $planRow['slug'],
+            features: json_decode($planRow['features'], true) ?? [],
+            limits: json_decode($planRow['limits'], true) ?? [],
+            isActive: (bool) $planRow['is_active'],
+        );
+
+        return new SaasSubscription(
+            id: $subId,
+            tenantId: $tenantId,
+            plan: $planDto,
+            status: $status,
+            trialEndsAt: null,
+            currentPeriodEndsAt: null,
+        );
     }
 }

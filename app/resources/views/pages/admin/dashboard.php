@@ -21,6 +21,29 @@ $activityProps = [
   ?>
 
 <div class="space-y-6">
+  <?php if (tenant_can('custom_domain')): ?>
+    <div class="settings-panel">
+      <h3>Custom Domain Settings</h3>
+      <!-- form here -->
+    </div>
+  <?php else: ?>
+    <div class="upgrade-banner">
+      Upgrade to Pro to use Custom Domains!
+    </div>
+
+    <?php
+    $currentUsers = 12;
+    $maxUsers = tenant_limit('max_users');
+    ?>
+
+    <div class="usage-stats">
+      Users:
+      <?= $currentUsers ?> /
+      <?= $maxUsers === PHP_INT_MAX ? 'Unlimited' : $maxUsers ?>
+    </div>
+
+  <?php endif; ?>
+
   <?= component('ForgeComponents:admin/stats', [
     'stats' => $stats ?? [],
     'columns' => 4

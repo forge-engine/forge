@@ -36,7 +36,7 @@ final class TenantConnectionFactory
             try {
                 return $this->container->get($key) ??
                     $this->container->singleton($key, fn() => $this->build($tenant));
-            } catch (MissingServiceException|ResolveParameterException|ReflectionException $e) {
+            } catch (MissingServiceException | ResolveParameterException | ReflectionException $e) {
 
             }
         }
@@ -77,34 +77,35 @@ final class TenantConnectionFactory
      */
     private function dbConnection(Tenant $tenant): Connection
     {
+        /** @var DatabaseConfigInterface $base */
         $base = $this->container->get(DatabaseConfigInterface::class);
 
-        if ($base->driver === 'sqlite' && $tenant->dbName !== null) {
-            $dbFile = BASE_PATH . '/storage/Database/' . $tenant->dbName . '.sqlite';
+        if ($base->getDriver() === 'sqlite' && $tenant->dbName !== null) {
+            $dbFile = BASE_PATH . '/storage/database/' . $tenant->dbName . '.sqlite';
             if (!file_exists($dbFile)) {
                 touch($dbFile);
             }
             $config = new DatabaseConfig(
                 driver: 'sqlite',
                 database: $dbFile,
-                host: $base->host,
-                username: $base->username,
-                password: $base->password,
-                port: $base->port,
-                charset: $base->charset
+                host: $base->getHost(),
+                username: $base->getUsername(),
+                password: $base->getPassword(),
+                port: $base->getPort(),
+                charset: $base->getCharset()
             );
             return new Connection($config);
         }
 
         // MySQL / PostgreSQL
         $config = new DatabaseConfig(
-            driver: $base->driver,
+            driver: $base->getDriver(),
             database: $tenant->dbName,
-            host: $base->host,
-            username: $base->username,
-            password: $base->password,
-            port: $base->port,
-            charset: $base->charset
+            host: $base->getHost(),
+            username: $base->getUsername(),
+            password: $base->getPassword(),
+            port: $base->getPort(),
+            charset: $base->getCharset()
         );
         return new Connection($config);
     }

@@ -32,15 +32,14 @@ final class DatabaseConfig implements DatabaseConfigInterface
     ];
 
     public function __construct(
-        public string $driver,
-        public string $database,
-        public string $host = "localhost",
-        public string $username = "",
-        public string $password = "",
-        public int    $port = 3306,
-        public string $charset = "utf8mb4"
-    )
-    {
+        private readonly string $driver,
+        private readonly string $database,
+        private readonly string $host = "localhost",
+        private readonly string $username = "",
+        private readonly string $password = "",
+        private readonly int $port = 3306,
+        private readonly string $charset = "utf8mb4"
+    ) {
         $this->validateDriver();
     }
 
