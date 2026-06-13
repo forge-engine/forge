@@ -4,7 +4,6 @@
  * @var string $content
  * @var int $counter
  */
-
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -23,10 +22,9 @@
       window.csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
     </script> -->
 </head>
-<body class="h-full scroll-smooth">
-<div>
-    <?= $content ?>
-</div>
-</body>
-
+    <body class="h-full scroll-smooth">
+        <div>
+            <?= $content ?>
+        </div>
+    </body>
 </html>

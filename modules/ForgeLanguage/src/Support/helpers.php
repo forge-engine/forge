@@ -3,7 +3,7 @@ use App\Modules\ForgeLanguage\Services\LanguageService;
 use Forge\Core\DI\Container;
 
 if (!function_exists('languageTerm')) {
-    function languageTerm(string $key, ?string $fallback = null, ?array $args = []): string
+    function languageTerm(string $key, ?string $fallback = null, ?array $args = []): string|array
     {
         /**
          * @var LanguageService $langService

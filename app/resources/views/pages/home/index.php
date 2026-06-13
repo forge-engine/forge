@@ -23,14 +23,14 @@ layout(name: "main");
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <!-- Main Content -->
       <?= component(
-          name: 'ForgeLanguage:language-switcher',
-          props: [
-              'definition' => new LanguageSwitcherDefinition(
-                  showFlags: true,
-                  showLabels: true,
-                  showCodes: false,
-              )
-          ]
+        name: 'ForgeLanguage:language-switcher',
+        props: [
+          'definition' => new LanguageSwitcherDefinition(
+            showFlags: true,
+            showLabels: true,
+            showCodes: false,
+          )
+        ]
       ) ?>
     </div>
   </div>

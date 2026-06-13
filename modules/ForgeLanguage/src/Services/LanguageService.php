@@ -96,38 +96,64 @@ final class LanguageService
         string $key,
         ?string $fallback = null,
         array $args = []
-    ): string {
-
+    ): string|array {
         $resource = ModuleResourceResolver::parse($key);
         $module = $resource->module;
         $termKey = $resource->name;
 
         $language = $this->current();
 
-        $cacheKey = ($module ?? 'app') . ':' . $language;
+        $filePath = '';
+        $dotNotation = $termKey;
+
+        if (str_contains($termKey, '/')) {
+            $lastSlashPos = strrpos($termKey, '/');
+            $filePath = substr($termKey, 0, $lastSlashPos);
+            $dotNotation = substr($termKey, $lastSlashPos + 1);
+        }
+
+        $cacheKey = ($module ?? 'app') . ':' . $language . ':' . $filePath;
 
         if (!isset($this->loadedLanguages[$cacheKey])) {
-            $this->loadedLanguages[$cacheKey] =
-                $this->loadLanguage(
-                    $language,
-                    $module
-                );
+            $this->loadedLanguages[$cacheKey] = $this->loadLanguage(
+                $language,
+                $module,
+                $filePath
+            );
         }
 
         $terms = $this->loadedLanguages[$cacheKey];
+        $value = $this->getNestedValue($terms, $dotNotation);
 
-        if (!array_key_exists($termKey, $terms)) {
+        if ($value === null) {
             return $fallback ?? $termKey;
         }
 
-        $value = $terms[$termKey];
-
         if (is_callable($value)) {
             return (string) $value(...$args);
-
         }
 
-        return (string) $value;
+        return is_array($value) ? $value : (string) $value;
+    }
+
+    private function getNestedValue(array $array, ?string $key): mixed
+    {
+        if ($key === null) {
+            return $array;
+        }
+
+        if (array_key_exists($key, $array)) {
+            return $array[$key];
+        }
+
+        foreach (explode('.', $key) as $segment) {
+            if (!is_array($array) || !array_key_exists($segment, $array)) {
+                return null;
+            }
+            $array = $array[$segment];
+        }
+
+        return $array;
     }
 
     /**
@@ -202,14 +228,17 @@ final class LanguageService
      * App definitions are loaded first.
      * Module definitions override app definitions.
      */
-    private function loadLanguage(string $language, ?string $module = null): array
+    private function loadLanguage(string $language, ?string $module = null, string $filePath = ''): array
     {
         if ($module === null) {
             $path = BASE_PATH . '/' . trim($this->structureResolver->getAppPath('languages'), '/');
-            $file = "{$path}/{$language}.php";
-
         } else {
             $path = BASE_PATH . '/modules/' . $module . '/' . trim($this->structureResolver->getModulePath($module, 'languages'), '/');
+        }
+
+        if ($filePath !== '') {
+            $file = "{$path}/{$filePath}/{$language}.php";
+        } else {
             $file = "{$path}/{$language}.php";
         }
 
@@ -219,9 +248,7 @@ final class LanguageService
 
         $loaded = require $file;
 
-        return is_array($loaded)
-            ? $loaded
-            : [];
+        return is_array($loaded) ? $loaded : [];
     }
 
     /**
