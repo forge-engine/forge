@@ -7,7 +7,7 @@ use Forge\Core\Helpers\Flash;
  * @var string $message
  */
 
-layout(name: "auth", fromModule: true, moduleName: "ForgeAuth");
+layout("ForgeAuth:auth");
 ?>
 <div class="space-y-8">
   <!-- Header -->
@@ -20,35 +20,35 @@ layout(name: "auth", fromModule: true, moduleName: "ForgeAuth");
   <?php
   $flashMessages = Flash::flat() ?? [];
   if (!empty($flashMessages)):
-    ?>
-    <div class="space-y-2">
-      <?php foreach ($flashMessages as $msg): ?>
-        <?php
-        $type = $msg['type'] ?? 'info';
-        $typeStyles = [
-          'error' => 'bg-red-50 border-red-200 text-red-800',
-          'success' => 'bg-green-50 border-green-200 text-green-800',
-          'warning' => 'bg-yellow-50 border-yellow-200 text-yellow-800',
-          'info' => 'bg-blue-50 border-blue-200 text-blue-800',
-        ];
-        $style = $typeStyles[$type] ?? $typeStyles['info'];
-        ?>
-        <div class="rounded-lg border p-4 <?= $style ?>">
-          <div class="flex items-center gap-2">
-            <?php if ($type === 'error'): ?>
-              <i class="fa-solid fa-circle-exclamation"></i>
-            <?php elseif ($type === 'success'): ?>
-              <i class="fa-solid fa-circle-check"></i>
-            <?php elseif ($type === 'warning'): ?>
-              <i class="fa-solid fa-triangle-exclamation"></i>
-            <?php else: ?>
-              <i class="fa-solid fa-circle-info"></i>
-            <?php endif; ?>
-            <p class="text-sm font-medium"><?= htmlspecialchars($msg['message'] ?? '') ?></p>
-          </div>
-        </div>
-      <?php endforeach; ?>
-    </div>
+      ?>
+                                                <div class="space-y-2">
+                                                  <?php foreach ($flashMessages as $msg): ?>
+                                                                                                <?php
+                                                                                                $type = $msg['type'] ?? 'info';
+                                                                                                $typeStyles = [
+                                                                                                    'error' => 'bg-red-50 border-red-200 text-red-800',
+                                                                                                    'success' => 'bg-green-50 border-green-200 text-green-800',
+                                                                                                    'warning' => 'bg-yellow-50 border-yellow-200 text-yellow-800',
+                                                                                                    'info' => 'bg-blue-50 border-blue-200 text-blue-800',
+                                                                                                ];
+                                                                                                $style = $typeStyles[$type] ?? $typeStyles['info'];
+                                                                                                ?>
+                                                                                                <div class="rounded-lg border p-4 <?= $style ?>">
+                                                                                                  <div class="flex items-center gap-2">
+                                                                                                    <?php if ($type === 'error'): ?>
+                                                                                                                                                  <i class="fa-solid fa-circle-exclamation"></i>
+                                                                                                    <?php elseif ($type === 'success'): ?>
+                                                                                                                                                  <i class="fa-solid fa-circle-check"></i>
+                                                                                                    <?php elseif ($type === 'warning'): ?>
+                                                                                                                                                  <i class="fa-solid fa-triangle-exclamation"></i>
+                                                                                                    <?php else: ?>
+                                                                                                                                                  <i class="fa-solid fa-circle-info"></i>
+                                                                                                    <?php endif; ?>
+                                                                                                    <p class="text-sm font-medium"><?= htmlspecialchars($msg['message'] ?? '') ?></p>
+                                                                                                  </div>
+                                                                                                </div>
+                                                  <?php endforeach; ?>
+                                                </div>
   <?php endif; ?>
 
   <!-- Login Form -->
@@ -56,23 +56,23 @@ layout(name: "auth", fromModule: true, moduleName: "ForgeAuth");
     <?= form_open(attrs: ["class" => "space-y-6"]) ?>
     <div>
       <?= component(name: 'ForgeHub:input', props: [
-        'type' => 'text',
-        'name' => 'identifier',
-        'id' => 'identifier',
-        'label' => 'Identifier',
-        'placeholder' => 'Enter your identifier',
-        'required' => true,
+          'type' => 'text',
+          'name' => 'identifier',
+          'id' => 'identifier',
+          'label' => 'Identifier',
+          'placeholder' => 'Enter your identifier',
+          'required' => true,
       ]) ?>
     </div>
 
     <div>
       <?= component(name: 'ForgeHub:input', props: [
-        'type' => 'password',
-        'name' => 'password',
-        'id' => 'password',
-        'label' => 'Password',
-        'placeholder' => 'Enter your password',
-        'required' => true,
+          'type' => 'password',
+          'name' => 'password',
+          'id' => 'password',
+          'label' => 'Password',
+          'placeholder' => 'Enter your password',
+          'required' => true,
       ]) ?>
     </div>
 
@@ -87,11 +87,11 @@ layout(name: "auth", fromModule: true, moduleName: "ForgeAuth");
 
     <div>
       <?= component(name: 'ForgeHub:button', props: [
-        'type' => 'submit',
-        'variant' => 'primary',
-        'size' => 'lg',
-        'class' => 'w-full',
-        'children' => 'Sign in',
+          'type' => 'submit',
+          'variant' => 'primary',
+          'size' => 'lg',
+          'class' => 'w-full',
+          'children' => 'Sign in',
       ]) ?>
     </div>
     <?= form_close() ?>
