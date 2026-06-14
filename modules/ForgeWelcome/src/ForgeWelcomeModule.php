@@ -19,17 +19,17 @@ use Forge\CLI\Traits\OutputHelper;
 use Forge\Core\Module\Attributes\Structure;
 
 #[Module(
-  name: 'ForgeWelcome',
-  version: '1.2.0',
-  description: 'A playground by forge',
-  order: 99,
-  author: 'Forge Team',
-  license: 'MIT',
-  type: 'generic',
-  tags: ['generic', 'welcome', 'playground', 'forge']
+    name: 'ForgeWelcome',
+    version: '1.2.1',
+    description: 'A playground by forge',
+    order: 99,
+    author: 'Forge Team',
+    license: 'MIT',
+    type: 'generic',
+    tags: ['generic', 'welcome', 'playground', 'forge']
 )]
 #[Service]
-#[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
+#[Compatibility(framework: '>=4.15.10', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
 #[Structure(structure: [
     'controllers' => 'src/Controllers',
@@ -49,16 +49,16 @@ use Forge\Core\Module\Attributes\Structure;
 #[PostUninstall(command: 'asset:unlink', args: ['--type=module', '--module=forge-welcome'])]
 final class ForgeWelcomeModule
 {
-  use OutputHelper;
+    use OutputHelper;
 
-  public function register(Container $container): void
-  {
-    $container->bind(ForgeWelcomeInterface::class, ForgeWelcomeService::class);
-  }
+    public function register(Container $container): void
+    {
+        $container->bind(ForgeWelcomeInterface::class, ForgeWelcomeService::class);
+    }
 
-  #[LifecycleHook(hook: LifecycleHookName::AFTER_MODULE_REGISTER)]
-  public function onAfterModuleRegister(): void
-  {
-    //error_log("ForgeWelcome:  registered!");
-  }
+    #[LifecycleHook(hook: LifecycleHookName::AFTER_MODULE_REGISTER)]
+    public function onAfterModuleRegister(): void
+    {
+        //error_log("ForgeWelcome:  registered!");
+    }
 }
