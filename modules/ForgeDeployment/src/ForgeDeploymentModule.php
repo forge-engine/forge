@@ -17,7 +17,7 @@ use Forge\CLI\Traits\OutputHelper;
 
 #[Module(
   name: 'ForgeDeployment',
-  version: '2.5.0',
+  version: '2.5.1',
   description: 'Deploy applications to cloud providers with automated provisioning',
   order: 99,
   author: 'Forge Team',
@@ -27,7 +27,7 @@ use Forge\CLI\Traits\OutputHelper;
 )]
 #[HubItem(label: 'Deployment', route: '/hub/deployment', icon: ForgeIcon::DEPLOY, order: 10)]
 #[Service]
-#[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
+#[Compatibility(framework: '>=4.15.11', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
 #[ConfigDefaults(defaults: [
   'forge_deployment' => [
