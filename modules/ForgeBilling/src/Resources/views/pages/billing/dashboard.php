@@ -7,7 +7,7 @@ use Forge\Core\Helpers\Flash;
  * @var array $data
  */
 
-layout(name: "billing", fromModule: true, moduleName: "ForgeBilling");
+layout(name: "ForgeBilling:billing");
 
 $subscription = $data['data']['subscription'] ?? null;
 $latestInvoice = $data['data']['latestInvoice'] ?? null;
@@ -20,22 +20,22 @@ $onTrial = $data['data']['onTrial'] ?? false;
 $flashMessages = Flash::flat() ?? [];
 if (!empty($flashMessages)):
     ?>
-                          <div style="margin-bottom:1.5rem">
-                            <?php foreach ($flashMessages as $msg): ?>
-                                                      <?php
-                                                      $type = $msg['type'] ?? 'info';
-                                                      $cssClass = match ($type) {
-                                                          'error' => 'alert--error',
-                                                          'success' => 'alert--success',
-                                                          'warning' => 'alert--warning',
-                                                          default => 'alert--info',
-                                                      };
-                                                      ?>
-                                                      <div class="alert <?= $cssClass ?>">
-                                                        <?= htmlspecialchars($msg['message'] ?? '') ?>
-                                                      </div>
-                            <?php endforeach; ?>
-                          </div>
+                              <div style="margin-bottom:1.5rem">
+                                <?php foreach ($flashMessages as $msg): ?>
+                                                              <?php
+                                                              $type = $msg['type'] ?? 'info';
+                                                              $cssClass = match ($type) {
+                                                                  'error' => 'alert--error',
+                                                                  'success' => 'alert--success',
+                                                                  'warning' => 'alert--warning',
+                                                                  default => 'alert--info',
+                                                              };
+                                                              ?>
+                                                              <div class="alert <?= $cssClass ?>">
+                                                                <?= htmlspecialchars($msg['message'] ?? '') ?>
+                                                              </div>
+                                <?php endforeach; ?>
+                              </div>
 <?php endif; ?>
 
 <div class="stats-grid">
@@ -44,16 +44,16 @@ if (!empty($flashMessages)):
       <div class="stat-card__label">Current Plan</div>
       <div class="stat-card__value">
         <?php if ($subscription): ?>
-                                  <?= htmlspecialchars($subscription->plan->name) ?>
+                                      <?= htmlspecialchars($subscription->plan->name) ?>
         <?php else: ?>
-                                  No plan
+                                      No plan
         <?php endif; ?>
       </div>
       <?php if ($subscription): ?>
-                                <?= component(name: 'ForgeBilling:subscription-status', props: [
-                                    'status' => $subscription->status->value,
-                                    'trialEndsAt' => $subscription->trialEndsAt,
-                                ]) ?>
+                                    <?= component(name: 'ForgeBilling:subscription-status', props: [
+                                        'status' => $subscription->status->value,
+                                        'trialEndsAt' => $subscription->trialEndsAt,
+                                    ]) ?>
       <?php endif; ?>
     </div>
     <div class="stat-card__icon stat-card__icon--plan">
@@ -66,11 +66,11 @@ if (!empty($flashMessages)):
       <div class="stat-card__label">Status</div>
       <div class="stat-card__value">
         <?php if ($isActive): ?>
-                                  Active
+                                      Active
         <?php elseif ($onTrial): ?>
-                                  Trial
+                                      Trial
         <?php else: ?>
-                                  Inactive
+                                      Inactive
         <?php endif; ?>
       </div>
     </div>
@@ -84,13 +84,13 @@ if (!empty($flashMessages)):
       <div class="stat-card__label">Latest Invoice</div>
       <div class="stat-card__value">
         <?php if ($latestInvoice): ?>
-                                  <?= htmlspecialchars($latestInvoice->currency) ?>                         <?= number_format($latestInvoice->amount, 2) ?>
+                                      <?= htmlspecialchars($latestInvoice->currency) ?>                             <?= number_format($latestInvoice->amount, 2) ?>
         <?php else: ?>
-                                  --
+                                      --
         <?php endif; ?>
       </div>
       <?php if ($latestInvoice): ?>
-                                <?= component(name: 'ForgeBilling:invoice-status', props: ['status' => $latestInvoice->status->value]) ?>
+                                    <?= component(name: 'ForgeBilling:invoice-status', props: ['status' => $latestInvoice->status->value]) ?>
       <?php endif; ?>
     </div>
     <div class="stat-card__icon stat-card__icon--invoice">
@@ -110,53 +110,53 @@ if (!empty($flashMessages)):
 </div>
 
 <?php if (!$subscription): ?>
-                          <div class="card" style="margin-bottom:2rem">
-                            <div class="card__body">
-                              <div style="text-align:center;padding:2rem 1rem">
-                                <div style="font-size:2.5rem;margin-bottom:0.75rem;opacity:0.3">
-                                  <svg width="48" height="48" viewBox="0 0 20 20" fill="currentColor" style="margin:0 auto">
-                                    <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
-                                  </svg>
+                              <div class="card" style="margin-bottom:2rem">
+                                <div class="card__body">
+                                  <div style="text-align:center;padding:2rem 1rem">
+                                    <div style="font-size:2.5rem;margin-bottom:0.75rem;opacity:0.3">
+                                      <svg width="48" height="48" viewBox="0 0 20 20" fill="currentColor" style="margin:0 auto">
+                                        <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
+                                      </svg>
+                                    </div>
+                                    <h2 style="font-size:1.25rem;font-weight:600;color:#111827;margin-bottom:0.5rem">No active subscription</h2>
+                                    <p style="color:#6b7280;font-size:0.875rem;margin-bottom:1.5rem">Choose a plan to get started with billing.</p>
+                                    <a href="/billing/plans" class="btn btn--primary">View Plans</a>
+                                  </div>
                                 </div>
-                                <h2 style="font-size:1.25rem;font-weight:600;color:#111827;margin-bottom:0.5rem">No active subscription</h2>
-                                <p style="color:#6b7280;font-size:0.875rem;margin-bottom:1.5rem">Choose a plan to get started with billing.</p>
-                                <a href="/billing/plans" class="btn btn--primary">View Plans</a>
                               </div>
-                            </div>
-                          </div>
 <?php endif; ?>
 
 <?php if (!empty($invoices)): ?>
-                          <div class="card" style="margin-bottom:2rem">
-                            <div class="card__header">
-                              <span class="card__title">Recent Invoices</span>
-                              <a href="/billing/invoices" class="btn btn--secondary btn--sm">View All</a>
-                            </div>
-                            <div class="card__body" style="padding:0">
-                              <div class="table-container">
-                                <table class="table">
-                                  <thead>
-                                    <tr>
-                                      <th>Invoice</th>
-                                      <th>Date</th>
-                                      <th>Time</th>
-                                      <th>Amount</th>
-                                      <th>Status</th>
-                                      <th></th>
-                                    </tr>
-                                  </thead>
-                                  <tbody>
-                                    <?php foreach (array_slice($invoices, 0, 5) as $invoice): ?>
-                                                              <?= component(name: 'ForgeBilling:invoice-row', props: [
-                                                                  'invoice' => $invoice,
-                                                                  'detailUrl' => '/billing/invoices/' . htmlspecialchars($invoice->id),
-                                                              ]) ?>
-                                    <?php endforeach; ?>
-                                  </tbody>
-                                </table>
+                              <div class="card" style="margin-bottom:2rem">
+                                <div class="card__header">
+                                  <span class="card__title">Recent Invoices</span>
+                                  <a href="/billing/invoices" class="btn btn--secondary btn--sm">View All</a>
+                                </div>
+                                <div class="card__body" style="padding:0">
+                                  <div class="table-container">
+                                    <table class="table">
+                                      <thead>
+                                        <tr>
+                                          <th>Invoice</th>
+                                          <th>Date</th>
+                                          <th>Time</th>
+                                          <th>Amount</th>
+                                          <th>Status</th>
+                                          <th></th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        <?php foreach (array_slice($invoices, 0, 5) as $invoice): ?>
+                                                                      <?= component(name: 'ForgeBilling:invoice-row', props: [
+                                                                          'invoice' => $invoice,
+                                                                          'detailUrl' => '/billing/invoices/' . htmlspecialchars($invoice->id),
+                                                                      ]) ?>
+                                        <?php endforeach; ?>
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          </div>
 <?php endif; ?>
 
 <div class="quick-actions">

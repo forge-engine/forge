@@ -23,16 +23,16 @@ $title = $title ?? 'Admin Dashboard';
                 'items' => $sidebarItems,
                 'brand' => $brand ?? 'Admin',
                 'logo' => $logo ?? null
-            ], fromModule: true),
+            ], ),
             'header' => component('ForgeComponents:admin/header', [
                 'title' => $title,
                 'user' => $user,
                 'notifications' => $notifications ?? []
-            ], fromModule: true),
-            'breadcrumb' => isset($breadcrumb) ? component('ForgeComponents:admin/breadcrumb', ['items' => $breadcrumb], fromModule: true) : null,
+            ], ),
+            'breadcrumb' => isset($breadcrumb) ? component('ForgeComponents:admin/breadcrumb', ['items' => $breadcrumb], ) : null,
             'default' => $content ?? ''
         ]
-    ], fromModule: true) ?>
+    ], ) ?>
 
     <?= ModuleResources::loadScripts("forge-ui") ?>
 </body>

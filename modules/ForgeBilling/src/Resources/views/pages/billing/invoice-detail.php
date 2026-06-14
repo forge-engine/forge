@@ -5,24 +5,24 @@
  * @var array $data
  */
 
-layout(name: "billing", fromModule: true, moduleName: "ForgeBilling");
+layout(name: "ForgeBilling:billing");
 
 $invoice = $data['invoice'] ?? null;
 $items = $data['items'] ?? [];
 
 if (!$invoice):
     ?>
-          <div class="card">
-            <div class="card__body">
-              <div class="empty-state">
-                <div class="empty-state__text">Invoice not found</div>
-                <div class="empty-state__subtext">The requested invoice could not be found.</div>
-                <a href="/billing/invoices" class="btn btn--secondary">Back to Invoices</a>
+              <div class="card">
+                <div class="card__body">
+                  <div class="empty-state">
+                    <div class="empty-state__text">Invoice not found</div>
+                    <div class="empty-state__subtext">The requested invoice could not be found.</div>
+                    <a href="/billing/invoices" class="btn btn--secondary">Back to Invoices</a>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
-        <?php
-        return;
+            <?php
+            return;
 endif;
 ?>
 
@@ -48,43 +48,43 @@ endif;
           Created: <?= htmlspecialchars($invoice->createdAt?->format('F j, Y \a\t g:i A') ?? '-') ?>
         </div>
         <?php if ($invoice->paidAt): ?>
-                  <div class="invoice-meta">
-                    Paid: <?= htmlspecialchars($invoice->paidAt->format('F j, Y \a\t g:i A')) ?>
-                  </div>
+                      <div class="invoice-meta">
+                        Paid: <?= htmlspecialchars($invoice->paidAt->format('F j, Y \a\t g:i A')) ?>
+                      </div>
         <?php endif; ?>
         <?php if ($invoice->dueDate): ?>
-                  <div class="invoice-meta">
-                    Due: <?= htmlspecialchars($invoice->dueDate->format('F j, Y')) ?>
-                  </div>
+                      <div class="invoice-meta">
+                        Due: <?= htmlspecialchars($invoice->dueDate->format('F j, Y')) ?>
+                      </div>
         <?php endif; ?>
       </div>
     </div>
 
     <?php if (!empty($items)): ?>
-              <hr class="divider">
-              <h3 style="font-size:1rem;font-weight:600;margin-bottom:1rem">Line Items</h3>
-              <div class="table-container">
-                <table class="table">
-                  <thead>
-                    <tr>
-                      <th>Description</th>
-                      <th>Qty</th>
-                      <th>Amount</th>
-                      <th>Total</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <?php foreach ($items as $item): ?>
-                              <tr>
-                                <td><?= htmlspecialchars($item->description) ?></td>
-                                <td><?= (int) $item->quantity ?></td>
-                                <td><?= htmlspecialchars($item->currency) ?>                 <?= number_format($item->amount, 2) ?></td>
-                                <td><?= htmlspecialchars($item->currency) ?>                 <?= number_format($item->amount * $item->quantity, 2) ?></td>
-                              </tr>
-                    <?php endforeach; ?>
-                  </tbody>
-                </table>
-              </div>
+                  <hr class="divider">
+                  <h3 style="font-size:1rem;font-weight:600;margin-bottom:1rem">Line Items</h3>
+                  <div class="table-container">
+                    <table class="table">
+                      <thead>
+                        <tr>
+                          <th>Description</th>
+                          <th>Qty</th>
+                          <th>Amount</th>
+                          <th>Total</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <?php foreach ($items as $item): ?>
+                                      <tr>
+                                        <td><?= htmlspecialchars($item->description) ?></td>
+                                        <td><?= (int) $item->quantity ?></td>
+                                        <td><?= htmlspecialchars($item->currency) ?>                         <?= number_format($item->amount, 2) ?></td>
+                                        <td><?= htmlspecialchars($item->currency) ?>                         <?= number_format($item->amount * $item->quantity, 2) ?></td>
+                                      </tr>
+                        <?php endforeach; ?>
+                      </tbody>
+                    </table>
+                  </div>
     <?php endif; ?>
 
     <div class="invoice-total">

@@ -7,7 +7,7 @@ use Forge\Core\Helpers\Flash;
  * @var array $data
  */
 
-layout(name: "billing", fromModule: true, moduleName: "ForgeBilling");
+layout(name: "ForgeBilling:billing");
 
 $methods = $data['methods'] ?? [];
 ?>
@@ -15,22 +15,22 @@ $methods = $data['methods'] ?? [];
 $flashMessages = Flash::flat() ?? [];
 if (!empty($flashMessages)):
     ?>
-          <div style="margin-bottom:1.5rem">
-            <?php foreach ($flashMessages as $msg): ?>
-                      <?php
-                      $type = $msg['type'] ?? 'info';
-                      $cssClass = match ($type) {
-                          'error' => 'alert--error',
-                          'success' => 'alert--success',
-                          'warning' => 'alert--warning',
-                          default => 'alert--info',
-                      };
-                      ?>
-                      <div class="alert <?= $cssClass ?>">
-                        <?= htmlspecialchars($msg['message'] ?? '') ?>
-                      </div>
-            <?php endforeach; ?>
-          </div>
+              <div style="margin-bottom:1.5rem">
+                <?php foreach ($flashMessages as $msg): ?>
+                              <?php
+                              $type = $msg['type'] ?? 'info';
+                              $cssClass = match ($type) {
+                                  'error' => 'alert--error',
+                                  'success' => 'alert--success',
+                                  'warning' => 'alert--warning',
+                                  default => 'alert--info',
+                              };
+                              ?>
+                              <div class="alert <?= $cssClass ?>">
+                                <?= htmlspecialchars($msg['message'] ?? '') ?>
+                              </div>
+                <?php endforeach; ?>
+              </div>
 <?php endif; ?>
 
 <div class="page-header">
@@ -41,29 +41,29 @@ if (!empty($flashMessages)):
 </div>
 
 <?php if (empty($methods)): ?>
-          <div class="card" style="margin-bottom:2rem">
-            <div class="card__body">
-              <div class="empty-state">
-                <div class="empty-state__icon">
-                  <svg width="48" height="48" viewBox="0 0 20 20" fill="currentColor" style="margin:0 auto">
-                    <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"/>
-                    <path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd"/>
-                  </svg>
+              <div class="card" style="margin-bottom:2rem">
+                <div class="card__body">
+                  <div class="empty-state">
+                    <div class="empty-state__icon">
+                      <svg width="48" height="48" viewBox="0 0 20 20" fill="currentColor" style="margin:0 auto">
+                        <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z"/>
+                        <path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd"/>
+                      </svg>
+                    </div>
+                    <div class="empty-state__text">No payment methods saved</div>
+                    <div class="empty-state__subtext">Add a payment method to automate billing.</div>
+                  </div>
                 </div>
-                <div class="empty-state__text">No payment methods saved</div>
-                <div class="empty-state__subtext">Add a payment method to automate billing.</div>
               </div>
-            </div>
-          </div>
 <?php else: ?>
-          <div style="display:flex;flex-direction:column;gap:var(--spacing-4);margin-bottom:2rem">
-            <?php foreach ($methods as $method): ?>
-                      <?= component(name: 'ForgeBilling:payment-method-card', props: [
-                          'method' => $method,
-                          'deleteUrl' => '/billing/payment-methods/' . htmlspecialchars($method->id) . '/delete',
-                      ]) ?>
-            <?php endforeach; ?>
-          </div>
+              <div style="display:flex;flex-direction:column;gap:var(--spacing-4);margin-bottom:2rem">
+                <?php foreach ($methods as $method): ?>
+                              <?= component(name: 'ForgeBilling:payment-method-card', props: [
+                                  'method' => $method,
+                                  'deleteUrl' => '/billing/payment-methods/' . htmlspecialchars($method->id) . '/delete',
+                              ]) ?>
+                <?php endforeach; ?>
+              </div>
 <?php endif; ?>
 
 <hr class="divider">
