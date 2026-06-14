@@ -21,34 +21,34 @@ layout("ForgeAuth:auth");
   $flashMessages = Flash::flat() ?? [];
   if (!empty($flashMessages)):
       ?>
-                                                <div class="space-y-2">
-                                                  <?php foreach ($flashMessages as $msg): ?>
-                                                                                                <?php
-                                                                                                $type = $msg['type'] ?? 'info';
-                                                                                                $typeStyles = [
-                                                                                                    'error' => 'bg-red-50 border-red-200 text-red-800',
-                                                                                                    'success' => 'bg-green-50 border-green-200 text-green-800',
-                                                                                                    'warning' => 'bg-yellow-50 border-yellow-200 text-yellow-800',
-                                                                                                    'info' => 'bg-blue-50 border-blue-200 text-blue-800',
-                                                                                                ];
-                                                                                                $style = $typeStyles[$type] ?? $typeStyles['info'];
-                                                                                                ?>
-                                                                                                <div class="rounded-lg border p-4 <?= $style ?>">
-                                                                                                  <div class="flex items-center gap-2">
-                                                                                                    <?php if ($type === 'error'): ?>
-                                                                                                                                                  <i class="fa-solid fa-circle-exclamation"></i>
-                                                                                                    <?php elseif ($type === 'success'): ?>
-                                                                                                                                                  <i class="fa-solid fa-circle-check"></i>
-                                                                                                    <?php elseif ($type === 'warning'): ?>
-                                                                                                                                                  <i class="fa-solid fa-triangle-exclamation"></i>
-                                                                                                    <?php else: ?>
-                                                                                                                                                  <i class="fa-solid fa-circle-info"></i>
-                                                                                                    <?php endif; ?>
-                                                                                                    <p class="text-sm font-medium"><?= htmlspecialchars($msg['message'] ?? '') ?></p>
-                                                                                                  </div>
-                                                                                                </div>
-                                                  <?php endforeach; ?>
-                                                </div>
+                                                                <div class="space-y-2">
+                                                                  <?php foreach ($flashMessages as $msg): ?>
+                                                                                                                                <?php
+                                                                                                                                $type = $msg['type'] ?? 'info';
+                                                                                                                                $typeStyles = [
+                                                                                                                                    'error' => 'bg-red-50 border-red-200 text-red-800',
+                                                                                                                                    'success' => 'bg-green-50 border-green-200 text-green-800',
+                                                                                                                                    'warning' => 'bg-yellow-50 border-yellow-200 text-yellow-800',
+                                                                                                                                    'info' => 'bg-blue-50 border-blue-200 text-blue-800',
+                                                                                                                                ];
+                                                                                                                                $style = $typeStyles[$type] ?? $typeStyles['info'];
+                                                                                                                                ?>
+                                                                                                                                <div class="rounded-lg border p-4 <?= $style ?>">
+                                                                                                                                  <div class="flex items-center gap-2">
+                                                                                                                                    <?php if ($type === 'error'): ?>
+                                                                                                                                                                                                  <i class="fa-solid fa-circle-exclamation"></i>
+                                                                                                                                    <?php elseif ($type === 'success'): ?>
+                                                                                                                                                                                                  <i class="fa-solid fa-circle-check"></i>
+                                                                                                                                    <?php elseif ($type === 'warning'): ?>
+                                                                                                                                                                                                  <i class="fa-solid fa-triangle-exclamation"></i>
+                                                                                                                                    <?php else: ?>
+                                                                                                                                                                                                  <i class="fa-solid fa-circle-info"></i>
+                                                                                                                                    <?php endif; ?>
+                                                                                                                                    <p class="text-sm font-medium"><?= htmlspecialchars($msg['message'] ?? '') ?></p>
+                                                                                                                                  </div>
+                                                                                                                                </div>
+                                                                  <?php endforeach; ?>
+                                                                </div>
   <?php endif; ?>
 
   <!-- Login Form -->
