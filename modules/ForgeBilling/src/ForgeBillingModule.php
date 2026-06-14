@@ -44,14 +44,14 @@ use Forge\Core\Module\LifecycleHookName;
 ])]
 #[Module(
     name: 'ForgeBilling',
-    version: '0.2.0',
+    version: '0.2.1',
     description: 'Billing portal with plans, invoices, and payment provider support',
     order: 5,
     author: 'Forge Team',
     license: 'MIT',
     tags: ['billing', 'invoices', 'payments', 'plans'],
 )]
-#[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
+#[Compatibility(framework: '>=4.15.10', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
 #[ConfigDefaults(defaults: ['forge_billing' => []])]
 #[PostInstall(command: 'db:migrate', args: ['--type=', 'module', '--module=', 'ForgeBilling'])]
