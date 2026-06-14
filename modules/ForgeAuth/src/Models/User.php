@@ -47,23 +47,5 @@ class User extends Model
         return self::describe(__FUNCTION__);
     }
 
-    public function getRoles(): array
-    {
-        $roleService = \Forge\Core\DI\Container::getInstance()->get(\App\Modules\ForgeAuth\Services\RoleService::class);
-        return $roleService->getUserRoles($this);
-    }
 
-    public function hasRole(string $roleName): bool
-    {
-        $roleService = \Forge\Core\DI\Container::getInstance()->get(\App\Modules\ForgeAuth\Services\RoleService::class);
-        return $roleService->userHasRole($this, $roleName);
-    }
-
-    public function hasPermission(string $permission): bool
-    {
-        $roleService = \Forge\Core\DI\Container::getInstance()->get(\App\Modules\ForgeAuth\Services\RoleService::class);
-        return $roleService->userHasPermission($this, $permission);
-    }
-
-    
 }

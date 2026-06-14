@@ -4,20 +4,21 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeHub\Controllers;
 
+use App\Modules\ForgeAuth\Enums\Role;
 use App\Modules\ForgeHub\Services\CronJobService;
-use Forge\CLI\Application;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\DI\Container;
 use Forge\Core\Http\Attributes\Middleware;
+use Forge\Core\Http\Attributes\RequiresRole;
 use Forge\Core\Http\Request;
 use Forge\Core\Http\Response;
 use Forge\Core\Routing\Route;
 use Forge\Traits\ControllerHelper;
 
 #[Service]
-#[Middleware('web')]
-#[Middleware('auth')]
-#[Middleware('hub-permissions')]
+#[RequiresRole(Role::ADMIN->value)]
+#[Middleware(['web', 'auth', 'role', 'hub-permissions'])]
+
 final class CronJobController
 {
     use ControllerHelper;
@@ -178,7 +179,7 @@ final class CronJobController
         $commandType = $data['command_type'] ?? ($job['command_type'] ?? 'forge');
         $advanced = isset($data['advanced']) && $data['advanced'] === true;
         $schedule = $data['schedule'] ?? $job['schedule'];
-        $enabled = isset($data['enabled']) ? (bool)$data['enabled'] : ($job['enabled'] ?? true);
+        $enabled = isset($data['enabled']) ? (bool) $data['enabled'] : ($job['enabled'] ?? true);
 
         if (empty($name)) {
             return $this->jsonResponse([
@@ -284,7 +285,7 @@ final class CronJobController
     #[Route("/hub/cron-jobs/{id:[^/]+}/output", "GET")]
     public function getOutput(Request $request, string $id): Response
     {
-        $maxLines = (int)($request->query('lines') ?? 200);
+        $maxLines = (int) ($request->query('lines') ?? 200);
         $output = $this->cronJobService->getLastOutput($id, $maxLines);
 
         return $this->jsonResponse([

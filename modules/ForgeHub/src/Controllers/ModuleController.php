@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeHub\Controllers;
 
+use App\Modules\ForgeAuth\Enums\Role;
 use App\Modules\ForgeHub\Services\HubItemRegistry;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Http\Attributes\Middleware;
+use Forge\Core\Http\Attributes\RequiresRole;
 use Forge\Core\Http\Request;
 use Forge\Core\Http\Response;
 use Forge\Core\Module\Attributes\Module;
@@ -16,9 +18,9 @@ use Forge\Traits\ControllerHelper;
 use ReflectionClass;
 
 #[Service]
-#[Middleware('web')]
-#[Middleware('auth')]
-#[Middleware('hub-permissions')]
+#[Middleware(['web', 'auth', 'role', 'hub-permissions'])]
+#[RequiresRole(Role::ADMIN->value)]
+
 final class ModuleController
 {
   use ControllerHelper;

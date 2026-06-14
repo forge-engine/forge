@@ -4,19 +4,22 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeHub\Controllers;
 
+use App\Modules\ForgeAuth\Enums\Permission;
+use App\Modules\ForgeAuth\Enums\Role;
 use App\Modules\ForgeHub\Services\CacheService;
 use App\Modules\ForgeHub\Services\EnhancedCacheService;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Http\Attributes\Middleware;
+use Forge\Core\Http\Attributes\RequiresRole;
 use Forge\Core\Http\Request;
 use Forge\Core\Http\Response;
 use Forge\Core\Routing\Route;
 use Forge\Traits\ControllerHelper;
 
 #[Service]
-#[Middleware('web')]
-#[Middleware('auth')]
-#[Middleware('hub-permissions')]
+#[Middleware(['web', 'auth', 'role', 'hub-permissions'])]
+#[RequiresRole(Role::ADMIN->value)]
+
 final class CacheController
 {
   use ControllerHelper;
@@ -27,7 +30,10 @@ final class CacheController
   ) {
   }
 
-  #[Route("/hub/cache")]
+  #[Route(
+    path: "/hub/cache",
+    permissions: [Permission::HUB_PERMISSIONS->value]
+  )]
   public function index(Request $request): Response
   {
     $stats = $this->cacheService->getStats();
@@ -44,34 +50,42 @@ final class CacheController
     return $this->view(view: "pages/cache", data: $data);
   }
 
-  #[Route("/hub/cache/clear", "POST")]
+  #[Route(
+    path: "/hub/cache/clear",
+    method: "POST",
+    permissions: [Permission::HUB_PERMISSIONS->value]
+  )]
   public function clear(Request $request): Response
   {
     $this->cacheService->clearAll();
-    
+
     return $this->jsonResponse([
       'success' => true,
       'message' => 'Cache cleared successfully',
     ]);
   }
 
-
-
-
-
-  #[Route("/hub/cache/clear-expired", "POST")]
+  #[Route(
+    path: "/hub/cache/clear-expired",
+    method: "POST",
+    permissions: [Permission::HUB_PERMISSIONS->value]
+  )]
   public function clearExpired(Request $request): Response
   {
-    $hours = (int)($request->postData['hours'] ?? 24);
+    $hours = (int) ($request->postData['hours'] ?? 24);
     $this->cacheService->clearExpired($hours);
-    
+
     return $this->jsonResponse([
       'success' => true,
       'message' => "Cleared cache entries older than {$hours} hours",
     ]);
   }
 
-  #[Route("/hub/cache/clear-tag", "POST")]
+  #[Route(
+    path: "/hub/cache/clear-tag",
+    method: "POST",
+    permissions: [Permission::HUB_PERMISSIONS->value]
+  )]
   public function clearTag(Request $request): Response
   {
     $tag = $request->postData['tag'] ?? null;

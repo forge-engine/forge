@@ -6,48 +6,32 @@ namespace App\Modules\ForgeAuth\Services;
 
 use App\Modules\ForgeAuth\Models\User;
 use Forge\Core\DI\Attributes\Service;
-use Forge\Core\Session\SessionInterface;
+use Forge\Core\Contracts\Database\QueryBuilderInterface;
 
 #[Service]
 final class PermissionService
 {
-  private const string SESSION_PERMISSIONS_KEY = 'user_permissions';
-
   public function __construct(
-    private readonly SessionInterface $session
+    private readonly QueryBuilderInterface $queryBuilder
   ) {
   }
 
   /**
-   * Get all permissions for a user.
-   * For now, permissions are stored in user metadata.
-   * Later this can be expanded to use a full RBAC system with roles.
+   * Get all permissions for a user based on their roles.
    *
    * @return array<string> Array of permission strings
    */
   public function getUserPermissions(User $user): array
   {
-    // Check session first (cached)
-    if ($this->session->has(self::SESSION_PERMISSIONS_KEY)) {
-      return $this->session->get(self::SESSION_PERMISSIONS_KEY, []);
-    }
+    $rows = $this->queryBuilder
+        ->table('permissions')
+        ->select('permissions.name')
+        ->join('role_permissions', 'permissions.id', '=', 'role_permissions.permission_id')
+        ->join('user_roles', 'role_permissions.role_id', '=', 'user_roles.role_id')
+        ->where('user_roles.user_id', '=', $user->id)
+        ->get();
 
-    // Get permissions from user metadata
-    $permissions = [];
-    if ($user->metadata !== null) {
-      $metadata = $user->metadata;
-      // Check if metadata has permissions array
-      if (is_array($metadata) && isset($metadata['permissions']) && is_array($metadata['permissions'])) {
-        $permissions = $metadata['permissions'];
-      } elseif (is_object($metadata) && property_exists($metadata, 'permissions')) {
-        $permissions = is_array($metadata->permissions) ? $metadata->permissions : [];
-      }
-    }
-
-    // Store in session for future requests
-    $this->session->set(self::SESSION_PERMISSIONS_KEY, $permissions);
-
-    return $permissions;
+    return array_values(array_unique(array_column($rows, 'name')));
   }
 
   /**
@@ -65,7 +49,7 @@ final class PermissionService
   public function hasAnyPermission(User $user, array $permissions): bool
   {
     if (empty($permissions)) {
-      return true; // No permissions required means access granted
+      return true;
     }
 
     $userPermissions = $this->getUserPermissions($user);
@@ -85,7 +69,7 @@ final class PermissionService
   public function hasAllPermissions(User $user, array $permissions): bool
   {
     if (empty($permissions)) {
-      return true; // No permissions required means access granted
+      return true;
     }
 
     $userPermissions = $this->getUserPermissions($user);
@@ -97,55 +81,5 @@ final class PermissionService
     }
 
     return true;
-  }
-
-  /**
-   * Get permissions from session (for current user).
-   * Returns empty array if no user is logged in.
-   */
-  public function getCurrentUserPermissions(): array
-  {
-    if (!$this->session->has(self::SESSION_PERMISSIONS_KEY)) {
-      return [];
-    }
-
-    return $this->session->get(self::SESSION_PERMISSIONS_KEY, []);
-  }
-
-  /**
-   * Check if current user has a specific permission.
-   */
-  public function currentUserHasPermission(string $permission): bool
-  {
-    $permissions = $this->getCurrentUserPermissions();
-    return in_array($permission, $permissions, true);
-  }
-
-  /**
-   * Check if current user has any of the specified permissions.
-   */
-  public function currentUserHasAnyPermission(array $permissions): bool
-  {
-    if (empty($permissions)) {
-      return true;
-    }
-
-    $userPermissions = $this->getCurrentUserPermissions();
-
-    foreach ($permissions as $permission) {
-      if (in_array($permission, $userPermissions, true)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-
-  /**
-   * Clear cached permissions from session.
-   */
-  public function clearCache(): void
-  {
-    $this->session->remove(self::SESSION_PERMISSIONS_KEY);
   }
 }

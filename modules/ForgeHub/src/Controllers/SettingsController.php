@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeHub\Controllers;
 
-use App\Modules\ForgeAuth\Services\ForgeAuthService;
+use App\Modules\ForgeAuth\Enums\Role;
+use App\Modules\ForgeAuth\Services\UserContext;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Helpers\Flash;
 use Forge\Core\Helpers\Redirect;
 use Forge\Core\Http\Attributes\Middleware;
+use Forge\Core\Http\Attributes\RequiresRole;
 use Forge\Core\Http\Request;
 use Forge\Core\Http\Response;
 use Forge\Core\Routing\Route;
@@ -16,23 +18,23 @@ use Forge\Traits\ControllerHelper;
 use Forge\Traits\SecurityHelper;
 
 #[Service]
-#[Middleware('web')]
-#[Middleware('auth')]
-#[Middleware('hub-permissions')]
+#[Middleware(['web', 'auth', 'role', 'hub-permissions'])]
+#[RequiresRole(Role::ADMIN->value)]
+
 final class SettingsController
 {
   use ControllerHelper;
   use SecurityHelper;
 
   public function __construct(
-    private readonly ForgeAuthService $authService
+    private readonly UserContext $userContext
   ) {
   }
 
   #[Route("/hub/settings")]
   public function index(): Response
   {
-    $user = $this->authService->user();
+    $user = $this->userContext->current();
     if ($user === null) {
       Flash::set('error', 'You must be logged in to view settings.');
       return Redirect::to('/auth/login');
@@ -49,7 +51,7 @@ final class SettingsController
   #[Route("/hub/settings/password", "POST")]
   public function updatePassword(Request $request): Response
   {
-    $user = $this->authService->user();
+    $user = $this->userContext->current();
     if ($user === null) {
       Flash::set('error', 'You must be logged in to update your password.');
       return Redirect::to('/auth/login');
@@ -86,6 +88,6 @@ final class SettingsController
       Flash::set('error', 'Failed to update password: ' . $e->getMessage());
     }
 
-    return $this->redirect('/hub/settings');
+    return Redirect::to('/hub/settings');
   }
 }

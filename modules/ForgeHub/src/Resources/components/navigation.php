@@ -13,13 +13,13 @@ $hubItems = $registry ? $registry->getHubItems() : [];
 $currentPath = $_SERVER['REQUEST_URI'] ?? '/';
 
 
-$hasAuth = $container->has(\App\Modules\ForgeAuth\Services\ForgeAuthService::class);
+$hasAuth = $container->has(\App\Modules\ForgeAuth\Services\UserContext::class);
 $user = null;
 $userPermissions = [];
 if ($hasAuth) {
   try {
-    $authService = $container->get(\App\Modules\ForgeAuth\Services\ForgeAuthService::class);
-    $user = $authService->user();
+    $authService = $container->get(\App\Modules\ForgeAuth\Services\UserContext::class);
+    $user = $authService->current();
 
     if ($user !== null && $container->has(\App\Modules\ForgeAuth\Services\PermissionService::class)) {
       try {

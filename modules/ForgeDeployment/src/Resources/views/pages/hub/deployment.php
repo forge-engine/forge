@@ -1,6 +1,6 @@
 <?php
 
-layout(name: "hub", fromModule: true, moduleName: "ForgeHub"); ?>
+layout(name: "ForgeHub:hub"); ?>
 <div class="space-y-6">
   <div class="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
     <div>
@@ -14,16 +14,14 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub"); ?>
         <i class="fa-solid fa-rotate" id="refreshIcon"></i>
         <span>Refresh</span>
       </button>
-      <button id="editConfigBtn" <?= $isProduction ? "disabled" : "" ?>
-        class="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 text-sm font-medium transition-colors <?= $isProduction
-            ? "opacity-50 cursor-not-allowed"
-            : "" ?>">
+      <button id="editConfigBtn" <?= $isProduction ? "disabled" : "" ?> class="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 text-sm font-medium transition-colors <?= $isProduction
+               ? "opacity-50 cursor-not-allowed"
+               : "" ?>">
         Edit Config
       </button>
-      <button id="manageSecretsBtn" <?= $isProduction ? "disabled" : "" ?>
-        class="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 text-sm font-medium transition-colors <?= $isProduction
-            ? "opacity-50 cursor-not-allowed"
-            : "" ?>">
+      <button id="manageSecretsBtn" <?= $isProduction ? "disabled" : "" ?> class="px-4 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 text-sm font-medium transition-colors <?= $isProduction
+               ? "opacity-50 cursor-not-allowed"
+               : "" ?>">
         Manage Secrets
       </button>
     </div>
@@ -48,14 +46,14 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub"); ?>
               <dd class="mt-1 text-sm font-semibold text-gray-900" id="status-domain">
                 <?php
                 $isComplete =
-                    !empty($status["completed_steps"]) &&
-                    in_array(
-                        "post_deployment_completed",
-                        $status["completed_steps"],
-                    );
+                  !empty($status["completed_steps"]) &&
+                  in_array(
+                    "post_deployment_completed",
+                    $status["completed_steps"],
+                  );
                 if ($isComplete):
-                    $domainUrl =
-                        "https://" . htmlspecialchars($status["domain"]); ?>
+                  $domainUrl =
+                    "https://" . htmlspecialchars($status["domain"]); ?>
                   <a href="<?= $domainUrl ?>" target="_blank" rel="noopener noreferrer"
                     class="inline-flex gap-1 items-center text-blue-600 hover:text-blue-800 hover:underline">
                     <?= htmlspecialchars($status["domain"]) ?>
@@ -64,11 +62,11 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub"); ?>
                         d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
                     </svg>
                   </a>
-                <?php
+                  <?php
                 else:
-                     ?>
+                  ?>
                   <?= htmlspecialchars($status["domain"]) ?>
-                <?php
+                  <?php
                 endif;
                 ?>
               </dd>
@@ -79,15 +77,14 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub"); ?>
               <dt class="text-sm font-medium text-gray-500">Progress</dt>
               <dd class="text-sm font-semibold text-gray-900" id="status-progress">
                 <?= htmlspecialchars(
-                    (string) $status["progress_percentage"],
+                  (string) $status["progress_percentage"],
                 ) ?>%
               </dd>
             </div>
             <div class="w-full h-2 bg-gray-200 rounded-full">
-              <div class="h-2 bg-blue-600 rounded-full transition-all" id="status-progress-bar"
-                style="width: <?= htmlspecialchars(
-                    (string) $status["progress_percentage"],
-                ) ?>%"></div>
+              <div class="h-2 bg-blue-600 rounded-full transition-all" id="status-progress-bar" style="width: <?= htmlspecialchars(
+                (string) $status["progress_percentage"],
+              ) ?>%"></div>
             </div>
           </div>
           <div>
@@ -165,7 +162,7 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub"); ?>
               Using default PHP CLI command (<code class="px-1 bg-blue-100 rounded">php</code>).
             <?php else: ?>
               Using PHP at <code class="px-1 bg-blue-100 rounded"><?= htmlspecialchars(
-                  $php_info["path"] ?? "php",
+                $php_info["path"] ?? "php",
               ) ?></code>
               <?php if (!empty($php_info["version"] ?? "")): ?>
                 (version <?= htmlspecialchars($php_info["version"]) ?>)
@@ -189,8 +186,8 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub"); ?>
         $isProduction = $is_production ?? false;
         $deployDisabled = $isProduction ? "disabled" : "";
         $deployDisabledClass = $isProduction
-            ? "opacity-50 cursor-not-allowed"
-            : "";
+          ? "opacity-50 cursor-not-allowed"
+          : "";
         ?>
         <button id="deployBtn" <?= $deployDisabled ?>
           class="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors flex items-center justify-center gap-2 <?= $deployDisabledClass ?>">
@@ -235,12 +232,12 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub"); ?>
               <dd class="mt-1 text-sm text-gray-900">
                 <?php if (isset($config["server"]["name"])): ?>
                   <span><?= htmlspecialchars(
-                      $config["server"]["name"],
+                    $config["server"]["name"],
                   ) ?></span>
                 <?php endif; ?>
                 <?php if (isset($config["server"]["region"])): ?>
                   <span class="text-gray-400"> • <?= htmlspecialchars(
-                      $config["server"]["region"],
+                    $config["server"]["region"],
                   ) ?></span>
                 <?php endif; ?>
               </dd>
@@ -252,12 +249,12 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub"); ?>
               <dd class="mt-1 text-sm text-gray-900">
                 <?php if (isset($config["provision"]["php_version"])): ?>
                   <span>PHP <?= htmlspecialchars(
-                      $config["provision"]["php_version"],
+                    $config["provision"]["php_version"],
                   ) ?></span>
                 <?php endif; ?>
                 <?php if (isset($config["provision"]["database_type"])): ?>
                   <span class="text-gray-400"> • <?= htmlspecialchars(
-                      $config["provision"]["database_type"],
+                    $config["provision"]["database_type"],
                   ) ?></span>
                 <?php endif; ?>
               </dd>
@@ -269,7 +266,7 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub"); ?>
               <dd class="mt-1 text-sm text-gray-900">
                 <?php if (isset($config["deployment"]["domain"])): ?>
                   <span><?= htmlspecialchars(
-                      $config["deployment"]["domain"],
+                    $config["deployment"]["domain"],
                   ) ?></span>
                 <?php endif; ?>
               </dd>
@@ -279,7 +276,7 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub"); ?>
             <div class="pt-2 border-t border-gray-200">
               <dt class="text-sm font-medium text-gray-500">Config File</dt>
               <dd class="mt-1 font-mono text-xs text-gray-600"><?= htmlspecialchars(
-                  $config_path,
+                $config_path,
               ) ?></dd>
             </div>
           <?php endif; ?>
@@ -299,24 +296,23 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub"); ?>
           <h2 class="text-lg font-semibold text-gray-900">Post-Deployment Commands</h2>
           <?php $isProduction = $is_production ?? false; ?>
           <button id="editPostCommandsBtn" <?= $isProduction
-              ? "disabled"
-              : "" ?>
-            class="px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors <?= $isProduction
-                ? "opacity-50 cursor-not-allowed"
-                : "" ?>">
+            ? "disabled"
+            : "" ?> class="px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors <?= $isProduction
+               ? "opacity-50 cursor-not-allowed"
+               : "" ?>">
             <i class="fa-solid fa-edit"></i> Edit
           </button>
         </div>
         <?php if (!empty($config["deployment"]["post_deployment_commands"])): ?>
           <div class="overflow-y-auto pr-2 space-y-2 max-h-64" id="postCommandsDisplay">
             <?php foreach (
-                $config["deployment"]["post_deployment_commands"]
-                as $cmd
+              $config["deployment"]["post_deployment_commands"]
+              as $cmd
             ): ?>
               <div class="flex gap-2 items-center p-2 bg-gray-50 rounded border border-gray-200">
                 <i class="text-xs text-gray-400 fa-solid fa-terminal"></i>
                 <span class="font-mono text-sm text-gray-900"><?= htmlspecialchars(
-                    $cmd,
+                  $cmd,
                 ) ?></span>
               </div>
             <?php endforeach; ?>
@@ -332,38 +328,37 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub"); ?>
         <div class="flex justify-between items-center mb-4">
           <h2 class="text-lg font-semibold text-gray-900">Environment Variables</h2>
           <?php $isProduction = $is_production ?? false; ?>
-          <button id="editEnvVarsBtn" <?= $isProduction ? "disabled" : "" ?>
-            class="px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors <?= $isProduction
-                ? "opacity-50 cursor-not-allowed"
-                : "" ?>">
+          <button id="editEnvVarsBtn" <?= $isProduction ? "disabled" : "" ?> class="px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors <?= $isProduction
+                   ? "opacity-50 cursor-not-allowed"
+                   : "" ?>">
             <i class="fa-solid fa-edit"></i> Edit
           </button>
         </div>
         <?php if (!empty($config["deployment"]["env_vars"])): ?>
           <div class="overflow-y-auto pr-2 space-y-2 max-h-64" id="envVarsDisplay">
             <?php foreach (
-                $config["deployment"]["env_vars"]
-                as $key => $value
+              $config["deployment"]["env_vars"]
+              as $key => $value
             ): ?>
               <?php $displayValue = is_array($value)
-                  ? "[" .
-                      implode(
-                          ", ",
-                          array_map(
-                              fn($v) => '"' . addslashes((string) $v) . '"',
-                              $value,
-                          ),
-                      ) .
-                      "]"
-                  : (string) $value; ?>
+                ? "[" .
+                implode(
+                  ", ",
+                  array_map(
+                    fn($v) => '"' . addslashes((string) $v) . '"',
+                    $value,
+                  ),
+                ) .
+                "]"
+                : (string) $value; ?>
               <div class="flex justify-between items-center p-2 bg-gray-50 rounded border border-gray-200">
                 <div class="flex flex-1 gap-2 items-center min-w-0">
                   <span class="text-sm font-medium text-gray-700"><?= htmlspecialchars(
-                      $key,
+                    $key,
                   ) ?></span>
                   <span class="text-sm text-gray-400">=</span>
                   <span class="font-mono text-sm text-gray-900 truncate"><?= htmlspecialchars(
-                      $displayValue,
+                    $displayValue,
                   ) ?></span>
                 </div>
               </div>
@@ -385,11 +380,11 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub"); ?>
             <div class="flex justify-between items-center p-3 rounded-lg border border-gray-200 hover:bg-gray-50">
               <div class="flex-1 min-w-0">
                 <div class="text-sm font-medium text-gray-900 truncate"><?= htmlspecialchars(
-                    $log["id"],
+                  $log["id"],
                 ) ?></div>
                 <div class="text-xs text-gray-500"><?= date(
-                    "M j, Y H:i:s",
-                    $log["modified"],
+                  "M j, Y H:i:s",
+                  $log["modified"],
                 ) ?></div>
               </div>
               <button onclick="viewLogs('<?= htmlspecialchars($log["id"]) ?>')"

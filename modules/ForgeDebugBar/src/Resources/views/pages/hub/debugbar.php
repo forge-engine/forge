@@ -1,6 +1,6 @@
 <?php
 
-layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
+layout(name: "ForgeHub:hub");
 ?>
 <div class="grid gap-6">
   <?php if (!$hasData): ?>
@@ -162,7 +162,8 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
               <?php if ($key === 'middleware' && is_array($value)): ?>
                 <div>
                   <dt class="text-sm font-medium text-gray-500 mb-2">
-                    <?= htmlspecialchars(ucfirst(str_replace('_', ' ', $key))) ?></dt>
+                    <?= htmlspecialchars(ucfirst(str_replace('_', ' ', $key))) ?>
+                  </dt>
                   <dd class="mt-1">
                     <ul class="flex flex-wrap gap-2">
                       <?php foreach ($value as $middleware): ?>

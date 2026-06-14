@@ -6,7 +6,7 @@ namespace App\Modules\ForgeAuth\Controllers;
 
 use App\Modules\ForgeAuth\Exceptions\LoginException;
 use App\Modules\ForgeAuth\Services\ForgeAuthService;
-use App\Modules\ForgeAuth\Validation\ForgeAuthValidate;
+use App\Modules\ForgeAuth\Services\TokenManagerService;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Http\Attributes\ApiRoute;
 use Forge\Core\Http\Attributes\Middleware;
@@ -23,8 +23,10 @@ final class ApiLoginController
     use ControllerHelper;
     use SecurityHelper;
 
-    public function __construct(private readonly ForgeAuthService $forgeAuthService)
-    {
+    public function __construct(
+        private readonly ForgeAuthService $forgeAuthService,
+        private readonly TokenManagerService $tokenManagerService
+    ) {
     }
 
     #[ApiRoute('/auth/login', 'POST')]
@@ -32,11 +34,10 @@ final class ApiLoginController
     {
         try {
             $data = $request->json() ?: $request->postData;
-            ForgeAuthValidate::login($data);
             $loginCredentials = $this->sanitize($data);
 
             $user = $this->forgeAuthService->login($loginCredentials);
-            $tokens = $this->forgeAuthService->issueToken($user);
+            $tokens = $this->tokenManagerService->issueToken($user);
 
             $responseData = [
                 'user' => $user,
@@ -63,7 +64,7 @@ final class ApiLoginController
             return $this->apiError('Refresh token is required', 400);
         }
 
-        $tokens = $this->forgeAuthService->refreshToken($refreshToken);
+        $tokens = $this->tokenManagerService->refreshToken($refreshToken);
 
         if (!$tokens) {
             return $this->apiError('Invalid refresh token', 401);
@@ -72,4 +73,3 @@ final class ApiLoginController
         return $this->apiResponse($tokens);
     }
 }
-

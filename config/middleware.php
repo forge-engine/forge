@@ -66,4 +66,10 @@ return [
     "role" => [
         \App\Modules\ForgeAuth\Middlewares\RoleMiddleware::class,
     ],
+    "permission" => [
+        \App\Modules\ForgeAuth\Middlewares\PermissionMiddleware::class,
+    ],
+    "hub-permissions" => [
+        \App\Modules\ForgeHub\Middlewares\HubPermissionMiddleware::class,
+    ],
 ];

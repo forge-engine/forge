@@ -452,11 +452,11 @@ final class QueueWorkerService
     {
         $outputFile = $this->getOutputFilePath($id);
 
-        if (!FileExistenceCache::exists($outputFile) || filesize($outputFile) === 0) {
+        if (!file_exists($outputFile) || @filesize($outputFile) === 0) {
             return null;
         }
 
-        $content = file_get_contents($outputFile);
+        $content = @file_get_contents($outputFile);
         if ($content === false) {
             return null;
         }
@@ -471,8 +471,8 @@ final class QueueWorkerService
     {
         $outputFile = $this->getOutputFilePath($id);
 
-        if (FileExistenceCache::exists($outputFile)) {
-            return file_put_contents($outputFile, '') !== false;
+        if (file_exists($outputFile)) {
+            return @file_put_contents($outputFile, '') !== false;
         }
 
         return true;
@@ -482,8 +482,8 @@ final class QueueWorkerService
     {
         $outputFile = $this->getOutputFilePath($id);
 
-if (FileExistenceCache::exists($outputFile)) {
-            @unlink($outputFile);
+        if (file_exists($outputFile)) {
+            return (int)@filesize($outputFile);
         }
 
         return 0;

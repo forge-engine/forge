@@ -4,19 +4,22 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeHub\Controllers;
 
+use App\Modules\ForgeAuth\Enums\Permission;
+use App\Modules\ForgeAuth\Enums\Role;
 use App\Modules\ForgeHub\Services\CommandService;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Http\ApiResponse;
 use Forge\Core\Http\Attributes\Middleware;
+use Forge\Core\Http\Attributes\RequiresRole;
 use Forge\Core\Http\Request;
 use Forge\Core\Http\Response;
 use Forge\Core\Routing\Route;
 use Forge\Traits\ControllerHelper;
 
 #[Service]
-#[Middleware('web')]
-#[Middleware('auth')]
-#[Middleware('hub-permissions')]
+#[Middleware(['web', 'auth', 'role', 'hub-permissions'])]
+#[RequiresRole(Role::ADMIN->value)]
+
 final class CommandController
 {
     use ControllerHelper;
@@ -25,7 +28,10 @@ final class CommandController
     {
     }
 
-    #[Route("/hub/commands")]
+    #[Route(
+        path: "/hub/commands",
+        permissions: [Permission::HUB_PERMISSIONS->value]
+    )]
     public function index(): Response
     {
         $whoami = trim(shell_exec('whoami') ?? '');
@@ -34,14 +40,21 @@ final class CommandController
         return $this->view(view: "pages/commands", data: ['whoami' => $whoami, 'pwd' => $pwd]);
     }
 
-    #[Route("/hub/commands/list")]
+    #[Route(
+        path: "/hub/commands/list",
+        permissions: [Permission::HUB_PERMISSIONS->value]
+    )]
     public function getCommands(): Response
     {
         $commands = $this->commandService->getAvailableCommands();
         return new ApiResponse(['commands' => $commands]);
     }
 
-    #[Route("/hub/commands/refresh", "POST")]
+    #[Route(
+        path: "/hub/commands/refresh",
+        method: "POST",
+        permissions: [Permission::HUB_PERMISSIONS->value]
+    )]
     public function refreshCommands(): Response
     {
         $this->commandService->clearCache();
@@ -49,14 +62,20 @@ final class CommandController
         return new ApiResponse(['commands' => $commands, 'message' => 'Commands refreshed successfully']);
     }
 
-    #[Route("/hub/commands/cache-stats")]
+    #[Route(
+        path: "/hub/commands/cache-stats",
+        permissions: [Permission::HUB_PERMISSIONS->value]
+    )]
     public function getCacheStats(): Response
     {
         $stats = $this->commandService->getCacheStats();
         return new ApiResponse(['cache_stats' => $stats]);
     }
 
-    #[Route("/hub/commands/arguments")]
+    #[Route(
+        path: "/hub/commands/arguments",
+        permissions: [Permission::HUB_PERMISSIONS->value]
+    )]
     public function getCommandArguments(Request $request): Response
     {
         $commandName = $request->query('command') ?? '';
@@ -68,7 +87,11 @@ final class CommandController
         return new ApiResponse(['arguments' => $arguments]);
     }
 
-    #[Route("/hub/commands/execute", "POST")]
+    #[Route(
+        path: "/hub/commands/execute",
+        method: "POST",
+        permissions: [Permission::HUB_PERMISSIONS->value]
+    )]
     public function execute(Request $request): Response
     {
         $command = trim($request->postData['command'] ?? '');
@@ -127,7 +150,11 @@ final class CommandController
         ]);
     }
 
-    #[Route("/hub/commands/send-input", "POST")]
+    #[Route(
+        path: "/hub/commands/send-input",
+        method: "POST",
+        permissions: [Permission::HUB_PERMISSIONS->value]
+    )]
     public function sendInput(Request $request): Response
     {
         $processId = $request->postData['process_id'] ?? '';
@@ -154,7 +181,10 @@ final class CommandController
         ]);
     }
 
-    #[Route("/hub/commands/status")]
+    #[Route(
+        path: "/hub/commands/status",
+        permissions: [Permission::HUB_PERMISSIONS->value]
+    )]
     public function status(Request $request): Response
     {
         $processId = $request->query('process_id') ?? null;

@@ -7,7 +7,8 @@ namespace App\Modules\ForgeAuth\Middlewares;
 use App\Modules\ForgeAuth\Exceptions\JwtTokenExpiredException;
 use App\Modules\ForgeAuth\Exceptions\JwtTokenInvalidException;
 use App\Modules\ForgeAuth\Exceptions\JwtTokenMissingException;
-use App\Modules\ForgeAuth\Services\ForgeAuthService;
+use App\Modules\ForgeAuth\Services\TokenManagerService;
+use App\Modules\ForgeAuth\Services\UserContext;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Http\ApiResponse;
 use Forge\Core\Http\Middleware;
@@ -17,8 +18,10 @@ use Forge\Core\Http\Response;
 #[Service]
 final class ApiJwtMiddleware extends Middleware
 {
-    public function __construct(private readonly ForgeAuthService $forgeAuthService)
-    {
+    public function __construct(
+        private readonly TokenManagerService $tokenManagerService,
+        private readonly UserContext $userContext
+    ) {
     }
 
     public function handle(Request $request, callable $next): Response
@@ -43,7 +46,7 @@ final class ApiJwtMiddleware extends Middleware
         }
 
         try {
-            $user = $this->forgeAuthService->resolveUserFromToken($token);
+            $user = $this->tokenManagerService->resolveUserFromToken($token);
         } catch (JwtTokenMissingException | JwtTokenInvalidException | JwtTokenExpiredException $e) {
             return $this->unauthorizedResponse($e->getMessage());
         }
@@ -52,7 +55,7 @@ final class ApiJwtMiddleware extends Middleware
             return $this->unauthorizedResponse('Unauthorized: Invalid token');
         }
 
-        $this->forgeAuthService->setUser($user);
+        $this->userContext->setCurrentUser($user);
 
         return $next($request);
     }
@@ -73,4 +76,3 @@ final class ApiJwtMiddleware extends Middleware
         );
     }
 }
-

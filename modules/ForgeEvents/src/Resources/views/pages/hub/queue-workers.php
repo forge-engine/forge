@@ -1,6 +1,6 @@
 <?php
 
-layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
+layout(name: "ForgeHub:hub");
 ?>
 <div class="space-y-6">
   <div class="flex items-center justify-between">
@@ -46,12 +46,13 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
               <td class="px-6 py-4">
                 <div class="flex flex-wrap gap-1">
                   <?php foreach (($worker['queues'] ?? []) as $queue): ?>
-                    <span class="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded"><?= htmlspecialchars($queue) ?></span>
+                    <span
+                      class="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-800 rounded"><?= htmlspecialchars($queue) ?></span>
                   <?php endforeach; ?>
                 </div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm text-gray-900"><?= htmlspecialchars((string)($worker['processes'] ?? 1)) ?></div>
+                <div class="text-sm text-gray-900"><?= htmlspecialchars((string) ($worker['processes'] ?? 1)) ?></div>
               </td>
               <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex flex-col gap-1">
@@ -97,8 +98,7 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
                       <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                           d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M9 10h6v4H9z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10h6v4H9z"></path>
                       </svg>
                     </button>
                   <?php else: ?>
@@ -228,7 +228,8 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
   </div>
 
   <div id="deleteModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
-    <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" id="deleteModalBackdrop"></div>
+    <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" id="deleteModalBackdrop">
+    </div>
     <div class="relative min-h-screen flex items-center justify-center p-4 sm:p-6">
       <div class="relative w-full max-w-md bg-white rounded-lg shadow-xl" onclick="event.stopPropagation()">
         <div class="px-6 py-4 border-b border-gray-200">
@@ -278,7 +279,8 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
             </div>
             <div>
               <h4 class="text-lg font-medium text-gray-900 mb-2" id="startWorkerName">Start Queue Worker</h4>
-              <p class="text-sm text-gray-600 mb-4">Are you sure you want to start this worker? It will begin processing jobs from the configured queues.</p>
+              <p class="text-sm text-gray-600 mb-4">Are you sure you want to start this worker? It will begin processing
+                jobs from the configured queues.</p>
               <div id="startWorkerDetails" class="text-xs text-gray-500 space-y-1"></div>
             </div>
           </div>
@@ -307,13 +309,13 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
               <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M9 10h6v4H9z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 10h6v4H9z"></path>
               </svg>
             </div>
             <div>
               <h4 class="text-lg font-medium text-gray-900 mb-2" id="stopWorkerName">Stop Queue Worker</h4>
-              <p class="text-sm text-gray-600 mb-4">Are you sure you want to stop this worker? It will gracefully terminate all running processes and stop processing jobs.</p>
+              <p class="text-sm text-gray-600 mb-4">Are you sure you want to stop this worker? It will gracefully
+                terminate all running processes and stop processing jobs.</p>
               <div id="stopWorkerDetails" class="text-xs text-gray-500 space-y-1"></div>
             </div>
           </div>
@@ -333,7 +335,8 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
   </div>
 
   <div id="outputModal" class="hidden fixed inset-0 z-50 overflow-y-auto">
-    <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" id="outputModalBackdrop"></div>
+    <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity" id="outputModalBackdrop">
+    </div>
     <div class="relative min-h-screen flex items-center justify-center p-4 sm:p-6">
       <div class="relative w-full max-w-4xl bg-white rounded-lg shadow-xl" onclick="event.stopPropagation()">
         <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">

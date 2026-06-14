@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeHub\Controllers;
 
+use App\Modules\ForgeAuth\Enums\Permission;
+use App\Modules\ForgeAuth\Enums\Role;
 use App\Modules\ForgeHub\Services\HubItemRegistry;
 use App\Modules\ForgeHub\Services\LogService;
 use App\Modules\ForgeHub\Services\CacheService;
@@ -11,15 +13,16 @@ use Forge\Core\DI\Attributes\Service;
 use Forge\Core\DI\Container;
 use Forge\Core\Helpers\Framework;
 use Forge\Core\Http\Attributes\Middleware;
+use Forge\Core\Http\Attributes\RequiresRole;
 use Forge\Core\Http\Response;
 use Forge\Core\Module\ModuleLoader\Loader;
 use Forge\Core\Routing\Route;
 use Forge\Traits\ControllerHelper;
 
 #[Service]
-#[Middleware('web')]
-#[Middleware('auth')]
-#[Middleware('hub-permissions')]
+#[Middleware(['web', 'auth', 'role', 'hub-permissions'])]
+#[RequiresRole(Role::ADMIN->value)]
+
 final class DashboardController
 {
   use ControllerHelper;
@@ -32,9 +35,13 @@ final class DashboardController
   ) {
   }
 
-  #[Route("/hub")]
+  #[Route(
+    path: "/hub",
+    permissions: [Permission::HUB_PERMISSIONS->value]
+  )]
   public function index(): Response
   {
+
     $modules = $this->loader->getSortedModuleRegistry();
     $hubItems = $this->registry->getHubItems();
     $logFiles = $this->logService->getLogFiles();

@@ -116,3 +116,4 @@ OPENCODE_AGENT_GUIDE.MD
 .clippy/*
 engine/*
 /public/assets/modules/*
+/storage/framework/*
