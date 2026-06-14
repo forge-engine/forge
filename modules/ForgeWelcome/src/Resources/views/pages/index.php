@@ -1,5 +1,5 @@
 <?php
-layout(name: "main", fromModule: true);
+layout(name: "ForgeWelcome:main", props: ["title" => "Welcome To Forge Kernel"]);
 ?>
 <div class="layout-wrapper">
     <div class="landing-wrapper">
@@ -33,8 +33,8 @@ layout(name: "main", fromModule: true);
                 This route is located in: /modules/ForgeWelcome/src/Controllers/WelcomeController.php <br />
                 This welcome page is located in: /modules/ForgeWelcome/src/resources/views/pages/index.php <br />
             </p>
-            <?= component(name: 'ForgeWelcome:nav-bar', fromModule: true) ?>
-            <?= component(name: 'ForgeWelcome:footer', fromModule: true) ?>
+            <?= component(name: 'ForgeWelcome:nav-bar') ?>
+            <?= component(name: 'ForgeWelcome:footer') ?>
         </div>
     </div>
 </div>
