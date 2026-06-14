@@ -19,7 +19,7 @@ use Forge\Core\Security\PermissionsEnum;
 
 #[Module(
   name: 'ForgeHub',
-  version: '2.5.1',
+  version: '2.5.2',
   description: 'Administration Hub for Forge Framework',
   order: 6,
   author: 'Forge Team',
@@ -34,7 +34,7 @@ use Forge\Core\Security\PermissionsEnum;
 #[HubItem(label: 'Cron Jobs', route: '/hub/cron-jobs', icon: ForgeIcon::CLOCK, order: 8)]
 #[HubItem(label: 'Monitoring', route: '/hub/monitoring', icon: ForgeIcon::MONITOR, order: 9)]
 #[Service]
-#[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
+#[Compatibility(framework: '>=4.15.10', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
 final class ForgeHubModule
 {
