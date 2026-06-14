@@ -32,7 +32,7 @@ use \App\Modules\ForgeDebugBar\DebugBar;
 #[Service]
 #[Module(
   name: 'ForgeDebugBar',
-  version: '1.3.0',
+  version: '1.3.1',
   description: 'A debug bar by Forge',
   order: 3,
   author: 'Forge Team',
@@ -41,8 +41,8 @@ use \App\Modules\ForgeDebugBar\DebugBar;
   tags: ['generic', 'debug', 'debug-bar', 'debug-bar-system', 'debug-bar-library', 'debug-bar-framework']
 )]
 #[HubItem(label: 'Debug Bar', route: '/hub/debugbar', icon: ForgeIcon::COG, order: 6)]
-#[Provides(\App\Modules\ForgeDebugBar\DebugBar::class, version: '1.3.0')]
-#[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
+#[Provides(DebugBar::class, version: '1.3.1')]
+#[Compatibility(framework: '>=4.15.11', php: '>=8.3')]
 #[ConfigDefaults(defaults: [
   'forge_debug_bar' => [
     'enabled' => true
@@ -61,11 +61,6 @@ class DebugBarModule
     $container->bind(DebugBar::class, DebugBar::class);
   }
 
-  #[LifecycleHook(hook: LifecycleHookName::BEFORE_REQUEST)]
-  public function onBeforeRequest(Request $request): void
-  {
-    //add_timeline_event('onBeforeRequest', 'start');
-  }
 
   #[LifecycleHook(hook: LifecycleHookName::AFTER_REQUEST)]
   public function onAfterRequest(Request $request, Response $response): void
@@ -179,8 +174,8 @@ class DebugBarModule
     $this->registerAsset(assetHtml: $debugBarHtml . "\n" . $jsScriptTag, beforeTag: '</body>');
   }
 
-  private function getDebugbarInstance(): \App\Modules\ForgeDebugBar\DebugBar
+  private function getDebugbarInstance(): DebugBar
   {
-    return \App\Modules\ForgeDebugBar\DebugBar::getInstance();
+    return DebugBar::getInstance();
   }
 }
