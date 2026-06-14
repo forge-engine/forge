@@ -15,6 +15,8 @@ use Forge\Core\Contracts\Database\QueryBuilderInterface;
 #[Service]
 final class RoleService
 {
+    private array $userRolesCache = [];
+
     public function __construct(
         private readonly RoleRepository $roleRepository,
         private readonly UserRepository $userRepository,
@@ -108,17 +110,26 @@ final class RoleService
 
     public function getUserRoles(User $user): array
     {
+        if (isset($this->userRolesCache[$user->id])) {
+            return $this->userRolesCache[$user->id];
+        }
+
         $userRoleRows = $this->queryBuilder
-            ->table("user_roles")
-            ->where("user_id", "=", $user->id)
+            ->table('user_roles')
+            ->select('role_id')
+            ->where('user_id', '=', $user->id)
             ->get();
 
         if (empty($userRoleRows)) {
+            $this->userRolesCache[$user->id] = [];
             return [];
         }
 
-        $roleIds = array_column($userRoleRows, "role_id");
-        return Role::query()->whereIn("id", $roleIds)->get();
+        $roleIds = array_column($userRoleRows, 'role_id');
+        $roles = Role::query()->whereIn('id', $roleIds)->get();
+
+        $this->userRolesCache[$user->id] = $roles;
+        return $roles;
     }
 
     public function getRolePermissions(Role $role): array

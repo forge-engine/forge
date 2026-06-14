@@ -11,6 +11,8 @@ use Forge\Core\Contracts\Database\QueryBuilderInterface;
 #[Service]
 final class PermissionService
 {
+  private array $permissionsCache = [];
+
   public function __construct(
     private readonly QueryBuilderInterface $queryBuilder
   ) {
@@ -23,6 +25,10 @@ final class PermissionService
    */
   public function getUserPermissions(User $user): array
   {
+    if (isset($this->permissionsCache[$user->id])) {
+      return $this->permissionsCache[$user->id];
+    }
+
     $rows = $this->queryBuilder
         ->table('permissions')
         ->select('permissions.name')
@@ -31,7 +37,9 @@ final class PermissionService
         ->where('user_roles.user_id', '=', $user->id)
         ->get();
 
-    return array_values(array_unique(array_column($rows, 'name')));
+    $permissions = array_values(array_unique(array_column($rows, 'name')));
+    $this->permissionsCache[$user->id] = $permissions;
+    return $permissions;
   }
 
   /**

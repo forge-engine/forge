@@ -148,7 +148,7 @@ return array (
         ),
       ),
     ),
-    'mtime' => 1781401334,
+    'mtime' => 1781416961,
     'modulePath' => '/Users/acidlake/Development/UPPER/Forge/repos/forge-v3/modules/ForgeHub',
   ),
   'App\\Modules\\ForgeLanguage\\ForgeLanguageModule' => 
