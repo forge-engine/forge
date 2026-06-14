@@ -24,7 +24,7 @@ use Forge\Core\Module\Attributes\Structure;
 #[Service]
 #[Module(
   name: 'ForgeAuth',
-  version: '1.0.2',
+  version: '1.0.3',
   description: 'An Auth module by forge.',
   order: 99,
   author: 'Forge Team',
@@ -32,7 +32,7 @@ use Forge\Core\Module\Attributes\Structure;
   type: 'auth',
   tags: ['auth', 'authentication', 'authorization', 'authentication-system', 'authentication-library', 'authentication-framework']
 )]
-#[Compatibility(framework: '>=0.1.0', php: '>=8.3')]
+#[Compatibility(framework: '>=4.15.10', php: '>=8.3')]
 #[Repository(type: 'git', url: 'https://github.com/forge-engine/modules')]
 #[ConfigDefaults(defaults: [
   'forge_auth' => [
