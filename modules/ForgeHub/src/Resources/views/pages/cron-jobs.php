@@ -1,6 +1,5 @@
 <?php
-
-layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
+layout(name: "ForgeHub:hub");
 ?>
 <div class="space-y-6">
   <div class="flex items-center justify-between">

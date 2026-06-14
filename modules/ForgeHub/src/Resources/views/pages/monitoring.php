@@ -2,7 +2,7 @@
 
 use Forge\Core\Helpers\Format;
 
-layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
+layout(name: "ForgeHub:hub");
 ?>
 <div class="space-y-6">
   <div class="flex items-center justify-between">
@@ -24,15 +24,18 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
         <dl class="space-y-3">
           <div class="flex items-center justify-between">
             <dt class="text-sm font-medium text-gray-500">1 Minute</dt>
-            <dd class="text-lg font-bold text-gray-900" id="cpu-1min"><?= htmlspecialchars((string) $metrics['cpu']['1min']) ?></dd>
+            <dd class="text-lg font-bold text-gray-900" id="cpu-1min">
+              <?= htmlspecialchars((string) $metrics['cpu']['1min']) ?></dd>
           </div>
           <div class="flex items-center justify-between">
             <dt class="text-sm font-medium text-gray-500">5 Minutes</dt>
-            <dd class="text-lg font-bold text-gray-900" id="cpu-5min"><?= htmlspecialchars((string) $metrics['cpu']['5min']) ?></dd>
+            <dd class="text-lg font-bold text-gray-900" id="cpu-5min">
+              <?= htmlspecialchars((string) $metrics['cpu']['5min']) ?></dd>
           </div>
           <div class="flex items-center justify-between">
             <dt class="text-sm font-medium text-gray-500">15 Minutes</dt>
-            <dd class="text-lg font-bold text-gray-900" id="cpu-15min"><?= htmlspecialchars((string) $metrics['cpu']['15min']) ?></dd>
+            <dd class="text-lg font-bold text-gray-900" id="cpu-15min">
+              <?= htmlspecialchars((string) $metrics['cpu']['15min']) ?></dd>
           </div>
         </dl>
       <?php else: ?>
@@ -54,7 +57,8 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
           <div>
             <div class="flex items-center justify-between mb-1">
               <dt class="text-sm font-medium text-gray-500">Usage</dt>
-              <dd class="text-sm font-semibold text-gray-900" id="sys-mem-percent"><?= htmlspecialchars((string) $sysMemPercent) ?>%</dd>
+              <dd class="text-sm font-semibold text-gray-900" id="sys-mem-percent">
+                <?= htmlspecialchars((string) $sysMemPercent) ?>%</dd>
             </div>
             <div class="w-full bg-gray-200 rounded-full h-2">
               <div class="bg-blue-600 h-2 rounded-full transition-all" id="sys-mem-bar"
@@ -92,7 +96,8 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
         <div>
           <div class="flex items-center justify-between mb-1">
             <dt class="text-sm font-medium text-gray-500">Usage</dt>
-            <dd class="text-sm font-semibold text-gray-900" id="php-mem-percent"><?= htmlspecialchars((string) $phpMemPercent) ?>%</dd>
+            <dd class="text-sm font-semibold text-gray-900" id="php-mem-percent">
+              <?= htmlspecialchars((string) $phpMemPercent) ?>%</dd>
           </div>
           <div class="w-full bg-gray-200 rounded-full h-2">
             <div class="bg-green-600 h-2 rounded-full transition-all" id="php-mem-bar"
@@ -101,7 +106,8 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
         </div>
         <div class="flex items-center justify-between pt-2">
           <dt class="text-sm font-medium text-gray-500">Current</dt>
-          <dd class="text-sm font-semibold text-gray-900" id="php-mem-current"><?= Format::fileSize($phpMemCurrent) ?></dd>
+          <dd class="text-sm font-semibold text-gray-900" id="php-mem-current"><?= Format::fileSize($phpMemCurrent) ?>
+          </dd>
         </div>
         <div class="flex items-center justify-between">
           <dt class="text-sm font-medium text-gray-500">Peak</dt>
@@ -109,7 +115,8 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
         </div>
         <div class="flex items-center justify-between">
           <dt class="text-sm font-medium text-gray-500">Limit</dt>
-          <dd class="text-sm font-semibold text-gray-900" id="php-mem-limit"><?= $phpMemLimit > 0 ? Format::fileSize($phpMemLimit) : 'Unlimited' ?></dd>
+          <dd class="text-sm font-semibold text-gray-900" id="php-mem-limit">
+            <?= $phpMemLimit > 0 ? Format::fileSize($phpMemLimit) : 'Unlimited' ?></dd>
         </div>
       </dl>
     </div>
@@ -127,7 +134,8 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
         <div>
           <div class="flex items-center justify-between mb-1">
             <dt class="text-sm font-medium text-gray-500">Usage</dt>
-            <dd class="text-sm font-semibold text-gray-900" id="root-disk-percent"><?= htmlspecialchars((string) $rootDiskPercent) ?>%</dd>
+            <dd class="text-sm font-semibold text-gray-900" id="root-disk-percent">
+              <?= htmlspecialchars((string) $rootDiskPercent) ?>%</dd>
           </div>
           <div class="w-full bg-gray-200 rounded-full h-2">
             <div class="bg-purple-600 h-2 rounded-full transition-all" id="root-disk-bar"
@@ -136,15 +144,18 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
         </div>
         <div class="flex items-center justify-between pt-2">
           <dt class="text-sm font-medium text-gray-500">Total</dt>
-          <dd class="text-sm font-semibold text-gray-900" id="root-disk-total"><?= Format::fileSize($rootDiskTotal) ?></dd>
+          <dd class="text-sm font-semibold text-gray-900" id="root-disk-total"><?= Format::fileSize($rootDiskTotal) ?>
+          </dd>
         </div>
         <div class="flex items-center justify-between">
           <dt class="text-sm font-medium text-gray-500">Used</dt>
-          <dd class="text-sm font-semibold text-gray-900" id="root-disk-used"><?= Format::fileSize($rootDiskUsed) ?></dd>
+          <dd class="text-sm font-semibold text-gray-900" id="root-disk-used"><?= Format::fileSize($rootDiskUsed) ?>
+          </dd>
         </div>
         <div class="flex items-center justify-between">
           <dt class="text-sm font-medium text-gray-500">Free</dt>
-          <dd class="text-sm font-semibold text-gray-900" id="root-disk-free"><?= Format::fileSize($rootDiskFree) ?></dd>
+          <dd class="text-sm font-semibold text-gray-900" id="root-disk-free"><?= Format::fileSize($rootDiskFree) ?>
+          </dd>
         </div>
       </dl>
     </div>
@@ -162,7 +173,8 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
         <div>
           <div class="flex items-center justify-between mb-1">
             <dt class="text-sm font-medium text-gray-500">Usage</dt>
-            <dd class="text-sm font-semibold text-gray-900" id="storage-disk-percent"><?= htmlspecialchars((string) $storageDiskPercent) ?>%</dd>
+            <dd class="text-sm font-semibold text-gray-900" id="storage-disk-percent">
+              <?= htmlspecialchars((string) $storageDiskPercent) ?>%</dd>
           </div>
           <div class="w-full bg-gray-200 rounded-full h-2">
             <div class="bg-orange-600 h-2 rounded-full transition-all" id="storage-disk-bar"
@@ -171,15 +183,18 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
         </div>
         <div class="flex items-center justify-between pt-2">
           <dt class="text-sm font-medium text-gray-500">Total</dt>
-          <dd class="text-sm font-semibold text-gray-900" id="storage-disk-total"><?= Format::fileSize($storageDiskTotal) ?></dd>
+          <dd class="text-sm font-semibold text-gray-900" id="storage-disk-total">
+            <?= Format::fileSize($storageDiskTotal) ?></dd>
         </div>
         <div class="flex items-center justify-between">
           <dt class="text-sm font-medium text-gray-500">Used</dt>
-          <dd class="text-sm font-semibold text-gray-900" id="storage-disk-used"><?= Format::fileSize($storageDiskUsed) ?></dd>
+          <dd class="text-sm font-semibold text-gray-900" id="storage-disk-used">
+            <?= Format::fileSize($storageDiskUsed) ?></dd>
         </div>
         <div class="flex items-center justify-between">
           <dt class="text-sm font-medium text-gray-500">Free</dt>
-          <dd class="text-sm font-semibold text-gray-900" id="storage-disk-free"><?= Format::fileSize($storageDiskFree) ?></dd>
+          <dd class="text-sm font-semibold text-gray-900" id="storage-disk-free">
+            <?= Format::fileSize($storageDiskFree) ?></dd>
         </div>
       </dl>
     </div>
@@ -189,35 +204,42 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
       <dl class="grid grid-cols-1 gap-3">
         <div class="flex items-center justify-between">
           <dt class="text-sm font-medium text-gray-500">PHP Version</dt>
-          <dd class="text-sm font-semibold text-gray-900" id="sys-php-version"><?= htmlspecialchars($metrics['system']['php_version']) ?></dd>
+          <dd class="text-sm font-semibold text-gray-900" id="sys-php-version">
+            <?= htmlspecialchars($metrics['system']['php_version']) ?></dd>
         </div>
         <div class="flex items-center justify-between">
           <dt class="text-sm font-medium text-gray-500">PHP SAPI</dt>
-          <dd class="text-sm font-semibold text-gray-900" id="sys-php-sapi"><?= htmlspecialchars($metrics['system']['php_sapi']) ?></dd>
+          <dd class="text-sm font-semibold text-gray-900" id="sys-php-sapi">
+            <?= htmlspecialchars($metrics['system']['php_sapi']) ?></dd>
         </div>
         <div class="flex items-center justify-between">
           <dt class="text-sm font-medium text-gray-500">Operating System</dt>
-          <dd class="text-sm font-semibold text-gray-900" id="sys-os"><?= htmlspecialchars($metrics['system']['os']) ?></dd>
+          <dd class="text-sm font-semibold text-gray-900" id="sys-os"><?= htmlspecialchars($metrics['system']['os']) ?>
+          </dd>
         </div>
         <?php if ($metrics['system']['uptime']): ?>
           <div class="flex items-center justify-between">
             <dt class="text-sm font-medium text-gray-500">Uptime</dt>
-            <dd class="text-sm font-semibold text-gray-900" id="sys-uptime"><?= htmlspecialchars($metrics['system']['uptime']) ?></dd>
+            <dd class="text-sm font-semibold text-gray-900" id="sys-uptime">
+              <?= htmlspecialchars($metrics['system']['uptime']) ?></dd>
           </div>
         <?php endif; ?>
         <?php if ($metrics['system']['process_count'] !== null): ?>
           <div class="flex items-center justify-between">
             <dt class="text-sm font-medium text-gray-500">Process Count</dt>
-            <dd class="text-sm font-semibold text-gray-900" id="sys-process-count"><?= htmlspecialchars((string) $metrics['system']['process_count']) ?></dd>
+            <dd class="text-sm font-semibold text-gray-900" id="sys-process-count">
+              <?= htmlspecialchars((string) $metrics['system']['process_count']) ?></dd>
           </div>
         <?php endif; ?>
         <div class="flex items-center justify-between">
           <dt class="text-sm font-medium text-gray-500">Server Time</dt>
-          <dd class="text-sm font-semibold text-gray-900" id="sys-server-time"><?= htmlspecialchars($metrics['system']['server_time']) ?></dd>
+          <dd class="text-sm font-semibold text-gray-900" id="sys-server-time">
+            <?= htmlspecialchars($metrics['system']['server_time']) ?></dd>
         </div>
         <div class="flex items-center justify-between">
           <dt class="text-sm font-medium text-gray-500">Timezone</dt>
-          <dd class="text-sm font-semibold text-gray-900" id="sys-timezone"><?= htmlspecialchars($metrics['system']['timezone']) ?></dd>
+          <dd class="text-sm font-semibold text-gray-900" id="sys-timezone">
+            <?= htmlspecialchars($metrics['system']['timezone']) ?></dd>
         </div>
       </dl>
     </div>

@@ -1,5 +1,5 @@
 <?php
-layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
+layout(name: "ForgeHub:hub");
 
 $commandHistory = $_SESSION['command_history'] ?? [];
 $whoami = $whoami ?? 'user';
@@ -12,8 +12,10 @@ $pwd = $pwd ?? '/';
       <div class="relative">
         <input type="text" id="commandSearch" placeholder="Search commands..."
           class="px-3 py-2 pl-10 w-full text-sm rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-        <svg class="absolute top-2.5 left-3 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+        <svg class="absolute top-2.5 left-3 w-4 h-4 text-gray-400" fill="none" stroke="currentColor"
+          viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
         </svg>
       </div>
     </div>
@@ -26,7 +28,9 @@ $pwd = $pwd ?? '/';
     <div class="flex justify-between items-center px-4 py-3 bg-gray-50 border-b border-gray-200">
       <div class="flex gap-2 items-center font-mono text-sm text-gray-600">
         <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+          <path fill-rule="evenodd"
+            d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+            clip-rule="evenodd" />
         </svg>
         <span><?= htmlspecialchars($whoami ?? 'user') ?> - <?= htmlspecialchars($pwd ?? '/') ?></span>
       </div>
@@ -49,7 +53,8 @@ $pwd = $pwd ?? '/';
         <label class="block mb-2 text-sm font-medium text-gray-700">Command Arguments</label>
         <div id="argumentsContainer" class="space-y-3"></div>
         <div class="flex gap-2 mt-3">
-          <button type="button" id="clearArgs" class="px-3 py-2 text-sm text-gray-600 rounded-lg border border-gray-300 hover:text-gray-900 hover:bg-gray-50">Clear</button>
+          <button type="button" id="clearArgs"
+            class="px-3 py-2 text-sm text-gray-600 rounded-lg border border-gray-300 hover:text-gray-900 hover:bg-gray-50">Clear</button>
         </div>
       </div>
     </div>
@@ -137,7 +142,7 @@ $pwd = $pwd ?? '/';
     commandsList.innerHTML = html;
 
     document.querySelectorAll('.command-item').forEach(btn => {
-      btn.addEventListener('click', function() {
+      btn.addEventListener('click', function () {
         const cmd = this.dataset.command;
         selectCommand(cmd);
       });
@@ -252,11 +257,11 @@ $pwd = $pwd ?? '/';
     return text.replace(/\u001b\[[0-9;]*m/g, '');
   }
 
-  commandSearch.addEventListener('input', function() {
+  commandSearch.addEventListener('input', function () {
     renderCommands(allCommands, this.value);
   });
 
-  clearArgs.addEventListener('click', function() {
+  clearArgs.addEventListener('click', function () {
     const container = document.getElementById('argumentsContainer');
     if (container) {
       Array.from(container.querySelectorAll('input')).forEach(input => {
@@ -572,7 +577,7 @@ $pwd = $pwd ?? '/';
     form.appendChild(csrfInput);
     form.appendChild(button);
 
-    form.addEventListener('submit', function(e) {
+    form.addEventListener('submit', function (e) {
       e.preventDefault();
       submitInputForm(form);
     });

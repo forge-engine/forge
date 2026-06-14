@@ -2,7 +2,7 @@
 
 use Forge\Core\Helpers\Flash;
 
-layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
+layout(name: "ForgeHub:hub");
 ?>
 <div class="space-y-6">
   <div>
@@ -114,7 +114,7 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
         <div class="space-y-4">
           <div>
             <p class="text-sm text-gray-500">User ID</p>
-            <p class="text-sm font-medium text-gray-900 mt-1"><?= htmlspecialchars((string)($user->id ?? '')) ?></p>
+            <p class="text-sm font-medium text-gray-900 mt-1"><?= htmlspecialchars((string) ($user->id ?? '')) ?></p>
           </div>
           <div>
             <p class="text-sm text-gray-500">Status</p>
@@ -127,7 +127,8 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
             ];
             $statusColor = $statusColors[$status] ?? 'bg-gray-100 text-gray-800';
             ?>
-            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <?= $statusColor ?> mt-1">
+            <span
+              class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <?= $statusColor ?> mt-1">
               <?= htmlspecialchars(ucfirst($status)) ?>
             </span>
           </div>

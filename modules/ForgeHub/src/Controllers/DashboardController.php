@@ -19,7 +19,7 @@ use Forge\Traits\ControllerHelper;
 #[Service]
 #[Middleware('web')]
 #[Middleware('auth')]
-#[Middleware('hub-permissions')]
+// #[Middleware('hub-permissions')]
 final class DashboardController
 {
   use ControllerHelper;

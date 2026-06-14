@@ -6,7 +6,7 @@ namespace App\Modules\ForgeAuth\Controllers;
 
 use App\Modules\ForgeAuth\Exceptions\LoginException;
 use App\Modules\ForgeAuth\Services\ForgeAuthService;
-use App\Modules\ForgeAuth\Validation\ForgeAuthValidate;
+use App\Modules\ForgeAuth\Validations\LoginValidation;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Helpers\Flash;
 use Forge\Core\Helpers\Redirect;
@@ -41,12 +41,10 @@ final class WebLoginController
   public function login(Request $request): Response
   {
     try {
-      ForgeAuthValidate::login($request->postData);
+      LoginValidation::validate($request->postData);
       $loginCredentials = $this->sanitize($request->postData);
 
       $this->forgeAuthService->login($loginCredentials);
-
-      // Use instance method to get redirect URL (checks intended URL, module redirects, then config)
       return Redirect::to($this->redirectHandler->redirectAfterLogin());
     } catch (LoginException $e) {
       Flash::set("error", $e->getMessage());

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\ForgeAuth\Controllers;
 
-use App\Modules\ForgeAuth\Exceptions\UserRegistrationException;
+use App\Modules\ForgeAuth\Requeriments\PasswordRequeriments;
 use App\Modules\ForgeAuth\Services\ForgeAuthService;
 use App\Modules\ForgeAuth\Services\RedirectHandlerService;
-use App\Modules\ForgeAuth\Validation\ForgeAuthValidate;
+use App\Modules\ForgeAuth\Validations\RegisterValidation;
 use Forge\Core\DI\Attributes\Service;
 use Forge\Core\Helpers\Flash;
 use Forge\Core\Helpers\Redirect;
@@ -15,6 +15,7 @@ use Forge\Core\Http\Attributes\Middleware;
 use Forge\Core\Http\Request;
 use Forge\Core\Http\Response;
 use Forge\Core\Routing\Route;
+use Forge\Exceptions\ValidationException;
 use Forge\Traits\ControllerHelper;
 use Forge\Traits\SecurityHelper;
 
@@ -39,14 +40,15 @@ final class WebRegisterController
   public function register(Request $request): Response
   {
     try {
-      ForgeAuthValidate::register($request->postData);
+      RegisterValidation::validate($request->postData);
+      PasswordRequeriments::validate($request->postData['password']);
       $registerData = $this->sanitize($request->postData);
 
       $this->forgeAuthService->register($registerData);
       Flash::set("success", "Registration successful. Please login.");
       return Redirect::to($this->redirectHandlerService->redirectAfterLogin());
-    } catch (UserRegistrationException) {
-      Flash::set("error", "Registration failed. Please try again.");
+    } catch (ValidationException $e) {
+      Flash::set("error", $e->getMessage());
       return Redirect::to('/auth/register');
     } catch (\Exception $e) {
       Flash::set("error", $e->getMessage());

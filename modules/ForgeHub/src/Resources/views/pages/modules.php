@@ -1,6 +1,5 @@
 <?php
-
-layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
+layout(name: "ForgeHub:hub");
 ?>
 <div class="grid gap-6">
   <?php if (empty($modules)): ?>

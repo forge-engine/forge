@@ -2,7 +2,7 @@
 
 use Forge\Core\Helpers\Flash;
 
-layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
+layout(name: "ForgeHub:hub");
 ?>
 <div class="space-y-6">
   <div>
@@ -68,11 +68,11 @@ layout(name: "hub", fromModule: true, moduleName: "ForgeHub");
         </div>
 
         <div class="flex justify-end">
-            <?= component(name: 'ForgeHub:button', props: [
-              'type' => 'submit',
-              'variant' => 'primary',
-              'children' => 'Update Password'
-            ]) ?>
+          <?= component(name: 'ForgeHub:button', props: [
+            'type' => 'submit',
+            'variant' => 'primary',
+            'children' => 'Update Password'
+          ]) ?>
         </div>
       </form>
     </div>
